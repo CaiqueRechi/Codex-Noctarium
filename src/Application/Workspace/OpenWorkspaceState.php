@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace CrowVaultCanvas\Application\Workspace;
+
+use CrowVaultCanvas\Domain\Knowledge\Models\WorkspaceState;
+
+final class OpenWorkspaceState
+{
+    public function handle(string $userId): WorkspaceSnapshot
+    {
+        $state = WorkspaceState::query()
+            ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($state === null) {
+            return new WorkspaceSnapshot(120, 120, 0.65, null);
+        }
+
+        return new WorkspaceSnapshot(
+            $state->viewport_x,
+            $state->viewport_y,
+            $state->viewport_zoom,
+            $state->focus_entity_id,
+        );
+    }
+}

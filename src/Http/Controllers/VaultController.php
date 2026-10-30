@@ -5,15 +5,22 @@ declare(strict_types=1);
 namespace CrowVaultCanvas\Http\Controllers;
 
 use CrowVaultCanvas\Application\OpenVault;
+use CrowVaultCanvas\Application\Workspace\OpenWorkspaceState;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 final class VaultController
 {
-    public function __invoke(OpenVault $openVault): Response
-    {
+    public function __invoke(
+        Request $request,
+        OpenVault $openVault,
+        OpenWorkspaceState $openWorkspaceState,
+    ): Response {
+        $userId = (string) $request->user()?->getAuthIdentifier();
+        abort_if($userId === '', 401);
         $vault = $openVault->handle();
 
         return Inertia::render('cvc/vault', [
@@ -34,8 +41,10 @@ final class VaultController
                     ])->values(),
                 ])->values(),
             ],
+            'workspace' => $openWorkspaceState->handle($userId)->toArray(),
             'endpoints' => [
                 'documents' => route('cvc.documents.store'),
+                'workspace' => route('cvc.workspace.update'),
             ],
         ]);
     }

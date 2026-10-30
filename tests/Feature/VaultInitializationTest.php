@@ -54,6 +54,7 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_contexts'));
         self::assertTrue(Schema::hasTable('cvc_entities'));
         self::assertTrue(Schema::hasTable('cvc_documents'));
+        self::assertTrue(Schema::hasTable('cvc_workspace_states'));
 
         $this->artisan('migrate:rollback')->assertSuccessful();
 
@@ -61,6 +62,7 @@ final class VaultInitializationTest extends TestCase
         self::assertFalse(Schema::hasTable('cvc_vaults'));
         self::assertFalse(Schema::hasTable('cvc_entities'));
         self::assertFalse(Schema::hasTable('cvc_documents'));
+        self::assertFalse(Schema::hasTable('cvc_workspace_states'));
 
         $this->artisan('migrate')->assertSuccessful();
 
@@ -68,5 +70,6 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_contexts'));
         self::assertTrue(Schema::hasTable('cvc_entities'));
         self::assertTrue(Schema::hasTable('cvc_documents'));
+        self::assertTrue(Schema::hasTable('cvc_workspace_states'));
     }
 }

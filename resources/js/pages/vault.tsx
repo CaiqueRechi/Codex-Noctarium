@@ -36,6 +36,7 @@ import type {
     OpenedDocument,
     SaveState,
 } from '../documents/types';
+import { saveWorkspaceState } from '../workspace/api';
 
 type ContextSummary = {
     id: string;
@@ -57,6 +58,11 @@ type VaultPageProps = {
     };
     endpoints: {
         documents: string;
+        workspace: string;
+    };
+    workspace: {
+        viewport: Viewport;
+        focusEntityId: string | null;
     };
 };
 
@@ -73,6 +79,7 @@ const semanticLevelLabels: Record<SemanticLevel, string> = {
 function buildNodes(
     universes: UniverseSummary[],
     semanticLevel: SemanticLevel,
+    focusEntityId: string | null,
 ): KnowledgeCanvasNode[] {
     return universes.flatMap((universe, universeIndex) => {
         const universeY = universeIndex * 420;
@@ -111,6 +118,7 @@ function buildNodes(
                             y: contextY + documentIndex * 160,
                         },
                         hidden: semanticLevel !== 'document',
+                        selected: document.id === focusEntityId,
                         data: {
                             kind: 'document',
                             label: document.title ?? 'Sem título',
@@ -141,24 +149,32 @@ function buildEdges(universes: UniverseSummary[]): Edge[] {
     );
 }
 
-export default function VaultPage({ vault, endpoints }: VaultPageProps) {
+export default function VaultPage({
+    vault,
+    endpoints,
+    workspace,
+}: VaultPageProps) {
     const [universes, setUniverses] = useState(vault.universes);
     const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(() =>
-        initialSemanticLevel(0.65),
+        initialSemanticLevel(workspace.viewport.zoom),
     );
     const [activeDocument, setActiveDocument] =
         useState<OpenedDocument | null>(null);
     const [draft, setDraft] = useState('');
     const [saveState, setSaveState] = useState<SaveState>('saved');
     const [error, setError] = useState<string | null>(null);
+    const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+    const [focusEntityId, setFocusEntityId] = useState(
+        workspace.focusEntityId,
+    );
     const [isCreating, setIsCreating] = useState(false);
     const [flow, setFlow] =
         useState<ReactFlowInstance<KnowledgeCanvasNode, Edge> | null>(null);
-    const viewport = useRef<Viewport>({ x: 120, y: 120, zoom: 0.65 });
+    const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
     const nodes = useMemo(
-        () => buildNodes(universes, semanticLevel),
-        [semanticLevel, universes],
+        () => buildNodes(universes, semanticLevel, focusEntityId),
+        [focusEntityId, semanticLevel, universes],
     );
     const edges = useMemo(() => buildEdges(universes), [universes]);
     const firstContextId = universes[0]?.contexts[0]?.id;
@@ -171,6 +187,33 @@ export default function VaultPage({ vault, endpoints }: VaultPageProps) {
             );
         },
         [],
+    );
+
+    const persistWorkspace = useCallback(
+        async (nextViewport: Viewport, nextFocusEntityId: string | null) => {
+            try {
+                await saveWorkspaceState(
+                    endpoints.workspace,
+                    nextViewport,
+                    nextFocusEntityId,
+                );
+                setWorkspaceError(null);
+            } catch (exception) {
+                setWorkspaceError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível salvar o enquadramento.',
+                );
+            }
+        },
+        [endpoints.workspace],
+    );
+
+    const handleMoveEnd = useCallback(
+        (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
+            void persistWorkspace(nextViewport, focusEntityId);
+        },
+        [focusEntityId, persistWorkspace],
     );
 
     const showDocument = useCallback((document: OpenedDocument) => {
@@ -210,7 +253,9 @@ export default function VaultPage({ vault, endpoints }: VaultPageProps) {
                     ),
                 })),
             );
+            setFocusEntityId(document.id);
             showDocument(document);
+            void persistWorkspace(viewport.current, document.id);
         } catch (exception) {
             setError(
                 exception instanceof Error
@@ -220,7 +265,13 @@ export default function VaultPage({ vault, endpoints }: VaultPageProps) {
         } finally {
             setIsCreating(false);
         }
-    }, [endpoints.documents, firstContextId, isCreating, showDocument]);
+    }, [
+        endpoints.documents,
+        firstContextId,
+        isCreating,
+        persistWorkspace,
+        showDocument,
+    ]);
 
     const handleNodeDoubleClick = useCallback<NodeMouseHandler>(
         async (_event, node) => {
@@ -231,9 +282,13 @@ export default function VaultPage({ vault, endpoints }: VaultPageProps) {
             setError(null);
 
             try {
-                showDocument(
-                    await openDocument(endpoints.documents, node.id),
+                const document = await openDocument(
+                    endpoints.documents,
+                    node.id,
                 );
+                setFocusEntityId(document.id);
+                showDocument(document);
+                void persistWorkspace(viewport.current, document.id);
             } catch (exception) {
                 setError(
                     exception instanceof Error
@@ -242,7 +297,7 @@ export default function VaultPage({ vault, endpoints }: VaultPageProps) {
                 );
             }
         },
-        [endpoints.documents, showDocument],
+        [endpoints.documents, persistWorkspace, showDocument],
     );
 
     const handleDraftChange = useCallback((content: string) => {
@@ -310,9 +365,9 @@ export default function VaultPage({ vault, endpoints }: VaultPageProps) {
                 </div>
             </header>
 
-            {error && !activeDocument && (
+            {(error || workspaceError) && !activeDocument && (
                 <p className="cvc-page-error" role="alert">
-                    {error}
+                    {error ?? workspaceError}
                 </p>
             )}
 
@@ -326,6 +381,7 @@ export default function VaultPage({ vault, endpoints }: VaultPageProps) {
                     maxZoom={2}
                     onInit={setFlow}
                     onMove={handleMove}
+                    onMoveEnd={handleMoveEnd}
                     onNodeDoubleClick={handleNodeDoubleClick}
                     nodesDraggable={false}
                     nodesFocusable
