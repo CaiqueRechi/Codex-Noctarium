@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas;
 
+use CrowVaultCanvas\Console\Commands\InitializeVaultCommand;
 use Illuminate\Support\ServiceProvider;
 
 final class CrowVaultCanvasServiceProvider extends ServiceProvider
@@ -15,6 +16,9 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadMigrationsFrom($this->packagePath('database/migrations'));
+        $this->commands([InitializeVaultCommand::class]);
+
         if (! $this->app['config']->boolean('crow-vault-canvas.enabled')) {
             return;
         }
