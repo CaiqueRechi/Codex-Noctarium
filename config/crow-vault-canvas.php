@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'enabled' => env('CVC_ENABLED', false),
+    'enabled' => filter_var(env('CVC_ENABLED', false), FILTER_VALIDATE_BOOL),
     'route' => [
         'prefix' => 'vault',
         'name' => 'cvc.',
