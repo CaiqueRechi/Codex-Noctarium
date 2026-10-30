@@ -36,4 +36,10 @@ final class Vault extends Model
             ->orderBy('sort_order')
             ->orderBy('name');
     }
+
+    /** @return HasMany<KnowledgeEntity, $this> */
+    public function entities(): HasMany
+    {
+        return $this->hasMany(KnowledgeEntity::class);
+    }
 }

@@ -10,6 +10,9 @@ return [
         'initial_universe' => env('CVC_INITIAL_UNIVERSE', 'Meu Universo'),
         'initial_context' => env('CVC_INITIAL_CONTEXT', 'Primeiro Contexto'),
     ],
+    'storage' => [
+        'root' => env('CVC_STORAGE_ROOT', storage_path('app/private/cvc')),
+    ],
     'route' => [
         'prefix' => 'vault',
         'name' => 'cvc.',
@@ -18,6 +21,10 @@ return [
             'auth',
             'verified',
             'screen.access:vault,read',
+        ],
+        'write_middleware' => [
+            'screen.access:vault,write',
+            'throttle:30,1',
         ],
     ],
 ];

@@ -7,6 +7,7 @@ namespace CrowVaultCanvas\Domain\Knowledge\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -47,5 +48,16 @@ final class KnowledgeContext extends Model
         return $this->hasMany(self::class, 'parent_id')
             ->orderBy('sort_order')
             ->orderBy('name');
+    }
+
+    /** @return BelongsToMany<KnowledgeEntity, $this> */
+    public function entities(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            KnowledgeEntity::class,
+            'cvc_context_entity',
+            'context_id',
+            'entity_id',
+        )->withTimestamps();
     }
 }

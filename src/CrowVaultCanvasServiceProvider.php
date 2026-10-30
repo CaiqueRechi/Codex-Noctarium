@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace CrowVaultCanvas;
 
 use CrowVaultCanvas\Console\Commands\InitializeVaultCommand;
+use CrowVaultCanvas\Infrastructure\Storage\LocalMarkdownStorage;
+use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
+use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Foundation\Http\Middleware\TrimStrings;
+use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 
 final class CrowVaultCanvasServiceProvider extends ServiceProvider
@@ -12,6 +17,7 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom($this->packagePath('config/crow-vault-canvas.php'), 'crow-vault-canvas');
+        $this->app->singleton(MarkdownStorage::class, LocalMarkdownStorage::class);
     }
 
     public function boot(): void
@@ -23,6 +29,12 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
             return;
         }
 
+        $documentUpdatePath = trim((string) config('crow-vault-canvas.route.prefix'), '/').'/documents/*';
+        $preservesMarkdown = static fn (Request $request): bool => $request->isMethod('PATCH')
+            && $request->is($documentUpdatePath);
+
+        TrimStrings::skipWhen($preservesMarkdown);
+        ConvertEmptyStringsToNull::skipWhen($preservesMarkdown);
         $this->loadRoutesFrom($this->packagePath('routes/web.php'));
     }
 

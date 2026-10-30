@@ -5,8 +5,14 @@ import {
     Controls,
     ReactFlow,
 } from '@xyflow/react';
-import type { Edge, NodeTypes, Viewport } from '@xyflow/react';
-import { useCallback, useMemo, useState } from 'react';
+import type {
+    Edge,
+    NodeMouseHandler,
+    NodeTypes,
+    ReactFlowInstance,
+    Viewport,
+} from '@xyflow/react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import '@xyflow/react/dist/style.css';
 import '../../css/presets.css';
@@ -19,10 +25,22 @@ import {
     resolveSemanticLevel,
 } from '../canvas/semantic-zoom';
 import type { SemanticLevel } from '../canvas/semantic-zoom';
+import {
+    createDocument,
+    openDocument,
+    saveDocument,
+} from '../documents/api';
+import { DocumentEditor } from '../documents/document-editor';
+import type {
+    DocumentSummary,
+    OpenedDocument,
+    SaveState,
+} from '../documents/types';
 
 type ContextSummary = {
     id: string;
     name: string;
+    documents: DocumentSummary[];
 };
 
 type UniverseSummary = {
@@ -36,6 +54,9 @@ type VaultPageProps = {
         id: string;
         name: string;
         universes: UniverseSummary[];
+    };
+    endpoints: {
+        documents: string;
     };
 };
 
@@ -65,51 +86,206 @@ function buildNodes(
                 semanticLevel,
             },
         };
-        const contextNodes: KnowledgeCanvasNode[] = universe.contexts.map(
-            (context, contextIndex) => ({
-                id: context.id,
-                type: 'knowledge',
-                position: { x: 380, y: universeY + contextIndex * 180 },
-                hidden: semanticLevel === 'universe',
-                data: {
-                    kind: 'context',
-                    label: context.name,
-                    semanticLevel,
-                },
-            }),
-        );
 
-        return [universeNode, ...contextNodes];
+        return [
+            universeNode,
+            ...universe.contexts.flatMap((context, contextIndex) => {
+                const contextY = universeY + contextIndex * 220;
+                const contextNode: KnowledgeCanvasNode = {
+                    id: context.id,
+                    type: 'knowledge',
+                    position: { x: 380, y: contextY },
+                    hidden: semanticLevel === 'universe',
+                    data: {
+                        kind: 'context',
+                        label: context.name,
+                        semanticLevel,
+                    },
+                };
+                const documentNodes: KnowledgeCanvasNode[] =
+                    context.documents.map((document, documentIndex) => ({
+                        id: document.id,
+                        type: 'knowledge',
+                        position: {
+                            x: 760,
+                            y: contextY + documentIndex * 160,
+                        },
+                        hidden: semanticLevel !== 'document',
+                        data: {
+                            kind: 'document',
+                            label: document.title ?? 'Sem título',
+                            semanticLevel,
+                        },
+                    }));
+
+                return [contextNode, ...documentNodes];
+            }),
+        ];
     });
 }
 
 function buildEdges(universes: UniverseSummary[]): Edge[] {
     return universes.flatMap((universe) =>
-        universe.contexts.map((context) => ({
-            id: `${universe.id}:${context.id}`,
-            source: universe.id,
-            target: context.id,
-        })),
+        universe.contexts.flatMap((context) => [
+            {
+                id: `${universe.id}:${context.id}`,
+                source: universe.id,
+                target: context.id,
+            },
+            ...context.documents.map((document) => ({
+                id: `${context.id}:${document.id}`,
+                source: context.id,
+                target: document.id,
+            })),
+        ]),
     );
 }
 
-export default function VaultPage({ vault }: VaultPageProps) {
+export default function VaultPage({ vault, endpoints }: VaultPageProps) {
+    const [universes, setUniverses] = useState(vault.universes);
     const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(() =>
         initialSemanticLevel(0.65),
     );
+    const [activeDocument, setActiveDocument] =
+        useState<OpenedDocument | null>(null);
+    const [draft, setDraft] = useState('');
+    const [saveState, setSaveState] = useState<SaveState>('saved');
+    const [error, setError] = useState<string | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
+    const [flow, setFlow] =
+        useState<ReactFlowInstance<KnowledgeCanvasNode, Edge> | null>(null);
+    const viewport = useRef<Viewport>({ x: 120, y: 120, zoom: 0.65 });
+    const returnViewport = useRef<Viewport | null>(null);
     const nodes = useMemo(
-        () => buildNodes(vault.universes, semanticLevel),
-        [semanticLevel, vault.universes],
+        () => buildNodes(universes, semanticLevel),
+        [semanticLevel, universes],
     );
-    const edges = useMemo(() => buildEdges(vault.universes), [vault.universes]);
+    const edges = useMemo(() => buildEdges(universes), [universes]);
+    const firstContextId = universes[0]?.contexts[0]?.id;
+
     const handleMove = useCallback(
-        (_event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+        (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
+            viewport.current = nextViewport;
             setSemanticLevel((previousLevel) =>
-                resolveSemanticLevel(viewport.zoom, previousLevel),
+                resolveSemanticLevel(nextViewport.zoom, previousLevel),
             );
         },
         [],
     );
+
+    const showDocument = useCallback((document: OpenedDocument) => {
+        returnViewport.current = { ...viewport.current };
+        setActiveDocument(document);
+        setDraft(document.content);
+        setSaveState('saved');
+        setError(null);
+    }, []);
+
+    const handleCreate = useCallback(async () => {
+        if (!firstContextId || isCreating) {
+            return;
+        }
+
+        setIsCreating(true);
+        setError(null);
+
+        try {
+            const document = await createDocument(
+                endpoints.documents,
+                firstContextId,
+            );
+            setUniverses((current) =>
+                current.map((universe) => ({
+                    ...universe,
+                    contexts: universe.contexts.map((context) =>
+                        context.id === firstContextId
+                            ? {
+                                  ...context,
+                                  documents: [
+                                      ...context.documents,
+                                      document,
+                                  ],
+                              }
+                            : context,
+                    ),
+                })),
+            );
+            showDocument(document);
+        } catch (exception) {
+            setError(
+                exception instanceof Error
+                    ? exception.message
+                    : 'Não foi possível criar a nota.',
+            );
+        } finally {
+            setIsCreating(false);
+        }
+    }, [endpoints.documents, firstContextId, isCreating, showDocument]);
+
+    const handleNodeDoubleClick = useCallback<NodeMouseHandler>(
+        async (_event, node) => {
+            if (node.data.kind !== 'document') {
+                return;
+            }
+
+            setError(null);
+
+            try {
+                showDocument(
+                    await openDocument(endpoints.documents, node.id),
+                );
+            } catch (exception) {
+                setError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível abrir o documento.',
+                );
+            }
+        },
+        [endpoints.documents, showDocument],
+    );
+
+    const handleDraftChange = useCallback((content: string) => {
+        setDraft(content);
+        setSaveState('pending');
+        setError(null);
+    }, []);
+
+    const handleSave = useCallback(async () => {
+        if (!activeDocument) {
+            return;
+        }
+
+        setSaveState('saving');
+        setError(null);
+
+        try {
+            const saved = await saveDocument(
+                endpoints.documents,
+                activeDocument,
+                draft,
+            );
+            setActiveDocument(saved);
+            setDraft(saved.content);
+            setSaveState('saved');
+        } catch (exception) {
+            setSaveState('failed');
+            setError(
+                exception instanceof Error
+                    ? exception.message
+                    : 'Não foi possível salvar o documento.',
+            );
+        }
+    }, [activeDocument, draft, endpoints.documents]);
+
+    const handleBack = useCallback(() => {
+        setActiveDocument(null);
+        setError(null);
+
+        if (returnViewport.current) {
+            void flow?.setViewport(returnViewport.current);
+        }
+    }, [flow]);
 
     return (
         <div className="cvc-theme cvc-shell">
@@ -119,20 +295,38 @@ export default function VaultPage({ vault }: VaultPageProps) {
                     <span className="cvc-eyebrow">Crow Vault Canvas</span>
                     <h1>{vault.name}</h1>
                 </div>
-                <output className="cvc-zoom-state" aria-live="polite">
-                    Nível: {semanticLevelLabels[semanticLevel]}
-                </output>
+                <div className="cvc-header__actions">
+                    <output className="cvc-zoom-state" aria-live="polite">
+                        Nível: {semanticLevelLabels[semanticLevel]}
+                    </output>
+                    <button
+                        type="button"
+                        className="cvc-button cvc-button--primary"
+                        disabled={!firstContextId || isCreating}
+                        onClick={() => void handleCreate()}
+                    >
+                        {isCreating ? 'Criando…' : 'Nova nota'}
+                    </button>
+                </div>
             </header>
+
+            {error && !activeDocument && (
+                <p className="cvc-page-error" role="alert">
+                    {error}
+                </p>
+            )}
 
             <main className="cvc-canvas" aria-label="Canvas do vault">
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
                     nodeTypes={nodeTypes}
-                    defaultViewport={{ x: 120, y: 120, zoom: 0.65 }}
+                    defaultViewport={viewport.current}
                     minZoom={0.25}
                     maxZoom={2}
+                    onInit={setFlow}
                     onMove={handleMove}
+                    onNodeDoubleClick={handleNodeDoubleClick}
                     nodesDraggable={false}
                     nodesFocusable
                     selectionOnDrag
@@ -146,6 +340,18 @@ export default function VaultPage({ vault }: VaultPageProps) {
                     <Controls position="bottom-right" showInteractive={false} />
                 </ReactFlow>
             </main>
+
+            {activeDocument && (
+                <DocumentEditor
+                    document={activeDocument}
+                    draft={draft}
+                    saveState={saveState}
+                    error={error}
+                    onChange={handleDraftChange}
+                    onSave={() => void handleSave()}
+                    onBack={handleBack}
+                />
+            )}
         </div>
     );
 }

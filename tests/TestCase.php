@@ -11,8 +11,14 @@ abstract class TestCase extends Orchestra
 {
     protected function defineEnvironment($app): void
     {
+        $app['config']->set('app.key', '00000000000000000000000000000000');
         $app['config']->set('crow-vault-canvas.enabled', true);
         $app['config']->set('crow-vault-canvas.route.middleware', ['web']);
+        $app['config']->set('crow-vault-canvas.route.write_middleware', []);
+        $app['config']->set(
+            'crow-vault-canvas.storage.root',
+            storage_path('framework/testing/cvc-private'),
+        );
     }
 
     /** @return array<class-string> */

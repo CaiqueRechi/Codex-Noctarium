@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -58,11 +58,13 @@ describe('RF-02 vault canvas', () => {
                                 {
                                     id: 'context-1',
                                     name: 'Primeiro Contexto',
+                                    documents: [],
                                 },
                             ],
                         },
                     ],
                 }}
+                endpoints={{ documents: '/vault/documents' }}
             />,
         );
 
@@ -73,5 +75,73 @@ describe('RF-02 vault canvas', () => {
 
         expect(screen.getByText('Primeiro Contexto')).toBeInTheDocument();
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+
+    it('keeps the draft visible and reports failure when saving is rejected', async () => {
+        const csrf = document.createElement('meta');
+        csrf.name = 'csrf-token';
+        csrf.content = 'test-token';
+        document.head.append(csrf);
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    document: {
+                        id: 'document-1',
+                        title: null,
+                        content: '',
+                        revision: 1,
+                    },
+                }),
+            })
+            .mockResolvedValueOnce({
+                ok: false,
+                json: async () => ({ message: 'Falha de armazenamento.' }),
+            });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Primeiro Contexto',
+                                    documents: [],
+                                },
+                            ],
+                        },
+                    ],
+                }}
+                endpoints={{ documents: '/vault/documents' }}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+        const editor = await screen.findByRole('textbox', {
+            name: 'Conteúdo Markdown',
+        });
+        fireEvent.change(editor, { target: { value: '# rascunho pendente' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+        await waitFor(() =>
+            expect(screen.getByRole('alert')).toHaveTextContent(
+                'Falha de armazenamento.',
+            ),
+        );
+        expect(editor).toHaveValue('# rascunho pendente');
+        expect(
+            screen.getByRole('button', { name: 'Voltar ao canvas' }),
+        ).toBeDisabled();
+
+        csrf.remove();
+        vi.unstubAllGlobals();
     });
 });

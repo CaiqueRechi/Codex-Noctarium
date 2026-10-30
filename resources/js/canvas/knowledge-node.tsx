@@ -4,7 +4,7 @@ import type { Node, NodeProps } from '@xyflow/react';
 import type { SemanticLevel } from './semantic-zoom';
 
 export type KnowledgeNodeData = {
-    kind: 'universe' | 'context';
+    kind: 'universe' | 'context' | 'document';
     label: string;
     semanticLevel: SemanticLevel;
 };
@@ -25,14 +25,20 @@ export function KnowledgeNode({
         >
             <Handle type="target" position={Position.Left} />
             <span className="cvc-knowledge-node__kind">
-                {data.kind === 'universe' ? 'Universo' : 'Contexto'}
+                {data.kind === 'universe'
+                    ? 'Universo'
+                    : data.kind === 'context'
+                      ? 'Contexto'
+                      : 'Documento'}
             </span>
             <strong>{data.label}</strong>
             {showsDetails && (
                 <small>
                     {data.kind === 'universe'
                         ? 'Aproxime para explorar seus contextos'
-                        : 'Foco selecionável, edição separada'}
+                        : data.kind === 'context'
+                          ? 'Aproxime para explorar os documentos'
+                          : 'Clique duas vezes para editar'}
                 </small>
             )}
             <Handle type="source" position={Position.Right} />
