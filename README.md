@@ -82,6 +82,6 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 
 ## Security boundary
 
-All vault routes require the Rechi OS web, authentication, verified-user, and screen-access middleware outside testing. Mutations require `vault:write`, CSRF protection, validation, and throttling. Markdown is edited as plain text and is not rendered as raw HTML in this slice.
+All vault routes require the Rechi OS web, authentication, verified-user, and screen-access middleware outside testing. Mutations require `vault:write`, CSRF protection, validation, and throttling. The canvas sends Laravel's `XSRF-TOKEN` cookie as the `X-XSRF-TOKEN` header, so the host only has to keep that cookie enabled; if it is missing, the page asks for a reload instead of sending the request. Markdown is edited as plain text and is not rendered as raw HTML in this slice.
 
 Storage paths are generated from validated UUIDs, confined to the configured private root, created as immutable revision files, and checked with SHA-256 when reopened. A failed write never advances the database revision or reports a successful save.

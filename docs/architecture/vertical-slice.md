@@ -62,7 +62,7 @@ The files are immutable. The database selects the confirmed current revision. A 
 
 - Rechi OS authentication, verified-user, and screen-permission middleware.
 - Separate read and write access levels.
-- Laravel CSRF protection on mutations.
+- Laravel CSRF protection on mutations. The browser reads the host's `XSRF-TOKEN` cookie and sends it as `X-XSRF-TOKEN`; the package does not depend on a `csrf-token` meta tag in the host layout. The host must keep issuing that cookie and must not exclude it from cookie encryption.
 - Document and workspace throttling.
 - Server-side UUID and numeric-range validation.
 - Fixed-vault scoping on every entity and context lookup.
