@@ -23,13 +23,24 @@ final class InitializeVaultCommand extends Command
                 ['name' => (string) config('crow-vault-canvas.vault.name')],
             );
 
-            $vault->contexts()->firstOrCreate(
+            $universe = $vault->contexts()->firstOrCreate(
                 [
                     'parent_id' => null,
                     'kind' => KnowledgeContext::KIND_UNIVERSE,
                 ],
                 [
                     'name' => (string) config('crow-vault-canvas.vault.initial_universe'),
+                    'sort_order' => 0,
+                ],
+            );
+
+            $vault->contexts()->firstOrCreate(
+                [
+                    'parent_id' => $universe->getKey(),
+                    'kind' => KnowledgeContext::KIND_CONTEXT,
+                ],
+                [
+                    'name' => (string) config('crow-vault-canvas.vault.initial_context'),
                     'sort_order' => 0,
                 ],
             );

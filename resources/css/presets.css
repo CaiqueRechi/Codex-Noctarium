@@ -1,0 +1,13 @@
+.cvc-theme {
+    --cvc-background: oklch(0.15 0.018 270);
+    --cvc-surface: oklch(0.2 0.025 270);
+    --cvc-surface-raised: oklch(0.25 0.035 270);
+    --cvc-border: oklch(0.42 0.045 270);
+    --cvc-text: oklch(0.96 0.012 260);
+    --cvc-text-muted: oklch(0.74 0.025 260);
+    --cvc-accent: oklch(0.72 0.16 272);
+    --cvc-accent-strong: oklch(0.65 0.22 286);
+    --cvc-focus: oklch(0.82 0.14 90);
+    --cvc-canvas-grid: oklch(0.54 0.035 270);
+    --cvc-shadow: oklch(0.06 0.02 270 / 0.45);
+}

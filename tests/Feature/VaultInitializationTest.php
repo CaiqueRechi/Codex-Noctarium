@@ -13,13 +13,13 @@ final class VaultInitializationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_rf_01_initialization_creates_one_vault_and_one_universe_idempotently(): void
+    public function test_rf_02_initialization_creates_a_navigable_context_idempotently(): void
     {
         $this->artisan('cvc:initialize')->assertSuccessful();
         $this->artisan('cvc:initialize')->assertSuccessful();
 
         $this->assertDatabaseCount('cvc_vaults', 1);
-        $this->assertDatabaseCount('cvc_contexts', 1);
+        $this->assertDatabaseCount('cvc_contexts', 2);
         $this->assertDatabaseHas('cvc_vaults', [
             'id' => config('crow-vault-canvas.vault.id'),
             'name' => 'Crow Vault Canvas',
@@ -28,6 +28,10 @@ final class VaultInitializationTest extends TestCase
             'kind' => 'universe',
             'name' => 'Meu Universo',
             'parent_id' => null,
+        ]);
+        $this->assertDatabaseHas('cvc_contexts', [
+            'kind' => 'context',
+            'name' => 'Primeiro Contexto',
         ]);
     }
 
@@ -40,6 +44,8 @@ final class VaultInitializationTest extends TestCase
         self::assertSame(config('crow-vault-canvas.vault.id'), $vault->getKey());
         self::assertCount(1, $vault->universes);
         self::assertSame('Meu Universo', $vault->universes->first()?->name);
+        self::assertCount(1, $vault->universes->first()?->children ?? []);
+        self::assertSame('Primeiro Contexto', $vault->universes->first()?->children->first()?->name);
     }
 
     public function test_vault_migration_can_be_rolled_back_and_reapplied(): void

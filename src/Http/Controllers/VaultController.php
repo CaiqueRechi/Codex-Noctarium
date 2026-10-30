@@ -22,6 +22,10 @@ final class VaultController
                 'universes' => $vault->universes->map(fn (KnowledgeContext $universe): array => [
                     'id' => $universe->getKey(),
                     'name' => $universe->name,
+                    'contexts' => $universe->children->map(fn (KnowledgeContext $context): array => [
+                        'id' => $context->getKey(),
+                        'name' => $context->name,
+                    ])->values(),
                 ])->values(),
             ],
         ]);

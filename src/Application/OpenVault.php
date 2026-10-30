@@ -13,7 +13,7 @@ final class OpenVault
         $vaultId = (string) config('crow-vault-canvas.vault.id');
 
         return Vault::query()
-            ->with('universes')
+            ->with('universes.children')
             ->findOrFail($vaultId);
     }
 }
