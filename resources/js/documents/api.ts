@@ -1,3 +1,4 @@
+import { xsrfHeaders } from '../http/csrf';
 import type { OpenedDocument } from './types';
 
 type DocumentResponse = {
@@ -14,7 +15,7 @@ async function requestDocument(
             Accept: 'application/json',
             'Content-Type': 'application/json',
             ...(init?.method && init.method !== 'GET'
-                ? { 'X-CSRF-TOKEN': csrfToken() }
+                ? xsrfHeaders()
                 : {}),
             ...init?.headers,
         },
@@ -63,16 +64,4 @@ export function saveDocument(
 
 function documentUrl(documentsEndpoint: string, entityId: string): string {
     return `${documentsEndpoint}/${encodeURIComponent(entityId)}`;
-}
-
-function csrfToken(): string {
-    const token = document
-        .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-        ?.getAttribute('content');
-
-    if (!token) {
-        throw new Error('Token CSRF indisponível. Recarregue a página.');
-    }
-
-    return token;
 }

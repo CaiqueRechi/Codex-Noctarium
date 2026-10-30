@@ -122,10 +122,7 @@ describe('RF-02 vault canvas', () => {
     });
 
     it('keeps the draft visible and reports failure when saving is rejected', async () => {
-        const csrf = document.createElement('meta');
-        csrf.name = 'csrf-token';
-        csrf.content = 'test-token';
-        document.head.append(csrf);
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
         const fetchMock = vi
             .fn()
             .mockResolvedValueOnce({
@@ -193,15 +190,13 @@ describe('RF-02 vault canvas', () => {
             screen.getByRole('button', { name: 'Voltar ao canvas' }),
         ).toBeDisabled();
 
-        csrf.remove();
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         vi.unstubAllGlobals();
     });
 
     it('returns to the persisted viewport without undoing the document', async () => {
-        const csrf = document.createElement('meta');
-        csrf.name = 'csrf-token';
-        csrf.content = 'test-token';
-        document.head.append(csrf);
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
         const fetchMock = vi
             .fn()
             .mockResolvedValueOnce({
@@ -265,7 +260,8 @@ describe('RF-02 vault canvas', () => {
 
         expect(setViewportMock).toHaveBeenCalledWith(persistedViewport);
 
-        csrf.remove();
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         vi.unstubAllGlobals();
     });
 });
