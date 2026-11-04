@@ -34,6 +34,14 @@ A manual perspective starts from the current base layout. A derived perspective 
 
 The active perspective ID is part of the per-user workspace state. The React client applies filters and layout overrides only to the already authorized vault payload, while every mutation revalidates the perspective, context, and entity against the configured vault on the server. User-pinned items are never moved by an automatic layout flow; no automatic layout exists in this MVP stage.
 
+## Named versions and recovery
+
+`cvc_versions` stores immutable version records for one perspective. A schema-versioned JSON snapshot contains entity metadata, exact document revision pointers, context membership, the effective perspective layout, filters, and active relations. The snapshot stores no duplicate Markdown content: it references immutable private revision files and protects the canonicalized snapshot with SHA-256 so MySQL JSON key ordering cannot cause a false integrity failure.
+
+Version creation and restoration require the authenticated write permission, CSRF protection, validation, and a dedicated throttle. Before restoration changes any database row, the server validates the snapshot scope and structure, confines every context and entity to the configured vault, reads every referenced Markdown file through the protected storage adapter, and verifies its content hash.
+
+A successful restoration first captures the complete current state as an automatic recovery version in the same transaction. It then restores entity metadata and soft-delete state, document revision pointers, context membership, perspective filters and layouts, and active relations. Restoring that recovery version returns to the replaced state, so restoration never makes the current state unreachable.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.
