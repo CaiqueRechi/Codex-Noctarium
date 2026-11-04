@@ -17,6 +17,7 @@ final class OpenVault
                 'universes.children.entities.document',
                 'relations',
                 'perspectives.layouts',
+                'perspectives.versions',
             ])
             ->findOrFail($vaultId);
     }

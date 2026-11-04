@@ -12,9 +12,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const setViewportMock = vi.fn();
 const fitViewMock = vi.fn().mockResolvedValue(true);
 const getViewportMock = vi.fn(() => ({ x: -40, y: 25, zoom: 1.4 }));
+const { routerReloadMock } = vi.hoisted(() => ({
+    routerReloadMock: vi.fn(),
+}));
 
 vi.mock('@inertiajs/react', () => ({
     Head: () => null,
+    router: { reload: routerReloadMock },
 }));
 
 vi.mock('@xyflow/react', () => ({
@@ -94,6 +98,7 @@ describe('RF-02 vault canvas', () => {
         setViewportMock.mockReset();
         fitViewMock.mockClear();
         getViewportMock.mockClear();
+        routerReloadMock.mockReset();
     });
 
     it('reveals context detail through zoom without entering edit mode', () => {
@@ -679,6 +684,112 @@ describe('RF-02 vault canvas', () => {
                 }),
             ),
         );
+
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
+
+    it('creates and restores a named version', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const version = {
+            id: 'version-1',
+            perspectiveId: 'perspective-1',
+            name: 'Marco inicial',
+            kind: 'named' as const,
+            createdAt: '2026-11-04T16:00:00-03:00',
+        };
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ version }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    recoveryVersion: {
+                        ...version,
+                        id: 'version-recovery',
+                        kind: 'recovery',
+                    },
+                }),
+            });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Projetos',
+                                    documents: [],
+                                },
+                            ],
+                        },
+                    ],
+                    perspectives: [
+                        {
+                            id: 'perspective-1',
+                            name: 'Principal',
+                            sourcePerspectiveId: null,
+                            filters: { contextIds: [], entityTypes: [] },
+                            layouts: [],
+                            versions: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    perspectives: '/vault/perspectives',
+                    versions: '/vault/versions',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 0, y: 0, zoom: 1.4 },
+                    focusEntityId: null,
+                    perspectiveId: 'perspective-1',
+                }}
+            />,
+        );
+
+        fireEvent.change(
+            screen.getByRole('textbox', { name: 'Nome da versão' }),
+            { target: { value: 'Marco inicial' } },
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Criar versão' }));
+
+        expect(
+            await screen.findByRole('button', { name: 'Restaurar' }),
+        ).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            '/vault/perspectives/perspective-1/versions',
+            expect.objectContaining({
+                method: 'POST',
+                body: JSON.stringify({ name: 'Marco inicial' }),
+            }),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Restaurar' }));
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenNthCalledWith(
+                2,
+                '/vault/versions/version-1/restore',
+                expect.objectContaining({ method: 'POST' }),
+            ),
+        );
+        expect(routerReloadMock).toHaveBeenCalledWith({
+            only: ['vault', 'workspace'],
+        });
 
         document.cookie =
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';

@@ -72,6 +72,7 @@ final class VaultController
                 'contexts' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/contexts'),
                 'relations' => route('cvc.relations.store'),
                 'perspectives' => route('cvc.perspectives.store'),
+                'versions' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/versions'),
                 'workspace' => route('cvc.workspace.update'),
             ],
         ]);

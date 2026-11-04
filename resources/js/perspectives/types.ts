@@ -16,4 +16,13 @@ export type PerspectiveSummary = {
     sourcePerspectiveId: string | null;
     filters: PerspectiveFilters;
     layouts: PerspectiveLayout[];
+    versions?: VersionSummary[];
+};
+
+export type VersionSummary = {
+    id: string;
+    perspectiveId: string;
+    name: string;
+    kind: 'named' | 'recovery';
+    createdAt: string;
 };

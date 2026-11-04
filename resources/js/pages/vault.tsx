@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     Background,
     BackgroundVariant,
@@ -60,6 +60,7 @@ import {
 } from '../relations/api';
 import { RelationsPanel } from '../relations/relations-panel';
 import type { RelationSummary } from '../relations/types';
+import { createVersion, restoreVersion } from '../versions/api';
 import { saveWorkspaceState } from '../workspace/api';
 
 type VaultPageProps = {
@@ -76,6 +77,7 @@ type VaultPageProps = {
         contexts?: string;
         relations?: string;
         perspectives?: string;
+        versions?: string;
         workspace: string;
     };
     workspace: {
@@ -693,6 +695,48 @@ export default function VaultPage({
         [focusEntityId, persistWorkspace],
     );
 
+    const handleVersionCreate = useCallback(
+        async (name: string) => {
+            if (!activePerspectiveId) {
+                throw new Error(
+                    'Selecione uma perspectiva antes de versionar.',
+                );
+            }
+
+            const version = await createVersion(
+                perspectiveEndpoint(),
+                activePerspectiveId,
+                name,
+            );
+            setPerspectives((current) =>
+                current.map((perspective) =>
+                    perspective.id === activePerspectiveId
+                        ? {
+                              ...perspective,
+                              versions: [
+                                  version,
+                                  ...(perspective.versions ?? []),
+                              ],
+                          }
+                        : perspective,
+                ),
+            );
+        },
+        [activePerspectiveId, perspectiveEndpoint],
+    );
+
+    const handleVersionRestore = useCallback(
+        async (versionId: string) => {
+            if (!endpoints.versions) {
+                throw new Error('O endpoint de versões não está disponível.');
+            }
+
+            await restoreVersion(endpoints.versions, versionId);
+            router.reload({ only: ['vault', 'workspace'] });
+        },
+        [endpoints.versions],
+    );
+
     const handleSave = useCallback(async () => {
         if (!activeDocument) {
             return;
@@ -803,6 +847,8 @@ export default function VaultPage({
                         onSelect={handlePerspectiveSelect}
                         onCreate={handlePerspectiveCreate}
                         onUpdate={handlePerspectiveUpdate}
+                        onCreateVersion={handleVersionCreate}
+                        onRestoreVersion={handleVersionRestore}
                     />
                     <PropertiesPanel
                         key={focusedDocument?.id ?? 'no-focused-entity'}

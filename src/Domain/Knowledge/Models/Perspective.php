@@ -48,4 +48,10 @@ final class Perspective extends Model
     {
         return $this->hasMany(PerspectiveLayout::class);
     }
+
+    /** @return HasMany<VaultVersion, $this> */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(VaultVersion::class)->latest();
+    }
 }

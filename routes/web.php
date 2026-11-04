@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
+use CrowVaultCanvas\Http\Controllers\RestoreVersionController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
 use CrowVaultCanvas\Http\Controllers\StoreDocumentController;
 use CrowVaultCanvas\Http\Controllers\StorePerspectiveController;
 use CrowVaultCanvas\Http\Controllers\StoreRelationController;
+use CrowVaultCanvas\Http\Controllers\StoreVersionController;
 use CrowVaultCanvas\Http\Controllers\UpdateDocumentController;
 use CrowVaultCanvas\Http\Controllers\UpdateEntityLayoutController;
 use CrowVaultCanvas\Http\Controllers\UpdateEntityPropertiesController;
@@ -57,6 +59,12 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 )
                     ->middleware(config('crow-vault-canvas.route.layout_write_middleware'))
                     ->name('perspectives.layouts.update');
+                Route::post('/perspectives/{perspective}/versions', StoreVersionController::class)
+                    ->middleware(config('crow-vault-canvas.route.version_write_middleware'))
+                    ->name('perspectives.versions.store');
+                Route::post('/versions/{version}/restore', RestoreVersionController::class)
+                    ->middleware(config('crow-vault-canvas.route.version_write_middleware'))
+                    ->name('versions.restore');
             });
         Route::patch('/workspace', UpdateWorkspaceStateController::class)
             ->middleware([

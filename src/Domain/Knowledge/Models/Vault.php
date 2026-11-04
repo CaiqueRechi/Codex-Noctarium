@@ -54,4 +54,10 @@ final class Vault extends Model
     {
         return $this->hasMany(Perspective::class)->orderBy('created_at');
     }
+
+    /** @return HasMany<VaultVersion, $this> */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(VaultVersion::class)->latest();
+    }
 }

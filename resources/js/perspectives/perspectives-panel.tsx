@@ -18,6 +18,8 @@ type PerspectivesPanelProps = {
         name: string,
         filters: PerspectiveFilters,
     ) => Promise<void>;
+    onCreateVersion: (name: string) => Promise<void>;
+    onRestoreVersion: (versionId: string) => Promise<void>;
 };
 
 export function PerspectivesPanel({
@@ -27,6 +29,8 @@ export function PerspectivesPanel({
     onSelect,
     onCreate,
     onUpdate,
+    onCreateVersion,
+    onRestoreVersion,
 }: PerspectivesPanelProps) {
     const activePerspective = perspectives.find(
         (perspective) => perspective.id === activePerspectiveId,
@@ -39,6 +43,7 @@ export function PerspectivesPanel({
     const [entityTypes, setEntityTypes] = useState(
         activePerspective?.filters.entityTypes.join(', ') ?? '',
     );
+    const [versionName, setVersionName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const contexts = useMemo(
@@ -219,6 +224,61 @@ export function PerspectivesPanel({
                 <p className="cvc-properties__error" role="alert">
                     {error}
                 </p>
+            )}
+
+            {activePerspective && (
+                <section className="cvc-versions" aria-label="Versões">
+                    <h4>Versões</h4>
+                    <label>
+                        <span>Nome da versão</span>
+                        <input
+                            aria-label="Nome da versão"
+                            value={versionName}
+                            maxLength={120}
+                            onChange={(event) =>
+                                setVersionName(event.target.value)
+                            }
+                        />
+                    </label>
+                    <button
+                        type="button"
+                        className="cvc-button cvc-button--compact"
+                        disabled={isSaving || versionName.trim() === ''}
+                        onClick={() =>
+                            void run(async () => {
+                                await onCreateVersion(versionName.trim());
+                                setVersionName('');
+                            })
+                        }
+                    >
+                        Criar versão
+                    </button>
+                    <ul>
+                        {(activePerspective.versions ?? []).map((version) => (
+                            <li key={version.id}>
+                                <span>
+                                    <strong>{version.name}</strong>
+                                    <small>
+                                        {version.kind === 'recovery'
+                                            ? 'Recuperação automática'
+                                            : 'Versão nomeada'}
+                                    </small>
+                                </span>
+                                <button
+                                    type="button"
+                                    disabled={isSaving}
+                                    onClick={() =>
+                                        void run(() =>
+                                            onRestoreVersion(version.id),
+                                        )
+                                    }
+                                >
+                                    Restaurar
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
             )}
         </section>
     );

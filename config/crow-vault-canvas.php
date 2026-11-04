@@ -40,6 +40,9 @@ return [
         'perspective_write_middleware' => [
             'throttle:30,1',
         ],
+        'version_write_middleware' => [
+            'throttle:10,1',
+        ],
         'workspace_write_middleware' => [
             'throttle:120,1',
         ],

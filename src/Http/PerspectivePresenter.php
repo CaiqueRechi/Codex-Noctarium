@@ -8,18 +8,23 @@ use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
 
 final class PerspectivePresenter
 {
+    public function __construct(
+        private readonly VersionPresenter $versionPresenter,
+    ) {}
+
     /**
      * @return array{
      *     id: string,
      *     name: string,
      *     sourcePerspectiveId: string|null,
      *     filters: array{contextIds: list<string>, entityTypes: list<string>},
-     *     layouts: list<array{contextId: string, entityId: string, position: array{x: float, y: float}|null, isPinned: bool}>
+     *     layouts: list<array{contextId: string, entityId: string, position: array{x: float, y: float}|null, isPinned: bool}>,
+     *     versions: list<array{id: string, perspectiveId: string, name: string, kind: string, createdAt: string}>
      * }
      */
     public function toArray(Perspective $perspective): array
     {
-        $perspective->loadMissing('layouts');
+        $perspective->loadMissing(['layouts', 'versions']);
         $filters = $perspective->filters;
 
         return [
@@ -41,6 +46,10 @@ final class PerspectivePresenter
                     ],
                 'isPinned' => (bool) $layout->is_pinned,
             ])->values()->all(),
+            'versions' => $perspective->versions
+                ->map(fn ($version): array => $this->versionPresenter->toArray($version))
+                ->values()
+                ->all(),
         ];
     }
 }
