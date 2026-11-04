@@ -41,6 +41,8 @@ final readonly class OpenDocument
             $entity->title,
             $content,
             $document->revision,
+            $entity->entity_type,
+            $entity->properties ?? [],
         );
     }
 }

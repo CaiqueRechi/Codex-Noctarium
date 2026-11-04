@@ -33,6 +33,9 @@ import type { SemanticLevel } from '../canvas/semantic-zoom';
 import { createDocument, openDocument, saveDocument } from '../documents/api';
 import { DocumentEditor } from '../documents/document-editor';
 import type { OpenedDocument, SaveState } from '../documents/types';
+import { updateEntityProperties } from '../entities/api';
+import { PropertiesPanel } from '../entities/properties-panel';
+import type { EntityProperties } from '../entities/types';
 import { VaultExplorer } from '../explorer/vault-explorer';
 import type {
     ExplorerTarget,
@@ -48,6 +51,7 @@ type VaultPageProps = {
     };
     endpoints: {
         documents: string;
+        entities: string;
         workspace: string;
     };
     workspace: {
@@ -169,6 +173,14 @@ export default function VaultPage({
         [focusEntityId, semanticLevel, universes],
     );
     const edges = useMemo(() => buildEdges(universes), [universes]);
+    const focusedDocument = useMemo(
+        () =>
+            universes
+                .flatMap((universe) => universe.contexts)
+                .flatMap((context) => context.documents)
+                .find((document) => document.id === focusEntityId) ?? null,
+        [focusEntityId, universes],
+    );
     const firstContextId = universes[0]?.contexts[0]?.id;
 
     const handleMove = useCallback(
@@ -291,6 +303,18 @@ export default function VaultPage({
         [endpoints.documents, persistWorkspace, showDocument],
     );
 
+    const handleNodeClick = useCallback<NodeMouseHandler<KnowledgeCanvasNode>>(
+        (_event, node) => {
+            if (node.data.kind !== 'document' || !node.data.entityId) {
+                return;
+            }
+
+            setFocusEntityId(node.data.entityId);
+            void persistWorkspace(viewport.current, node.data.entityId);
+        },
+        [persistWorkspace],
+    );
+
     const handleLocate = useCallback(
         async (target: ExplorerTarget) => {
             const targetLevel: SemanticLevel =
@@ -325,6 +349,38 @@ export default function VaultPage({
         setSaveState('pending');
         setError(null);
     }, []);
+
+    const handlePropertiesSave = useCallback(
+        async (entityType: string | null, properties: EntityProperties) => {
+            if (!focusedDocument) {
+                return;
+            }
+
+            const updated = await updateEntityProperties(
+                endpoints.entities,
+                focusedDocument.id,
+                entityType,
+                properties,
+            );
+            setUniverses((current) =>
+                current.map((universe) => ({
+                    ...universe,
+                    contexts: universe.contexts.map((context) => ({
+                        ...context,
+                        documents: context.documents.map((document) =>
+                            document.id === updated.id ? updated : document,
+                        ),
+                    })),
+                })),
+            );
+            setActiveDocument((current) =>
+                current?.id === updated.id
+                    ? { ...current, ...updated }
+                    : current,
+            );
+        },
+        [endpoints.entities, focusedDocument],
+    );
 
     const handleSave = useCallback(async () => {
         if (!activeDocument) {
@@ -408,6 +464,7 @@ export default function VaultPage({
                         onInit={setFlow}
                         onMove={handleMove}
                         onMoveEnd={handleMoveEnd}
+                        onNodeClick={handleNodeClick}
                         onNodeDoubleClick={handleNodeDoubleClick}
                         nodesDraggable={false}
                         nodesFocusable
@@ -425,6 +482,12 @@ export default function VaultPage({
                         />
                     </ReactFlow>
                 </main>
+
+                <PropertiesPanel
+                    key={focusedDocument?.id ?? 'no-focused-entity'}
+                    document={focusedDocument}
+                    onSave={handlePropertiesSave}
+                />
             </div>
 
             {activeDocument && (

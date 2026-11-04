@@ -83,7 +83,9 @@
 .cvc-workspace {
     display: grid;
     min-height: 0;
-    grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+    grid-template-columns:
+        minmax(14rem, 18rem) minmax(0, 1fr)
+        minmax(16rem, 20rem);
 }
 
 .cvc-explorer {
@@ -152,6 +154,83 @@
     outline: 3px solid var(--cvc-focus);
     outline-offset: 1px;
     background: var(--cvc-surface-raised);
+}
+
+.cvc-properties {
+    z-index: 5;
+    overflow: auto;
+    border-left: 1px solid var(--cvc-border);
+    background: var(--cvc-surface);
+    padding: 1rem;
+}
+
+.cvc-properties__header {
+    margin-bottom: 1rem;
+}
+
+.cvc-properties__header h2 {
+    margin: 0.2rem 0 0;
+    font-size: 1rem;
+}
+
+.cvc-properties__empty {
+    color: var(--cvc-text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.cvc-properties__form,
+.cvc-properties__list,
+.cvc-properties__row,
+.cvc-properties__form label {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.cvc-properties__form label > span {
+    color: var(--cvc-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.cvc-properties__form input {
+    min-width: 0;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.55rem;
+    outline: 0;
+    background: var(--cvc-background);
+    padding: 0.55rem 0.65rem;
+    color: var(--cvc-text);
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.cvc-properties__form input:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 1px;
+}
+
+.cvc-properties__row {
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.7rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.7rem;
+}
+
+.cvc-button--compact {
+    justify-self: start;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+}
+
+.cvc-properties__error {
+    margin: 0;
+    border: 1px solid var(--cvc-danger);
+    border-radius: 0.55rem;
+    background: var(--cvc-danger-surface);
+    padding: 0.65rem;
+    font-size: 0.8rem;
 }
 
 .cvc-page-error,
@@ -236,6 +315,20 @@
     line-height: 1.7;
 }
 
+@media (max-width: 64rem) {
+    .cvc-workspace {
+        grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+        grid-template-rows: minmax(20rem, 1fr) auto;
+    }
+
+    .cvc-properties {
+        max-height: 18rem;
+        grid-column: 1 / -1;
+        border-top: 1px solid var(--cvc-border);
+        border-left: 0;
+    }
+}
+
 @media (max-width: 48rem) {
     .cvc-header,
     .cvc-editor__header {
@@ -250,12 +343,19 @@
 
     .cvc-workspace {
         grid-template-columns: 1fr;
-        grid-template-rows: minmax(9rem, 30vh) minmax(20rem, 1fr);
+        grid-template-rows:
+            minmax(9rem, 25vh) minmax(20rem, 1fr)
+            minmax(10rem, auto);
     }
 
     .cvc-explorer {
         border-right: 0;
         border-bottom: 1px solid var(--cvc-border);
+    }
+
+    .cvc-properties {
+        max-height: 35vh;
+        grid-column: 1;
     }
 }
 

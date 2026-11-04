@@ -118,6 +118,7 @@ describe('RF-02 vault canvas', () => {
                 }}
                 endpoints={{
                     documents: '/vault/documents',
+                    entities: '/vault/entities',
                     workspace: '/vault/workspace',
                 }}
                 workspace={{
@@ -154,6 +155,8 @@ describe('RF-02 vault canvas', () => {
                         title: null,
                         content: '',
                         revision: 1,
+                        entityType: null,
+                        properties: {},
                     },
                 }),
             })
@@ -185,6 +188,7 @@ describe('RF-02 vault canvas', () => {
                 }}
                 endpoints={{
                     documents: '/vault/documents',
+                    entities: '/vault/entities',
                     workspace: '/vault/workspace',
                 }}
                 workspace={{
@@ -228,6 +232,8 @@ describe('RF-02 vault canvas', () => {
                         title: null,
                         content: '# conteúdo confirmado',
                         revision: 4,
+                        entityType: null,
+                        properties: {},
                     },
                 }),
             })
@@ -253,6 +259,8 @@ describe('RF-02 vault canvas', () => {
                                             id: 'document-1',
                                             title: null,
                                             revision: 4,
+                                            entityType: null,
+                                            properties: {},
                                         },
                                     ],
                                 },
@@ -262,6 +270,7 @@ describe('RF-02 vault canvas', () => {
                 }}
                 endpoints={{
                     documents: '/vault/documents',
+                    entities: '/vault/entities',
                     workspace: '/vault/workspace',
                 }}
                 workspace={{
@@ -313,6 +322,8 @@ describe('RF-02 vault canvas', () => {
                                             id: 'entity-shared',
                                             title: 'Conhecimento compartilhado',
                                             revision: 1,
+                                            entityType: null,
+                                            properties: {},
                                         },
                                     ],
                                 },
@@ -324,6 +335,8 @@ describe('RF-02 vault canvas', () => {
                                             id: 'entity-shared',
                                             title: 'Conhecimento compartilhado',
                                             revision: 1,
+                                            entityType: null,
+                                            properties: {},
                                         },
                                     ],
                                 },
@@ -333,6 +346,7 @@ describe('RF-02 vault canvas', () => {
                 }}
                 endpoints={{
                     documents: '/vault/documents',
+                    entities: '/vault/entities',
                     workspace: '/vault/workspace',
                 }}
                 workspace={{
@@ -362,6 +376,98 @@ describe('RF-02 vault canvas', () => {
         expect(fetchMock).toHaveBeenCalledWith(
             '/vault/workspace',
             expect.objectContaining({ method: 'PATCH' }),
+        );
+
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
+
+    it('updates type and properties without replacing the focused entity', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                entity: {
+                    id: 'entity-1',
+                    title: 'Registro',
+                    revision: 3,
+                    entityType: 'referência',
+                    properties: { status: 'ativo' },
+                },
+            }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Projetos',
+                                    documents: [
+                                        {
+                                            id: 'entity-1',
+                                            title: 'Registro',
+                                            revision: 3,
+                                            entityType: null,
+                                            properties: {},
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 0, y: 0, zoom: 1.4 },
+                    focusEntityId: 'entity-1',
+                }}
+            />,
+        );
+
+        fireEvent.change(screen.getByRole('textbox', { name: 'Tipo' }), {
+            target: { value: 'referência' },
+        });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Adicionar propriedade' }),
+        );
+        fireEvent.change(screen.getByRole('textbox', { name: 'Nome 1' }), {
+            target: { value: 'status' },
+        });
+        fireEvent.change(screen.getByRole('textbox', { name: 'Valor 1' }), {
+            target: { value: 'ativo' },
+        });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Salvar propriedades' }),
+        );
+
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/vault/entities/entity-1',
+                expect.objectContaining({
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        type: 'referência',
+                        properties: { status: 'ativo' },
+                    }),
+                }),
+            ),
+        );
+        expect(screen.getByRole('textbox', { name: 'Tipo' })).toHaveValue(
+            'referência',
         );
 
         document.cookie =

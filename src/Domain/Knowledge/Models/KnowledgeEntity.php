@@ -24,8 +24,17 @@ final class KnowledgeEntity extends Model
         'id',
         'vault_id',
         'kind',
+        'entity_type',
         'title',
+        'properties',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'properties' => 'array',
+        ];
+    }
 
     /** @return BelongsTo<Vault, $this> */
     public function vault(): BelongsTo

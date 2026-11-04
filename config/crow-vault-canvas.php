@@ -28,6 +28,9 @@ return [
         'document_write_middleware' => [
             'throttle:30,1',
         ],
+        'entity_write_middleware' => [
+            'throttle:60,1',
+        ],
         'workspace_write_middleware' => [
             'throttle:120,1',
         ],

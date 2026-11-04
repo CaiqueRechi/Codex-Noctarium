@@ -1,7 +1,11 @@
+import type { EntityProperties } from '../entities/types';
+
 export type DocumentSummary = {
     id: string;
     title: string | null;
     revision: number;
+    entityType: string | null;
+    properties: EntityProperties;
 };
 
 export type OpenedDocument = DocumentSummary & {

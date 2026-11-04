@@ -11,9 +11,12 @@ final readonly class OpenedDocument
         public ?string $title,
         public string $content,
         public int $revision,
+        public ?string $entityType,
+        /** @var array<string, bool|float|int|string|null> */
+        public array $properties,
     ) {}
 
-    /** @return array{id: string, title: string|null, content: string, revision: int} */
+    /** @return array{id: string, title: string|null, content: string, revision: int, entityType: string|null, properties: object} */
     public function toArray(): array
     {
         return [
@@ -21,6 +24,8 @@ final readonly class OpenedDocument
             'title' => $this->title,
             'content' => $this->content,
             'revision' => $this->revision,
+            'entityType' => $this->entityType,
+            'properties' => (object) $this->properties,
         ];
     }
 }

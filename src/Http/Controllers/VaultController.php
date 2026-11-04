@@ -37,6 +37,8 @@ final class VaultController
                             'id' => $entity->getKey(),
                             'title' => $entity->title,
                             'revision' => $entity->document?->revision,
+                            'entityType' => $entity->entity_type,
+                            'properties' => (object) ($entity->properties ?? []),
                         ])->values(),
                     ])->values(),
                 ])->values(),
@@ -44,6 +46,7 @@ final class VaultController
             'workspace' => $openWorkspaceState->handle($userId)->toArray(),
             'endpoints' => [
                 'documents' => route('cvc.documents.store'),
+                'entities' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/entities'),
                 'workspace' => route('cvc.workspace.update'),
             ],
         ]);
