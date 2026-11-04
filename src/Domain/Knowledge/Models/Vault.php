@@ -48,4 +48,10 @@ final class Vault extends Model
     {
         return $this->hasMany(KnowledgeRelation::class);
     }
+
+    /** @return HasMany<Perspective, $this> */
+    public function perspectives(): HasMany
+    {
+        return $this->hasMany(Perspective::class)->orderBy('created_at');
+    }
 }

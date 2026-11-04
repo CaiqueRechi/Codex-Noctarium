@@ -37,6 +37,9 @@ return [
         'layout_write_middleware' => [
             'throttle:120,1',
         ],
+        'perspective_write_middleware' => [
+            'throttle:30,1',
+        ],
         'workspace_write_middleware' => [
             'throttle:120,1',
         ],

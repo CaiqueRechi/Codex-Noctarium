@@ -24,6 +24,7 @@ final class UpdateWorkspaceStateController
                 (float) $request->validated('viewport.y'),
                 (float) $request->validated('viewport.zoom'),
                 $request->validated('focus_entity_id'),
+                $request->validated('perspective_id'),
             )->toArray(),
         ]);
     }

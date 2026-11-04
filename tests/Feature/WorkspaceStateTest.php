@@ -7,6 +7,7 @@ namespace CrowVaultCanvas\Tests\Feature;
 use CrowVaultCanvas\Application\Workspace\OpenWorkspaceState;
 use CrowVaultCanvas\Application\Workspace\SaveWorkspaceState;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
+use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
 use CrowVaultCanvas\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -22,10 +23,11 @@ final class WorkspaceStateTest extends TestCase
             'context_id' => $context->getKey(),
         ])->assertCreated()->json('document.id');
         self::assertIsString($entityId);
+        $perspectiveId = (string) Perspective::query()->firstOrFail()->getKey();
 
         $saveWorkspace = $this->app->make(SaveWorkspaceState::class);
-        $saveWorkspace->handle('42', -320.5, 88.25, 1.4, $entityId);
-        $saveWorkspace->handle('42', -180.75, 41.5, 1.2, $entityId);
+        $saveWorkspace->handle('42', -320.5, 88.25, 1.4, $entityId, $perspectiveId);
+        $saveWorkspace->handle('42', -180.75, 41.5, 1.2, $entityId, $perspectiveId);
 
         $snapshot = $this->app->make(OpenWorkspaceState::class)->handle('42');
 
@@ -33,6 +35,7 @@ final class WorkspaceStateTest extends TestCase
         self::assertSame(41.5, $snapshot->y);
         self::assertSame(1.2, $snapshot->zoom);
         self::assertSame($entityId, $snapshot->focusEntityId);
+        self::assertSame($perspectiveId, $snapshot->perspectiveId);
         $this->assertDatabaseCount('cvc_workspace_states', 1);
         $this->assertDatabaseHas('cvc_documents', [
             'entity_id' => $entityId,
@@ -51,6 +54,7 @@ final class WorkspaceStateTest extends TestCase
         self::assertSame(120.0, $snapshot->y);
         self::assertSame(0.65, $snapshot->zoom);
         self::assertNull($snapshot->focusEntityId);
+        self::assertNotNull($snapshot->perspectiveId);
         $this->assertDatabaseCount('cvc_workspace_states', 0);
     }
 }

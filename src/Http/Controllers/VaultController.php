@@ -9,6 +9,7 @@ use CrowVaultCanvas\Application\Workspace\OpenWorkspaceState;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
+use CrowVaultCanvas\Http\PerspectivePresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,6 +20,7 @@ final class VaultController
         Request $request,
         OpenVault $openVault,
         OpenWorkspaceState $openWorkspaceState,
+        PerspectivePresenter $perspectivePresenter,
     ): Response {
         $userId = (string) $request->user()?->getAuthIdentifier();
         abort_if($userId === '', 401);
@@ -59,6 +61,9 @@ final class VaultController
                     'isDirected' => $relation->is_directed,
                     'properties' => (object) ($relation->properties ?? []),
                 ])->values(),
+                'perspectives' => $vault->perspectives
+                    ->map(fn ($perspective): array => $perspectivePresenter->toArray($perspective))
+                    ->values(),
             ],
             'workspace' => $openWorkspaceState->handle($userId)->toArray(),
             'endpoints' => [
@@ -66,6 +71,7 @@ final class VaultController
                 'entities' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/entities'),
                 'contexts' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/contexts'),
                 'relations' => route('cvc.relations.store'),
+                'perspectives' => route('cvc.perspectives.store'),
                 'workspace' => route('cvc.workspace.update'),
             ],
         ]);

@@ -16,6 +16,7 @@ final class OpenVault
             ->with([
                 'universes.children.entities.document',
                 'relations',
+                'perspectives.layouts',
             ])
             ->findOrFail($vaultId);
     }

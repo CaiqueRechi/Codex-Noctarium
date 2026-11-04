@@ -44,6 +44,17 @@ final class InitializeVaultCommand extends Command
                     'sort_order' => 0,
                 ],
             );
+
+            $vault->perspectives()->firstOrCreate(
+                ['name' => 'Principal'],
+                [
+                    'source_perspective_id' => null,
+                    'filters' => [
+                        'context_ids' => [],
+                        'entity_types' => [],
+                    ],
+                ],
+            );
         });
 
         $this->components->info('CVC vault initialized.');

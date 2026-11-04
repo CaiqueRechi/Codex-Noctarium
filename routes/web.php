@@ -6,10 +6,13 @@ use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
 use CrowVaultCanvas\Http\Controllers\StoreDocumentController;
+use CrowVaultCanvas\Http\Controllers\StorePerspectiveController;
 use CrowVaultCanvas\Http\Controllers\StoreRelationController;
 use CrowVaultCanvas\Http\Controllers\UpdateDocumentController;
 use CrowVaultCanvas\Http\Controllers\UpdateEntityLayoutController;
 use CrowVaultCanvas\Http\Controllers\UpdateEntityPropertiesController;
+use CrowVaultCanvas\Http\Controllers\UpdatePerspectiveController;
+use CrowVaultCanvas\Http\Controllers\UpdatePerspectiveLayoutController;
 use CrowVaultCanvas\Http\Controllers\UpdateWorkspaceStateController;
 use CrowVaultCanvas\Http\Controllers\VaultController;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +45,18 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::delete('/relations/{relation}', DestroyRelationController::class)
                     ->middleware(config('crow-vault-canvas.route.relation_write_middleware'))
                     ->name('relations.destroy');
+                Route::post('/perspectives', StorePerspectiveController::class)
+                    ->middleware(config('crow-vault-canvas.route.perspective_write_middleware'))
+                    ->name('perspectives.store');
+                Route::patch('/perspectives/{perspective}', UpdatePerspectiveController::class)
+                    ->middleware(config('crow-vault-canvas.route.perspective_write_middleware'))
+                    ->name('perspectives.update');
+                Route::patch(
+                    '/perspectives/{perspective}/contexts/{context}/entities/{entity}/layout',
+                    UpdatePerspectiveLayoutController::class,
+                )
+                    ->middleware(config('crow-vault-canvas.route.layout_write_middleware'))
+                    ->name('perspectives.layouts.update');
             });
         Route::patch('/workspace', UpdateWorkspaceStateController::class)
             ->middleware([
