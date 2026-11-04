@@ -18,8 +18,16 @@ Capture remains unstructured. A document may later receive an optional `entity_t
 
 The properties panel edits only the focused entity. A successful response replaces every summary with the same stable ID, keeping shared visual instances synchronized without duplicating database rows.
 
+## Relations and context layouts
+
+`cvc_relations` stores soft-deletable links between stable entity IDs. A relation may be free or typed, directed or undirected, and global or scoped to a context. Contextual relations require both entities to participate in that context. Undirected endpoints are normalized before duplicate detection, so reversing the submitted endpoints cannot create the same relation twice.
+
+The context/entity pivot stores position and pin state for each visual instance. Dragging one instance writes only its context-specific pivot row; the same entity can therefore keep a different position in every context without duplicating content.
+
+The inspector can reuse the focused entity in another context, create relations, and soft-delete existing relations. Relation edges are derived for the current canvas payload, while the relational models remain the source of truth.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.
 
-Explorer and property data are not cached because they are permission-bound, mutable, and already included in the live vault payload. A future cache must include vault and authorization identity in its key and be invalidated by every related write.
+Explorer, property, relation, and layout data are not cached because they are permission-bound, mutable, and already included in the live vault payload. A future cache must include vault and authorization identity in its key and be invalidated by every related write.

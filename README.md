@@ -14,10 +14,12 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Authorized vault explorer for locating universes, contexts, and documents.
 - Shared entities displayed in multiple contexts without content duplication.
 - Optional entity type and scalar properties managed after capture.
+- Global or contextual, free or typed relations between entities.
+- Independent persisted positions for each context-specific visual instance.
 - Read/write authorization inherited from Rechi OS.
 - Soft-delete-ready vault, context, entity, and document records.
 
-Search, attachments, named versions, relationships, perspectives, vault import/export, remote hosting, and encryption at rest are not implemented yet.
+Search, attachments, named versions, perspectives, vault import/export, remote hosting, and encryption at rest are not implemented yet.
 
 ## Host integration
 
