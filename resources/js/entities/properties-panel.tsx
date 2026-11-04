@@ -89,7 +89,7 @@ export function PropertiesPanel({ document, onSave }: PropertiesPanelProps) {
     };
 
     return (
-        <aside className="cvc-properties" aria-label="Propriedades da entidade">
+        <section aria-label="Propriedades da entidade">
             <header className="cvc-properties__header">
                 <span className="cvc-eyebrow">Entidade</span>
                 <h2>Propriedades</h2>
@@ -198,6 +198,6 @@ export function PropertiesPanel({ document, onSave }: PropertiesPanelProps) {
                     </button>
                 </div>
             )}
-        </aside>
+        </section>
     );
 }

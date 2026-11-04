@@ -9,6 +9,7 @@ import type {
     Edge,
     NodeMouseHandler,
     NodeTypes,
+    OnNodeDrag,
     ReactFlowInstance,
     Viewport,
 } from '@xyflow/react';
@@ -41,6 +42,14 @@ import type {
     ExplorerTarget,
     UniverseSummary,
 } from '../explorer/vault-explorer';
+import {
+    attachEntityToContext,
+    createRelation,
+    deleteRelation,
+    saveEntityLayout,
+} from '../relations/api';
+import { RelationsPanel } from '../relations/relations-panel';
+import type { RelationSummary } from '../relations/types';
 import { saveWorkspaceState } from '../workspace/api';
 
 type VaultPageProps = {
@@ -48,10 +57,13 @@ type VaultPageProps = {
         id: string;
         name: string;
         universes: UniverseSummary[];
+        relations?: RelationSummary[];
     };
     endpoints: {
         documents: string;
         entities: string;
+        contexts?: string;
+        relations?: string;
         workspace: string;
     };
     workspace: {
@@ -108,9 +120,12 @@ function buildNodes(
                         id: entityNodeId(context.id, document.id),
                         type: 'knowledge',
                         position: {
-                            x: 760,
-                            y: contextY + documentIndex * 160,
+                            x: document.position?.x ?? 760,
+                            y:
+                                document.position?.y ??
+                                contextY + documentIndex * 160,
                         },
+                        draggable: true,
                         hidden: semanticLevel !== 'document',
                         selected: document.id === focusEntityId,
                         data: {
@@ -118,6 +133,7 @@ function buildNodes(
                             label: document.title ?? 'Sem título',
                             semanticLevel,
                             entityId: document.id,
+                            contextId: context.id,
                         },
                     }));
 
@@ -144,12 +160,51 @@ function buildEdges(universes: UniverseSummary[]): Edge[] {
     );
 }
 
+function buildRelationEdges(
+    universes: UniverseSummary[],
+    relations: RelationSummary[],
+): Edge[] {
+    const contexts = universes.flatMap((universe) => universe.contexts);
+
+    return relations.flatMap((relation) => {
+        const sourceContext = relation.contextId
+            ? contexts.find((context) => context.id === relation.contextId)
+            : contexts.find((context) =>
+                  context.documents.some(
+                      (document) => document.id === relation.sourceEntityId,
+                  ),
+              );
+        const targetContext = relation.contextId
+            ? sourceContext
+            : contexts.find((context) =>
+                  context.documents.some(
+                      (document) => document.id === relation.targetEntityId,
+                  ),
+              );
+
+        if (!sourceContext || !targetContext) {
+            return [];
+        }
+
+        return [
+            {
+                id: `relation:${relation.id}`,
+                source: entityNodeId(sourceContext.id, relation.sourceEntityId),
+                target: entityNodeId(targetContext.id, relation.targetEntityId),
+                label: relation.relationType ?? undefined,
+                animated: relation.isDirected,
+            },
+        ];
+    });
+}
+
 export default function VaultPage({
     vault,
     endpoints,
     workspace,
 }: VaultPageProps) {
     const [universes, setUniverses] = useState(vault.universes);
+    const [relations, setRelations] = useState(vault.relations ?? []);
     const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(() =>
         initialSemanticLevel(workspace.viewport.zoom),
     );
@@ -172,7 +227,13 @@ export default function VaultPage({
         () => buildNodes(universes, semanticLevel, focusEntityId),
         [focusEntityId, semanticLevel, universes],
     );
-    const edges = useMemo(() => buildEdges(universes), [universes]);
+    const edges = useMemo(
+        () => [
+            ...buildEdges(universes),
+            ...buildRelationEdges(universes, relations),
+        ],
+        [relations, universes],
+    );
     const focusedDocument = useMemo(
         () =>
             universes
@@ -315,6 +376,50 @@ export default function VaultPage({
         [persistWorkspace],
     );
 
+    const handleNodeDragStop = useCallback<OnNodeDrag<KnowledgeCanvasNode>>(
+        (_event, node) => {
+            if (
+                !node.data.entityId ||
+                !node.data.contextId ||
+                !endpoints.contexts
+            ) {
+                return;
+            }
+
+            setUniverses((current) =>
+                current.map((universe) => ({
+                    ...universe,
+                    contexts: universe.contexts.map((context) => ({
+                        ...context,
+                        documents: context.documents.map((document) =>
+                            context.id === node.data.contextId &&
+                            document.id === node.data.entityId
+                                ? {
+                                      ...document,
+                                      position: node.position,
+                                      isPinned: true,
+                                  }
+                                : document,
+                        ),
+                    })),
+                })),
+            );
+            void saveEntityLayout(
+                endpoints.contexts,
+                node.data.contextId,
+                node.data.entityId,
+                node.position,
+            ).catch((exception: unknown) =>
+                setWorkspaceError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível salvar o layout.',
+                ),
+            );
+        },
+        [endpoints.contexts],
+    );
+
     const handleLocate = useCallback(
         async (target: ExplorerTarget) => {
             const targetLevel: SemanticLevel =
@@ -381,6 +486,17 @@ export default function VaultPage({
         },
         [endpoints.entities, focusedDocument],
     );
+
+    const requireRelationEndpoints = useCallback(() => {
+        if (!endpoints.contexts || !endpoints.relations) {
+            throw new Error('Os endpoints de relações não estão disponíveis.');
+        }
+
+        return {
+            contexts: endpoints.contexts,
+            relations: endpoints.relations,
+        };
+    }, [endpoints.contexts, endpoints.relations]);
 
     const handleSave = useCallback(async () => {
         if (!activeDocument) {
@@ -465,8 +581,9 @@ export default function VaultPage({
                         onMove={handleMove}
                         onMoveEnd={handleMoveEnd}
                         onNodeClick={handleNodeClick}
+                        onNodeDragStop={handleNodeDragStop}
                         onNodeDoubleClick={handleNodeDoubleClick}
-                        nodesDraggable={false}
+                        nodesDraggable
                         nodesFocusable
                         selectionOnDrag
                     >
@@ -483,11 +600,86 @@ export default function VaultPage({
                     </ReactFlow>
                 </main>
 
-                <PropertiesPanel
-                    key={focusedDocument?.id ?? 'no-focused-entity'}
-                    document={focusedDocument}
-                    onSave={handlePropertiesSave}
-                />
+                <aside className="cvc-properties">
+                    <PropertiesPanel
+                        key={focusedDocument?.id ?? 'no-focused-entity'}
+                        document={focusedDocument}
+                        onSave={handlePropertiesSave}
+                    />
+                    {focusedDocument && (
+                        <RelationsPanel
+                            document={focusedDocument}
+                            universes={universes}
+                            relations={relations}
+                            onAttach={async (contextId) => {
+                                const relationEndpoints =
+                                    requireRelationEndpoints();
+                                await attachEntityToContext(
+                                    relationEndpoints.contexts,
+                                    contextId,
+                                    focusedDocument.id,
+                                );
+                                setUniverses((current) =>
+                                    current.map((universe) => ({
+                                        ...universe,
+                                        contexts: universe.contexts.map(
+                                            (context) =>
+                                                context.id === contextId
+                                                    ? {
+                                                          ...context,
+                                                          documents: [
+                                                              ...context.documents,
+                                                              {
+                                                                  ...focusedDocument,
+                                                                  position:
+                                                                      null,
+                                                                  isPinned: false,
+                                                              },
+                                                          ],
+                                                      }
+                                                    : context,
+                                        ),
+                                    })),
+                                );
+                            }}
+                            onCreate={async (
+                                targetId,
+                                contextId,
+                                relationType,
+                                isDirected,
+                            ) => {
+                                const relationEndpoints =
+                                    requireRelationEndpoints();
+                                const relation = await createRelation(
+                                    relationEndpoints.relations,
+                                    focusedDocument.id,
+                                    targetId,
+                                    contextId,
+                                    relationType,
+                                    isDirected,
+                                );
+                                setRelations((current) => [
+                                    ...current,
+                                    relation,
+                                ]);
+                            }}
+                            onDelete={async (relationId) => {
+                                const relationEndpoints =
+                                    requireRelationEndpoints();
+                                await deleteRelation(
+                                    relationEndpoints.relations,
+                                    relationId,
+                                );
+                                setRelations((current) =>
+                                    current.filter(
+                                        (relation) =>
+                                            relation.id !== relationId,
+                                    ),
+                                );
+                            }}
+                        />
+                    )}
+                </aside>
             </div>
 
             {activeDocument && (

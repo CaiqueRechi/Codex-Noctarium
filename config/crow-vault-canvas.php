@@ -31,6 +31,12 @@ return [
         'entity_write_middleware' => [
             'throttle:60,1',
         ],
+        'relation_write_middleware' => [
+            'throttle:60,1',
+        ],
+        'layout_write_middleware' => [
+            'throttle:120,1',
+        ],
         'workspace_write_middleware' => [
             'throttle:120,1',
         ],

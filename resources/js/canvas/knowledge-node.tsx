@@ -8,6 +8,7 @@ export type KnowledgeNodeData = {
     label: string;
     semanticLevel: SemanticLevel;
     entityId?: string;
+    contextId?: string;
 };
 
 export type KnowledgeCanvasNode = Node<KnowledgeNodeData, 'knowledge'>;

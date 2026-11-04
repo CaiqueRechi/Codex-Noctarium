@@ -50,7 +50,8 @@ final class KnowledgeEntity extends Model
             'cvc_context_entity',
             'entity_id',
             'context_id',
-        )->withTimestamps();
+        )->withPivot(['position_x', 'position_y', 'is_pinned'])
+            ->withTimestamps();
     }
 
     /** @return HasOne<MarkdownDocument, $this> */

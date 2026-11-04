@@ -474,4 +474,116 @@ describe('RF-02 vault canvas', () => {
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         vi.unstubAllGlobals();
     });
+
+    it('reuses a focused entity and creates a global relation', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({ ok: true })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    relation: {
+                        id: 'relation-1',
+                        sourceEntityId: 'entity-1',
+                        targetEntityId: 'entity-2',
+                        contextId: null,
+                        relationType: null,
+                        isDirected: false,
+                        properties: {},
+                    },
+                }),
+            });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const summary = (id: string, title: string) => ({
+            id,
+            title,
+            revision: 1,
+            entityType: null,
+            properties: {},
+        });
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Projetos',
+                                    documents: [
+                                        summary('entity-1', 'Origem'),
+                                        summary('entity-2', 'Destino'),
+                                    ],
+                                },
+                                {
+                                    id: 'context-2',
+                                    name: 'Estudos',
+                                    documents: [],
+                                },
+                            ],
+                        },
+                    ],
+                    relations: [],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    contexts: '/vault/contexts',
+                    relations: '/vault/relations',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 0, y: 0, zoom: 1.4 },
+                    focusEntityId: 'entity-1',
+                }}
+            />,
+        );
+
+        fireEvent.change(
+            screen.getByRole('combobox', { name: 'Reutilizar em contexto' }),
+            { target: { value: 'context-2' } },
+        );
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Adicionar ao contexto' }),
+        );
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/vault/contexts/context-2/entities',
+                expect.objectContaining({ method: 'POST' }),
+            ),
+        );
+
+        fireEvent.change(
+            screen.getByRole('combobox', { name: 'Relacionar com' }),
+            { target: { value: 'entity-2' } },
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Criar relação' }));
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/vault/relations',
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({
+                        source_entity_id: 'entity-1',
+                        target_entity_id: 'entity-2',
+                        context_id: null,
+                        type: null,
+                        directed: false,
+                        properties: {},
+                    }),
+                }),
+            ),
+        );
+
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
 });

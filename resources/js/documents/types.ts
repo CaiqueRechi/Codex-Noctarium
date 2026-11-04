@@ -6,6 +6,8 @@ export type DocumentSummary = {
     revision: number;
     entityType: string | null;
     properties: EntityProperties;
+    position?: { x: number; y: number } | null;
+    isPinned?: boolean;
 };
 
 export type OpenedDocument = DocumentSummary & {

@@ -8,6 +8,7 @@ use CrowVaultCanvas\Application\OpenVault;
 use CrowVaultCanvas\Application\Workspace\OpenWorkspaceState;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,14 +40,32 @@ final class VaultController
                             'revision' => $entity->document?->revision,
                             'entityType' => $entity->entity_type,
                             'properties' => (object) ($entity->properties ?? []),
+                            'position' => $entity->pivot?->position_x === null
+                                ? null
+                                : [
+                                    'x' => (float) $entity->pivot->position_x,
+                                    'y' => (float) $entity->pivot->position_y,
+                                ],
+                            'isPinned' => (bool) ($entity->pivot?->is_pinned ?? false),
                         ])->values(),
                     ])->values(),
+                ])->values(),
+                'relations' => $vault->relations->map(fn (KnowledgeRelation $relation): array => [
+                    'id' => $relation->getKey(),
+                    'sourceEntityId' => $relation->source_entity_id,
+                    'targetEntityId' => $relation->target_entity_id,
+                    'contextId' => $relation->context_id,
+                    'relationType' => $relation->relation_type,
+                    'isDirected' => $relation->is_directed,
+                    'properties' => (object) ($relation->properties ?? []),
                 ])->values(),
             ],
             'workspace' => $openWorkspaceState->handle($userId)->toArray(),
             'endpoints' => [
                 'documents' => route('cvc.documents.store'),
                 'entities' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/entities'),
+                'contexts' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/contexts'),
+                'relations' => route('cvc.relations.store'),
                 'workspace' => route('cvc.workspace.update'),
             ],
         ]);

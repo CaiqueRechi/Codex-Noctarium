@@ -58,6 +58,7 @@ final class KnowledgeContext extends Model
             'cvc_context_entity',
             'context_id',
             'entity_id',
-        )->withTimestamps();
+        )->withPivot(['position_x', 'position_y', 'is_pinned'])
+            ->withTimestamps();
     }
 }

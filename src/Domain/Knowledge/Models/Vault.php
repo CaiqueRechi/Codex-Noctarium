@@ -42,4 +42,10 @@ final class Vault extends Model
     {
         return $this->hasMany(KnowledgeEntity::class);
     }
+
+    /** @return HasMany<KnowledgeRelation, $this> */
+    public function relations(): HasMany
+    {
+        return $this->hasMany(KnowledgeRelation::class);
+    }
 }
