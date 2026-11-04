@@ -26,8 +26,16 @@ The context/entity pivot stores position and pin state for each visual instance.
 
 The inspector can reuse the focused entity in another context, create relations, and soft-delete existing relations. Relation edges are derived for the current canvas payload, while the relational models remain the source of truth.
 
+## Independent perspectives
+
+`cvc_perspectives` stores a named filter configuration for the fixed vault. Filters can limit visible contexts and entity types without deleting or changing the underlying entities and relations. `cvc_perspective_layouts` stores position and pin state by perspective, context, and entity; the base context layout remains the fallback when a perspective has no override.
+
+A manual perspective starts from the current base layout. A derived perspective copies its source filters and effective layouts inside one transaction. The source ID remains only provenance: later filter or layout changes write exclusively to the derived perspective, so the origin cannot drift.
+
+The active perspective ID is part of the per-user workspace state. The React client applies filters and layout overrides only to the already authorized vault payload, while every mutation revalidates the perspective, context, and entity against the configured vault on the server. User-pinned items are never moved by an automatic layout flow; no automatic layout exists in this MVP stage.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.
 
-Explorer, property, relation, and layout data are not cached because they are permission-bound, mutable, and already included in the live vault payload. A future cache must include vault and authorization identity in its key and be invalidated by every related write.
+Explorer, property, relation, perspective, and layout data are not cached because they are permission-bound, mutable, and already included in the live vault payload. A future cache must include vault and authorization identity in its key and be invalidated by every related write.
