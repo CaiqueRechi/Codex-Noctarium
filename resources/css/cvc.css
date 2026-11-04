@@ -80,6 +80,80 @@
     min-height: 0;
 }
 
+.cvc-workspace {
+    display: grid;
+    min-height: 0;
+    grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+}
+
+.cvc-explorer {
+    z-index: 5;
+    overflow: auto;
+    border-right: 1px solid var(--cvc-border);
+    background: var(--cvc-surface);
+    padding: 1rem;
+}
+
+.cvc-explorer__header {
+    margin-bottom: 1rem;
+}
+
+.cvc-explorer__header h2 {
+    margin: 0.2rem 0 0;
+    font-size: 1rem;
+}
+
+.cvc-explorer__tree,
+.cvc-explorer__tree ul {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cvc-explorer__tree ul {
+    margin-left: 0.75rem;
+    border-left: 1px solid var(--cvc-border);
+    padding-left: 0.5rem;
+}
+
+.cvc-explorer__item {
+    display: grid;
+    width: 100%;
+    gap: 0.15rem;
+    border: 1px solid transparent;
+    border-radius: 0.55rem;
+    background: transparent;
+    padding: 0.55rem 0.65rem;
+    color: var(--cvc-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.cvc-explorer__item span {
+    color: var(--cvc-text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.cvc-explorer__item strong {
+    overflow: hidden;
+    font-size: 0.85rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cvc-explorer__item:hover,
+.cvc-explorer__item:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 1px;
+    background: var(--cvc-surface-raised);
+}
+
 .cvc-page-error,
 .cvc-editor__error {
     margin: 0;
@@ -155,7 +229,8 @@
     background: var(--cvc-background);
     padding: clamp(1.25rem, 4vw, 4rem);
     color: var(--cvc-text);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         'Liberation Mono', monospace;
     font-size: clamp(1rem, 1.4vw, 1.2rem);
     line-height: 1.7;
@@ -171,6 +246,16 @@
     .cvc-header__actions,
     .cvc-editor__actions {
         flex-wrap: wrap;
+    }
+
+    .cvc-workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(9rem, 30vh) minmax(20rem, 1fr);
+    }
+
+    .cvc-explorer {
+        border-right: 0;
+        border-bottom: 1px solid var(--cvc-border);
     }
 }
 

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Tests\Feature;
 
+use CrowVaultCanvas\Application\Documents\CreateDocument;
 use CrowVaultCanvas\Application\OpenVault;
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -46,6 +48,38 @@ final class VaultInitializationTest extends TestCase
         self::assertSame('Meu Universo', $vault->universes->first()?->name);
         self::assertCount(1, $vault->universes->first()?->children ?? []);
         self::assertSame('Primeiro Contexto', $vault->universes->first()?->children->first()?->name);
+    }
+
+    public function test_rf_05_explorer_keeps_one_entity_available_in_multiple_contexts(): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $vault = $this->app->make(OpenVault::class)->handle();
+        $universe = $vault->universes->firstOrFail();
+        $firstContext = $universe->children->firstOrFail();
+        $secondContext = KnowledgeContext::query()->create([
+            'vault_id' => $vault->getKey(),
+            'parent_id' => $universe->getKey(),
+            'kind' => KnowledgeContext::KIND_CONTEXT,
+            'name' => 'Contexto Compartilhado',
+            'sort_order' => 1,
+        ]);
+        $document = $this->app->make(CreateDocument::class)->handle(
+            (string) $firstContext->getKey(),
+        );
+
+        $secondContext->entities()->attach($document->id);
+
+        $reopenedVault = $this->app->make(OpenVault::class)->handle();
+        $contexts = $reopenedVault->universes->firstOrFail()->children;
+
+        self::assertCount(2, $contexts);
+        self::assertTrue($contexts->every(
+            fn (KnowledgeContext $context): bool => $context->entities
+                ->contains(fn ($entity): bool => $entity->getKey() === $document->id),
+        ));
+        $this->assertDatabaseCount('cvc_entities', 1);
+        $this->assertDatabaseCount('cvc_documents', 1);
+        $this->assertDatabaseCount('cvc_context_entity', 2);
     }
 
     public function test_vault_migration_can_be_rolled_back_and_reapplied(): void

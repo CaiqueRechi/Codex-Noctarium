@@ -21,34 +21,24 @@ import '../../css/cvc.css';
 import { KnowledgeNode } from '../canvas/knowledge-node';
 import type { KnowledgeCanvasNode } from '../canvas/knowledge-node';
 import {
+    contextNodeId,
+    entityNodeId,
+    universeNodeId,
+} from '../canvas/node-identifiers';
+import {
     initialSemanticLevel,
     resolveSemanticLevel,
 } from '../canvas/semantic-zoom';
 import type { SemanticLevel } from '../canvas/semantic-zoom';
-import {
-    createDocument,
-    openDocument,
-    saveDocument,
-} from '../documents/api';
+import { createDocument, openDocument, saveDocument } from '../documents/api';
 import { DocumentEditor } from '../documents/document-editor';
+import type { OpenedDocument, SaveState } from '../documents/types';
+import { VaultExplorer } from '../explorer/vault-explorer';
 import type {
-    DocumentSummary,
-    OpenedDocument,
-    SaveState,
-} from '../documents/types';
+    ExplorerTarget,
+    UniverseSummary,
+} from '../explorer/vault-explorer';
 import { saveWorkspaceState } from '../workspace/api';
-
-type ContextSummary = {
-    id: string;
-    name: string;
-    documents: DocumentSummary[];
-};
-
-type UniverseSummary = {
-    id: string;
-    name: string;
-    contexts: ContextSummary[];
-};
 
 type VaultPageProps = {
     vault: {
@@ -84,7 +74,7 @@ function buildNodes(
     return universes.flatMap((universe, universeIndex) => {
         const universeY = universeIndex * 420;
         const universeNode: KnowledgeCanvasNode = {
-            id: universe.id,
+            id: universeNodeId(universe.id),
             type: 'knowledge',
             position: { x: 0, y: universeY },
             data: {
@@ -99,7 +89,7 @@ function buildNodes(
             ...universe.contexts.flatMap((context, contextIndex) => {
                 const contextY = universeY + contextIndex * 220;
                 const contextNode: KnowledgeCanvasNode = {
-                    id: context.id,
+                    id: contextNodeId(context.id),
                     type: 'knowledge',
                     position: { x: 380, y: contextY },
                     hidden: semanticLevel === 'universe',
@@ -111,7 +101,7 @@ function buildNodes(
                 };
                 const documentNodes: KnowledgeCanvasNode[] =
                     context.documents.map((document, documentIndex) => ({
-                        id: document.id,
+                        id: entityNodeId(context.id, document.id),
                         type: 'knowledge',
                         position: {
                             x: 760,
@@ -123,6 +113,7 @@ function buildNodes(
                             kind: 'document',
                             label: document.title ?? 'Sem título',
                             semanticLevel,
+                            entityId: document.id,
                         },
                     }));
 
@@ -137,13 +128,13 @@ function buildEdges(universes: UniverseSummary[]): Edge[] {
         universe.contexts.flatMap((context) => [
             {
                 id: `${universe.id}:${context.id}`,
-                source: universe.id,
-                target: context.id,
+                source: universeNodeId(universe.id),
+                target: contextNodeId(context.id),
             },
             ...context.documents.map((document) => ({
                 id: `${context.id}:${document.id}`,
-                source: context.id,
-                target: document.id,
+                source: contextNodeId(context.id),
+                target: entityNodeId(context.id, document.id),
             })),
         ]),
     );
@@ -158,18 +149,19 @@ export default function VaultPage({
     const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(() =>
         initialSemanticLevel(workspace.viewport.zoom),
     );
-    const [activeDocument, setActiveDocument] =
-        useState<OpenedDocument | null>(null);
+    const [activeDocument, setActiveDocument] = useState<OpenedDocument | null>(
+        null,
+    );
     const [draft, setDraft] = useState('');
     const [saveState, setSaveState] = useState<SaveState>('saved');
     const [error, setError] = useState<string | null>(null);
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
-    const [focusEntityId, setFocusEntityId] = useState(
-        workspace.focusEntityId,
-    );
+    const [focusEntityId, setFocusEntityId] = useState(workspace.focusEntityId);
     const [isCreating, setIsCreating] = useState(false);
-    const [flow, setFlow] =
-        useState<ReactFlowInstance<KnowledgeCanvasNode, Edge> | null>(null);
+    const [flow, setFlow] = useState<ReactFlowInstance<
+        KnowledgeCanvasNode,
+        Edge
+    > | null>(null);
     const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
     const nodes = useMemo(
@@ -244,10 +236,7 @@ export default function VaultPage({
                         context.id === firstContextId
                             ? {
                                   ...context,
-                                  documents: [
-                                      ...context.documents,
-                                      document,
-                                  ],
+                                  documents: [...context.documents, document],
                               }
                             : context,
                     ),
@@ -273,9 +262,11 @@ export default function VaultPage({
         showDocument,
     ]);
 
-    const handleNodeDoubleClick = useCallback<NodeMouseHandler>(
+    const handleNodeDoubleClick = useCallback<
+        NodeMouseHandler<KnowledgeCanvasNode>
+    >(
         async (_event, node) => {
-            if (node.data.kind !== 'document') {
+            if (node.data.kind !== 'document' || !node.data.entityId) {
                 return;
             }
 
@@ -284,7 +275,7 @@ export default function VaultPage({
             try {
                 const document = await openDocument(
                     endpoints.documents,
-                    node.id,
+                    node.data.entityId,
                 );
                 setFocusEntityId(document.id);
                 showDocument(document);
@@ -298,6 +289,35 @@ export default function VaultPage({
             }
         },
         [endpoints.documents, persistWorkspace, showDocument],
+    );
+
+    const handleLocate = useCallback(
+        async (target: ExplorerTarget) => {
+            const targetLevel: SemanticLevel =
+                target.kind === 'document'
+                    ? 'document'
+                    : target.kind === 'context'
+                      ? 'context'
+                      : 'universe';
+
+            setSemanticLevel(targetLevel);
+            setFocusEntityId(target.entityId);
+
+            if (!flow) {
+                return;
+            }
+
+            await flow.fitView({
+                nodes: [{ id: target.nodeId }],
+                includeHiddenNodes: true,
+                padding: 0.35,
+                duration: 250,
+            });
+            const nextViewport = flow.getViewport();
+            viewport.current = nextViewport;
+            await persistWorkspace(nextViewport, target.entityId);
+        },
+        [flow, persistWorkspace],
     );
 
     const handleDraftChange = useCallback((content: string) => {
@@ -371,31 +391,41 @@ export default function VaultPage({
                 </p>
             )}
 
-            <main className="cvc-canvas" aria-label="Canvas do vault">
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    nodeTypes={nodeTypes}
-                    defaultViewport={viewport.current}
-                    minZoom={0.25}
-                    maxZoom={2}
-                    onInit={setFlow}
-                    onMove={handleMove}
-                    onMoveEnd={handleMoveEnd}
-                    onNodeDoubleClick={handleNodeDoubleClick}
-                    nodesDraggable={false}
-                    nodesFocusable
-                    selectionOnDrag
-                >
-                    <Background
-                        color="var(--cvc-canvas-grid)"
-                        variant={BackgroundVariant.Dots}
-                        gap={24}
-                        size={1.5}
-                    />
-                    <Controls position="bottom-right" showInteractive={false} />
-                </ReactFlow>
-            </main>
+            <div className="cvc-workspace">
+                <VaultExplorer
+                    universes={universes}
+                    onLocate={(target) => void handleLocate(target)}
+                />
+
+                <main className="cvc-canvas" aria-label="Canvas do vault">
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        nodeTypes={nodeTypes}
+                        defaultViewport={workspace.viewport}
+                        minZoom={0.25}
+                        maxZoom={2}
+                        onInit={setFlow}
+                        onMove={handleMove}
+                        onMoveEnd={handleMoveEnd}
+                        onNodeDoubleClick={handleNodeDoubleClick}
+                        nodesDraggable={false}
+                        nodesFocusable
+                        selectionOnDrag
+                    >
+                        <Background
+                            color="var(--cvc-canvas-grid)"
+                            variant={BackgroundVariant.Dots}
+                            gap={24}
+                            size={1.5}
+                        />
+                        <Controls
+                            position="bottom-right"
+                            showInteractive={false}
+                        />
+                    </ReactFlow>
+                </main>
+            </div>
 
             {activeDocument && (
                 <DocumentEditor
