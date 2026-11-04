@@ -11,10 +11,13 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Private immutable Markdown revision files with relational metadata.
 - Explicit `pending`, `saving`, `saved`, and `failed` editor states.
 - Persisted camera and focused document per authenticated user.
+- Authorized vault explorer for locating universes, contexts, and documents.
+- Shared entities displayed in multiple contexts without content duplication.
+- Optional entity type and scalar properties managed after capture.
 - Read/write authorization inherited from Rechi OS.
 - Soft-delete-ready vault, context, entity, and document records.
 
-Search, attachments, named versions, relationships, perspectives, vault import/export, remote hosting, and encryption at rest are outside this vertical slice.
+Search, attachments, named versions, relationships, perspectives, vault import/export, remote hosting, and encryption at rest are not implemented yet.
 
 ## Host integration
 
@@ -52,6 +55,8 @@ php artisan cvc:initialize
 
 Grant the intended Rechi OS user `write` access to the `vault` screen, then open `/vault` in Chrome. The initializer is explicit and idempotent; package installation does not create product data automatically.
 
+Use the left explorer to locate a universe, context, or document. Selecting a document focuses every visual instance that shares its stable identity. The properties panel on the right accepts an optional type and up to 50 named scalar properties. Property changes do not alter the document ID, Markdown content, or revision.
+
 ## Verification
 
 Package PHP tests:
@@ -78,6 +83,7 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 
 - [Product requirements](docs/requirements/crow-vault-canvas.md)
 - [Vertical-slice architecture](docs/architecture/vertical-slice.md)
+- [MVP architecture](docs/architecture/mvp.md)
 - [Vertical-slice traceability](docs/traceability/vertical-slice.md)
 
 ## Security boundary
