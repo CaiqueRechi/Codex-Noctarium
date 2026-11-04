@@ -51,4 +51,23 @@ final class EntityPropertiesTest extends TestCase
         $this->assertDatabaseCount('cvc_entities', 1);
         $this->assertDatabaseCount('cvc_documents', 1);
     }
+
+    public function test_rf_07_allows_all_properties_to_be_cleared(): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $context = KnowledgeContext::query()
+            ->where('kind', KnowledgeContext::KIND_CONTEXT)
+            ->firstOrFail();
+        $document = $this->app->make(CreateDocument::class)->handle(
+            (string) $context->getKey(),
+        );
+
+        $this->patchJson("/vault/entities/{$document->id}", [
+            'type' => null,
+            'properties' => [],
+        ])
+            ->assertOk()
+            ->assertJsonPath('entity.id', $document->id)
+            ->assertJsonPath('entity.properties', []);
+    }
 }

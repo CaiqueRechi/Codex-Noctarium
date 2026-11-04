@@ -19,7 +19,7 @@ final class UpdateEntityPropertiesRequest extends FormRequest
     {
         return [
             'type' => ['present', 'nullable', 'string', 'max:64'],
-            'properties' => ['required', 'array', 'max:50'],
+            'properties' => ['present', 'array', 'max:50'],
         ];
     }
 
