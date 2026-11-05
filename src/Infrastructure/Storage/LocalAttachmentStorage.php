@@ -26,6 +26,34 @@ final class LocalAttachmentStorage implements AttachmentStorage
             throw new InvalidArgumentException('The attachment extension is not allowed.');
         }
 
+        $size = $file->getSize();
+
+        if ($size === false || $size < 1) {
+            throw new InvalidArgumentException('The attachment size is invalid.');
+        }
+
+        return app(StorageQuota::class)->store(
+            $vaultId,
+            $size,
+            "vaults/{$vaultId}/entities/{$entityId}/attachments/{$attachmentId}.{$extension}",
+            'file',
+            fn (): StoredAttachment => $this->storeWithoutQuota(
+                $file,
+                $vaultId,
+                $entityId,
+                $attachmentId,
+                $extension,
+            ),
+        );
+    }
+
+    private function storeWithoutQuota(
+        UploadedFile $file,
+        string $vaultId,
+        string $entityId,
+        string $attachmentId,
+        string $extension,
+    ): StoredAttachment {
         $storagePath = "vaults/{$vaultId}/entities/{$entityId}/attachments/{$attachmentId}.{$extension}";
         $absolutePath = $this->absolutePath($storagePath);
         $directory = dirname($absolutePath);

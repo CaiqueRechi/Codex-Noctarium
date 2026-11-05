@@ -91,6 +91,21 @@ final class AttachmentTest extends TestCase
         $this->assertDatabaseCount('cvc_attachments', 1);
     }
 
+    public function test_rf_12_rejects_an_attachment_that_exceeds_the_vault_quota(): void
+    {
+        $entityId = $this->createDocument();
+        config()->set('crow-vault-canvas.storage.max_vault_bytes', 1);
+        $pdf = "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n";
+
+        $this->post('/vault/entities/'.$entityId.'/attachments', [
+            'file' => UploadedFile::fake()->createWithContent('quota.pdf', $pdf),
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('file');
+
+        $this->assertDatabaseCount('cvc_attachments', 0);
+    }
+
     public function test_rf_12_hides_an_attachment_while_its_entity_is_trashed(): void
     {
         $entityId = $this->createDocument();

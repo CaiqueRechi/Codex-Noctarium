@@ -12,6 +12,10 @@ return [
     ],
     'storage' => [
         'root' => env('CVC_STORAGE_ROOT', storage_path('app/private/cvc')),
+        'max_markdown_bytes' => (int) env('CVC_MAX_MARKDOWN_BYTES', 2 * 1024 * 1024),
+        'max_vault_bytes' => (int) env('CVC_MAX_VAULT_BYTES', 1024 * 1024 * 1024),
+        'max_vault_entries' => (int) env('CVC_MAX_VAULT_ENTRIES', 10_000),
+        'minimum_free_bytes' => (int) env('CVC_MINIMUM_FREE_BYTES', 100 * 1024 * 1024),
     ],
     'operations' => [
         'history_limit' => env('CVC_OPERATION_HISTORY_LIMIT', 20),
