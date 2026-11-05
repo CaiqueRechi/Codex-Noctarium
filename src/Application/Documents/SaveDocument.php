@@ -51,7 +51,7 @@ final readonly class SaveDocument
             $entity->advanceSearchVersion();
         }, 3);
 
-        IndexKnowledgeEntity::dispatch($entityId)->afterCommit();
+        IndexKnowledgeEntity::dispatchTracked($entityId);
 
         return $this->openDocument->handle($entityId);
     }

@@ -62,7 +62,7 @@ final readonly class RestoreVaultVersion
                 ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
                 ->pluck('id'))
             ->unique()
-            ->each(fn (string $entityId) => IndexKnowledgeEntity::dispatch($entityId)->afterCommit());
+            ->each(fn (string $entityId) => IndexKnowledgeEntity::dispatchTracked($entityId));
 
         return $restoration;
     }

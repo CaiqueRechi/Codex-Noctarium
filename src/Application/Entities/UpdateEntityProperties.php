@@ -39,7 +39,7 @@ final class UpdateEntityProperties
             return $entity->load('document');
         }, 3);
 
-        IndexKnowledgeEntity::dispatch($entityId)->afterCommit();
+        IndexKnowledgeEntity::dispatchTracked($entityId);
 
         return $entity;
     }

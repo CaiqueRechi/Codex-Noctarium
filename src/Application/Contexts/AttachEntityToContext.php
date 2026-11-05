@@ -31,6 +31,6 @@ final class AttachEntityToContext
             $entity->advanceSearchVersion();
         }, 3);
 
-        IndexKnowledgeEntity::dispatch($entityId)->afterCommit();
+        IndexKnowledgeEntity::dispatchTracked($entityId);
     }
 }

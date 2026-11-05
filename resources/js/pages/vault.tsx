@@ -44,6 +44,8 @@ import type {
     ExplorerTarget,
     UniverseSummary,
 } from '../explorer/vault-explorer';
+import { OperationalStatusPanel } from '../operations/operational-status-panel';
+import type { OperationalTask } from '../operations/types';
 import {
     createPerspective,
     savePerspectiveLayout,
@@ -77,6 +79,7 @@ type VaultPageProps = {
         relations?: RelationSummary[];
         perspectives?: PerspectiveSummary[];
         trash?: TrashItem[];
+        operations?: OperationalTask[];
     };
     endpoints: {
         documents: string;
@@ -86,6 +89,7 @@ type VaultPageProps = {
         perspectives?: string;
         versions?: string;
         search?: string;
+        operations?: string;
         trash?: string;
         attachments?: string;
         workspace: string;
@@ -1048,6 +1052,13 @@ export default function VaultPage({
                 </main>
 
                 <aside className="cvc-properties">
+                    {endpoints.operations && (
+                        <OperationalStatusPanel
+                            endpoint={endpoints.operations}
+                            initialTasks={vault.operations ?? []}
+                            saveState={activeDocument ? saveState : null}
+                        />
+                    )}
                     {endpoints.search && (
                         <SearchPanel
                             endpoint={endpoints.search}

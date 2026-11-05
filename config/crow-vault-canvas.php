@@ -13,6 +13,10 @@ return [
     'storage' => [
         'root' => env('CVC_STORAGE_ROOT', storage_path('app/private/cvc')),
     ],
+    'operations' => [
+        'history_limit' => env('CVC_OPERATION_HISTORY_LIMIT', 20),
+        'stale_after_seconds' => env('CVC_OPERATION_STALE_AFTER_SECONDS', 300),
+    ],
     'route' => [
         'prefix' => 'vault',
         'name' => 'cvc.',
@@ -44,6 +48,9 @@ return [
             'throttle:10,1',
         ],
         'search_middleware' => [
+            'throttle:60,1',
+        ],
+        'operations_middleware' => [
             'throttle:60,1',
         ],
         'trash_write_middleware' => [

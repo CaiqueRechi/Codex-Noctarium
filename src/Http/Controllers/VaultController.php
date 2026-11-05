@@ -6,6 +6,7 @@ namespace CrowVaultCanvas\Http\Controllers;
 
 use CrowVaultCanvas\Application\Attachments\AttachmentSummary;
 use CrowVaultCanvas\Application\OpenVault;
+use CrowVaultCanvas\Application\Operations\ListOperationalTasks;
 use CrowVaultCanvas\Application\Workspace\OpenWorkspaceState;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
@@ -22,6 +23,7 @@ final class VaultController
         OpenVault $openVault,
         OpenWorkspaceState $openWorkspaceState,
         PerspectivePresenter $perspectivePresenter,
+        ListOperationalTasks $listOperationalTasks,
     ): Response {
         $userId = (string) $request->user()?->getAuthIdentifier();
         abort_if($userId === '', 401);
@@ -78,6 +80,9 @@ final class VaultController
                     'title' => $entity->title,
                     'deletedAt' => $entity->deleted_at?->toAtomString(),
                 ])->values(),
+                'operations' => $listOperationalTasks->handle()
+                    ->map(fn ($task): array => $task->toArray())
+                    ->values(),
             ],
             'workspace' => $openWorkspaceState->handle($userId)->toArray(),
             'endpoints' => [
@@ -88,6 +93,7 @@ final class VaultController
                 'perspectives' => route('cvc.perspectives.store'),
                 'versions' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/versions'),
                 'search' => route('cvc.search'),
+                'operations' => route('cvc.operations.index'),
                 'attachments' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/attachments'),
                 'trash' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/trash'),
                 'workspace' => route('cvc.workspace.update'),

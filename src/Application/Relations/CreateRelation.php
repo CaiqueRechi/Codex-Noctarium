@@ -102,8 +102,8 @@ final class CreateRelation
             return $relation;
         }, 3);
 
-        IndexKnowledgeEntity::dispatch($relation->source_entity_id)->afterCommit();
-        IndexKnowledgeEntity::dispatch($relation->target_entity_id)->afterCommit();
+        IndexKnowledgeEntity::dispatchTracked($relation->source_entity_id);
+        IndexKnowledgeEntity::dispatchTracked($relation->target_entity_id);
 
         return $relation;
     }

@@ -100,7 +100,7 @@ final class RestoreEntity
         }, 3);
 
         foreach ($entitiesToIndex as $indexedEntityId) {
-            IndexKnowledgeEntity::dispatch($indexedEntityId)->afterCommit();
+            IndexKnowledgeEntity::dispatchTracked($indexedEntityId);
         }
 
         return $restoration;

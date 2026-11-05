@@ -95,6 +95,7 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_versions'));
         self::assertTrue(Schema::hasTable('cvc_search_index'));
         self::assertTrue(Schema::hasTable('cvc_attachments'));
+        self::assertTrue(Schema::hasTable('cvc_operations'));
         self::assertTrue(Schema::hasColumn('cvc_entities', 'tags'));
         self::assertTrue(Schema::hasColumn('cvc_relations', 'cascade_deleted_by_entity_id'));
 
@@ -110,6 +111,7 @@ final class VaultInitializationTest extends TestCase
         self::assertFalse(Schema::hasTable('cvc_versions'));
         self::assertFalse(Schema::hasTable('cvc_search_index'));
         self::assertFalse(Schema::hasTable('cvc_attachments'));
+        self::assertFalse(Schema::hasTable('cvc_operations'));
 
         $this->artisan('migrate')->assertSuccessful();
 
@@ -123,6 +125,7 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_versions'));
         self::assertTrue(Schema::hasTable('cvc_search_index'));
         self::assertTrue(Schema::hasTable('cvc_attachments'));
+        self::assertTrue(Schema::hasTable('cvc_operations'));
         self::assertTrue(Schema::hasColumn('cvc_entities', 'tags'));
         self::assertTrue(Schema::hasColumn('cvc_relations', 'cascade_deleted_by_entity_id'));
     }

@@ -53,7 +53,7 @@ final readonly class CreateDocument
             return $entity;
         }, 3);
 
-        IndexKnowledgeEntity::dispatch((string) $entity->getKey())->afterCommit();
+        IndexKnowledgeEntity::dispatchTracked((string) $entity->getKey());
 
         return $this->openDocument->handle($entity->getKey());
     }

@@ -7,20 +7,77 @@ namespace CrowVaultCanvas\Jobs;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
+use CrowVaultCanvas\Domain\Knowledge\Models\OperationalTask;
 use CrowVaultCanvas\Domain\Knowledge\Models\SearchDocument;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 final class IndexKnowledgeEntity implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public readonly string $entityId) {}
+    public function __construct(
+        public readonly string $entityId,
+        public readonly ?string $operationId = null,
+    ) {}
+
+    public static function dispatchTracked(string $entityId): void
+    {
+        $task = null;
+
+        try {
+            $task = OperationalTask::query()->create([
+                'id' => (string) Str::uuid(),
+                'vault_id' => (string) config('crow-vault-canvas.vault.id'),
+                'subject_entity_id' => $entityId,
+                'operation_type' => 'search_index',
+                'status' => OperationalTask::STATUS_PENDING,
+                'progress_current' => 0,
+                'progress_total' => 1,
+                'message' => 'Aguardando atualização do índice de busca.',
+            ]);
+
+            Bus::dispatch((new self($entityId, (string) $task->getKey()))->afterCommit());
+        } catch (Throwable $exception) {
+            try {
+                $task?->forceFill([
+                    'status' => OperationalTask::STATUS_FAILED,
+                    'message' => 'Não foi possível enviar a atualização para a fila.',
+                    'error_code' => 'search_index_dispatch_failed',
+                    'finished_at' => now(),
+                ])->save();
+            } catch (Throwable $trackingException) {
+                report($trackingException);
+            }
+
+            report($exception);
+        }
+    }
 
     public function handle(MarkdownStorage $storage): void
+    {
+        $this->markRunning();
+        $this->index($storage);
+        $this->markSucceeded();
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        $this->updateOperation([
+            'status' => OperationalTask::STATUS_FAILED,
+            'message' => 'Falha ao atualizar o índice. Execute cvc:reindex para tentar novamente.',
+            'error_code' => 'search_index_failed',
+            'finished_at' => now(),
+        ]);
+    }
+
+    private function index(MarkdownStorage $storage): void
     {
         $entity = KnowledgeEntity::withTrashed()
             ->with(['document', 'contexts'])
@@ -82,6 +139,43 @@ final class IndexKnowledgeEntity implements ShouldQueue
             'contexts' => $entity->contexts->pluck('name')->implode(' '),
             'relations' => $relationText,
         ]);
+    }
+
+    private function markRunning(): void
+    {
+        $this->updateOperation([
+            'status' => OperationalTask::STATUS_RUNNING,
+            'message' => 'Atualizando o índice de busca.',
+            'started_at' => now(),
+        ]);
+    }
+
+    private function markSucceeded(): void
+    {
+        $this->updateOperation([
+            'status' => OperationalTask::STATUS_SUCCEEDED,
+            'progress_current' => 1,
+            'message' => 'Índice de busca atualizado.',
+            'error_code' => null,
+            'finished_at' => now(),
+        ]);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function updateOperation(array $attributes): void
+    {
+        if ($this->operationId === null) {
+            return;
+        }
+
+        try {
+            OperationalTask::query()
+                ->whereKey($this->operationId)
+                ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
+                ->update($attributes);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function deleteIfCurrent(int $searchVersion): void

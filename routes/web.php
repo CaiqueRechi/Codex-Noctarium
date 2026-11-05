@@ -5,6 +5,7 @@ declare(strict_types=1);
 use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
 use CrowVaultCanvas\Http\Controllers\DestroyEntityController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
+use CrowVaultCanvas\Http\Controllers\OperationalStatusController;
 use CrowVaultCanvas\Http\Controllers\RestoreEntityController;
 use CrowVaultCanvas\Http\Controllers\RestoreVersionController;
 use CrowVaultCanvas\Http\Controllers\SearchVaultController;
@@ -32,6 +33,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
         Route::get('/search', SearchVaultController::class)
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('search');
+        Route::get('/operations', OperationalStatusController::class)
+            ->middleware(config('crow-vault-canvas.route.operations_middleware'))
+            ->name('operations.index');
         Route::get('/documents/{entity}', ShowDocumentController::class)->name('documents.show');
         Route::get('/attachments/{attachment}', ShowAttachmentController::class)
             ->name('attachments.show');

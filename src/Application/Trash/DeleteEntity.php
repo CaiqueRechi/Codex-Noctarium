@@ -70,7 +70,7 @@ final class DeleteEntity
         }, 3);
 
         foreach ($entitiesToIndex as $indexedEntityId) {
-            IndexKnowledgeEntity::dispatch($indexedEntityId)->afterCommit();
+            IndexKnowledgeEntity::dispatchTracked($indexedEntityId);
         }
 
         return $deletion;

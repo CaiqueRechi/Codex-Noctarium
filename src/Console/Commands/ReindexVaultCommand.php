@@ -24,7 +24,7 @@ final class ReindexVaultCommand extends Command
             ->orderBy('id')
             ->chunk($chunkSize, function ($entities) use (&$count): void {
                 foreach ($entities as $entity) {
-                    IndexKnowledgeEntity::dispatch((string) $entity->getKey());
+                    IndexKnowledgeEntity::dispatchTracked((string) $entity->getKey());
                     $count++;
                 }
             });
