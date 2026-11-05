@@ -31,6 +31,7 @@ vi.mock('@xyflow/react', () => ({
         children,
         nodes,
         onMove,
+        onMoveEnd,
         onInit,
         onNodeDoubleClick,
     }: {
@@ -42,6 +43,10 @@ vi.mock('@xyflow/react', () => ({
         }>;
         onMove: (
             event: null,
+            viewport: { x: number; y: number; zoom: number },
+        ) => void;
+        onMoveEnd?: (
+            event: MouseEvent | TouchEvent | null,
             viewport: { x: number; y: number; zoom: number },
         ) => void;
         onInit?: (instance: {
@@ -84,6 +89,14 @@ vi.mock('@xyflow/react', () => ({
                     onClick={() => onMove(null, { x: 0, y: 0, zoom: 1 })}
                 >
                     aproximar
+                </button>
+                <button
+                    type="button"
+                    onClick={() =>
+                        onMoveEnd?.(null, { x: 0, y: 0, zoom: 1 })
+                    }
+                >
+                    enquadramento programático
                 </button>
                 {children}
             </div>
@@ -148,6 +161,54 @@ describe('RF-02 vault canvas', () => {
         expect(
             screen.queryByRole('textbox', { name: 'Conteúdo Markdown' }),
         ).not.toBeInTheDocument();
+    });
+
+    it('does not persist a viewport change emitted programmatically', () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Primeiro Contexto',
+                                    documents: [],
+                                },
+                            ],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'enquadramento programático',
+            }),
+        );
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
     });
 
     it('keeps the draft visible and reports failure when saving is rejected', async () => {
