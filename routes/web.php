@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
+use CrowVaultCanvas\Http\Controllers\DestroyEntityController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
+use CrowVaultCanvas\Http\Controllers\RestoreEntityController;
 use CrowVaultCanvas\Http\Controllers\RestoreVersionController;
 use CrowVaultCanvas\Http\Controllers\SearchVaultController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
@@ -39,6 +41,12 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::patch('/entities/{entity}', UpdateEntityPropertiesController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
                     ->name('entities.update');
+                Route::delete('/entities/{entity}', DestroyEntityController::class)
+                    ->middleware(config('crow-vault-canvas.route.trash_write_middleware'))
+                    ->name('entities.destroy');
+                Route::post('/trash/{entity}/restore', RestoreEntityController::class)
+                    ->middleware(config('crow-vault-canvas.route.trash_write_middleware'))
+                    ->name('trash.restore');
                 Route::post('/contexts/{context}/entities', AttachEntityToContextController::class)
                     ->middleware(config('crow-vault-canvas.route.relation_write_middleware'))
                     ->name('contexts.entities.store');

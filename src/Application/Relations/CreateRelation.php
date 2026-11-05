@@ -34,6 +34,7 @@ final class CreateRelation
             $entities = KnowledgeEntity::query()
                 ->where('vault_id', $vaultId)
                 ->whereKey([$sourceEntityId, $targetEntityId])
+                ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
                 ->keyBy(fn (KnowledgeEntity $entity): string => (string) $entity->getKey());

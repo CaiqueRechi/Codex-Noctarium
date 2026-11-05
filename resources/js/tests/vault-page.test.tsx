@@ -888,4 +888,128 @@ describe('RF-02 vault canvas', () => {
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         vi.unstubAllGlobals();
     });
+
+    it('moves a focused entity to trash and restores it in its context', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    trashItem: {
+                        id: 'entity-1',
+                        title: 'Registro recuperável',
+                        deletedAt: '2026-11-05T10:00:00-03:00',
+                    },
+                    deletedRelationIds: [],
+                }),
+            })
+            .mockResolvedValueOnce({ ok: true })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    entity: {
+                        id: 'entity-1',
+                        title: 'Registro recuperável',
+                        revision: 2,
+                        entityType: null,
+                        properties: {},
+                        tags: [],
+                    },
+                    memberships: [
+                        {
+                            contextId: 'context-1',
+                            position: { x: 30, y: 45 },
+                            isPinned: true,
+                        },
+                    ],
+                    restoredRelations: [],
+                    brokenRelations: [],
+                }),
+            });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Projetos',
+                                    documents: [
+                                        {
+                                            id: 'entity-1',
+                                            title: 'Registro recuperável',
+                                            revision: 2,
+                                            entityType: null,
+                                            properties: {},
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                    trash: [],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    trash: '/vault/trash',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 0, y: 0, zoom: 1.4 },
+                    focusEntityId: 'entity-1',
+                }}
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Mover selecionado para a lixeira',
+            }),
+        );
+        const restoreButton = await screen.findByRole('button', {
+            name: 'Restaurar',
+        });
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            '/vault/entities/entity-1',
+            expect.objectContaining({ method: 'DELETE' }),
+        );
+
+        fireEvent.click(restoreButton);
+
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenNthCalledWith(
+                3,
+                '/vault/trash/entity-1/restore',
+                expect.objectContaining({ method: 'POST' }),
+            ),
+        );
+        expect(
+            await screen.findByText('Entidade e relações válidas restauradas.'),
+        ).toBeInTheDocument();
+        expect(
+            within(
+                screen.getByRole('complementary', {
+                    name: 'Explorador do vault',
+                }),
+            ).getByRole('button', {
+                name: 'DocumentoRegistro recuperável',
+            }),
+        ).toBeInTheDocument();
+
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
 });

@@ -61,6 +61,9 @@ import {
 import { RelationsPanel } from '../relations/relations-panel';
 import type { RelationSummary } from '../relations/types';
 import { SearchPanel } from '../search/search-panel';
+import { deleteEntity, restoreEntity } from '../trash/api';
+import { TrashPanel } from '../trash/trash-panel';
+import type { TrashItem } from '../trash/types';
 import { createVersion, restoreVersion } from '../versions/api';
 import { saveWorkspaceState } from '../workspace/api';
 
@@ -71,6 +74,7 @@ type VaultPageProps = {
         universes: UniverseSummary[];
         relations?: RelationSummary[];
         perspectives?: PerspectiveSummary[];
+        trash?: TrashItem[];
     };
     endpoints: {
         documents: string;
@@ -80,6 +84,7 @@ type VaultPageProps = {
         perspectives?: string;
         versions?: string;
         search?: string;
+        trash?: string;
         workspace: string;
     };
     workspace: {
@@ -274,6 +279,8 @@ export default function VaultPage({
 }: VaultPageProps) {
     const [universes, setUniverses] = useState(vault.universes);
     const [relations, setRelations] = useState(vault.relations ?? []);
+    const [trash, setTrash] = useState(vault.trash ?? []);
+    const [trashNotice, setTrashNotice] = useState<string | null>(null);
     const [perspectives, setPerspectives] = useState(vault.perspectives ?? []);
     const [activePerspectiveId, setActivePerspectiveId] = useState<
         string | null
@@ -798,6 +805,108 @@ export default function VaultPage({
         [endpoints.versions],
     );
 
+    const handleEntityDelete = useCallback(
+        async (entityId: string) => {
+            const deletion = await deleteEntity(endpoints.entities, entityId);
+
+            setUniverses((current) =>
+                current.map((universe) => ({
+                    ...universe,
+                    contexts: universe.contexts.map((context) => ({
+                        ...context,
+                        documents: context.documents.filter(
+                            (document) => document.id !== entityId,
+                        ),
+                    })),
+                })),
+            );
+            setRelations((current) =>
+                current.filter(
+                    (relation) =>
+                        !deletion.deletedRelationIds.includes(relation.id),
+                ),
+            );
+            setTrash((current) => [
+                deletion.trashItem,
+                ...current.filter((item) => item.id !== entityId),
+            ]);
+            setTrashNotice(null);
+
+            if (focusEntityId === entityId) {
+                setFocusEntityId(null);
+                setActiveDocument(null);
+                await persistWorkspace(
+                    viewport.current,
+                    null,
+                    activePerspectiveId,
+                );
+            }
+        },
+        [activePerspectiveId, endpoints.entities, focusEntityId, persistWorkspace],
+    );
+
+    const handleEntityRestore = useCallback(
+        async (entityId: string) => {
+            if (!endpoints.trash) {
+                throw new Error('O endpoint da lixeira não está disponível.');
+            }
+
+            const restoration = await restoreEntity(endpoints.trash, entityId);
+            const memberships = new Map(
+                restoration.memberships.map((membership) => [
+                    membership.contextId,
+                    membership,
+                ]),
+            );
+
+            setUniverses((current) =>
+                current.map((universe) => ({
+                    ...universe,
+                    contexts: universe.contexts.map((context) => {
+                        const membership = memberships.get(context.id);
+
+                        if (
+                            !membership ||
+                            context.documents.some(
+                                (document) => document.id === entityId,
+                            )
+                        ) {
+                            return context;
+                        }
+
+                        return {
+                            ...context,
+                            documents: [
+                                ...context.documents,
+                                {
+                                    ...restoration.entity,
+                                    position: membership.position,
+                                    isPinned: membership.isPinned,
+                                },
+                            ],
+                        };
+                    }),
+                })),
+            );
+            setRelations((current) => [
+                ...current,
+                ...restoration.restoredRelations.filter(
+                    (relation) =>
+                        !current.some((existing) => existing.id === relation.id),
+                ),
+            ]);
+            setTrash((current) =>
+                current.filter((item) => item.id !== entityId),
+            );
+            setTrashNotice(
+                restoration.brokenRelations.length === 0
+                    ? 'Entidade e relações válidas restauradas.'
+                    : `${restoration.brokenRelations.length} relação(ões) permanecem inativas por destinos ausentes.`,
+            );
+        },
+        [endpoints.trash],
+    );
+
     const handleSave = useCallback(async () => {
         if (!activeDocument) {
             return;
@@ -906,6 +1015,15 @@ export default function VaultPage({
                             endpoint={endpoints.search}
                             universes={universes}
                             onSelect={handleSearchSelect}
+                        />
+                    )}
+                    {endpoints.trash && (
+                        <TrashPanel
+                            focusedDocument={focusedDocument}
+                            items={trash}
+                            notice={trashNotice}
+                            onDelete={handleEntityDelete}
+                            onRestore={handleEntityRestore}
                         />
                     )}
                     <PerspectivesPanel

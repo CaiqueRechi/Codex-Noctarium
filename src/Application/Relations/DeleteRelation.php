@@ -14,17 +14,23 @@ final class DeleteRelation
     public function handle(string $relationId): void
     {
         $relation = DB::transaction(function () use ($relationId): KnowledgeRelation {
-            $relation = KnowledgeRelation::query()
+            $relationSnapshot = KnowledgeRelation::query()
                 ->whereKey($relationId)
                 ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
-                ->lockForUpdate()
                 ->firstOrFail();
             $entities = KnowledgeEntity::query()
-                ->where('vault_id', $relation->vault_id)
-                ->whereKey([$relation->source_entity_id, $relation->target_entity_id])
+                ->where('vault_id', $relationSnapshot->vault_id)
+                ->whereKey([$relationSnapshot->source_entity_id, $relationSnapshot->target_entity_id])
+                ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
+            $relation = KnowledgeRelation::query()
+                ->whereKey($relationId)
+                ->where('vault_id', $relationSnapshot->vault_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
+            $relation->forceFill(['cascade_deleted_by_entity_id' => null])->save();
             $relation->delete();
             $entities->each(fn (KnowledgeEntity $entity) => $entity->advanceSearchVersion());
 

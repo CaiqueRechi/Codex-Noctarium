@@ -25,6 +25,10 @@ final class VaultController
         $userId = (string) $request->user()?->getAuthIdentifier();
         abort_if($userId === '', 401);
         $vault = $openVault->handle();
+        $trash = KnowledgeEntity::onlyTrashed()
+            ->where('vault_id', (string) $vault->getKey())
+            ->latest('deleted_at')
+            ->get();
 
         return Inertia::render('cvc/vault', [
             'vault' => [
@@ -65,6 +69,11 @@ final class VaultController
                 'perspectives' => $vault->perspectives
                     ->map(fn ($perspective): array => $perspectivePresenter->toArray($perspective))
                     ->values(),
+                'trash' => $trash->map(fn (KnowledgeEntity $entity): array => [
+                    'id' => $entity->getKey(),
+                    'title' => $entity->title,
+                    'deletedAt' => $entity->deleted_at?->toAtomString(),
+                ])->values(),
             ],
             'workspace' => $openWorkspaceState->handle($userId)->toArray(),
             'endpoints' => [
@@ -75,6 +84,7 @@ final class VaultController
                 'perspectives' => route('cvc.perspectives.store'),
                 'versions' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/versions'),
                 'search' => route('cvc.search'),
+                'trash' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/trash'),
                 'workspace' => route('cvc.workspace.update'),
             ],
         ]);

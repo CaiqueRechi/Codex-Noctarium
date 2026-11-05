@@ -24,6 +24,7 @@ final class KnowledgeRelation extends Model
         'relation_type',
         'is_directed',
         'properties',
+        'cascade_deleted_by_entity_id',
     ];
 
     protected function casts(): array

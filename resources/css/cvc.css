@@ -233,6 +233,38 @@
     line-height: 1.4;
 }
 
+.cvc-trash {
+    display: grid;
+    gap: 0.7rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--cvc-border);
+}
+
+.cvc-trash header h3 {
+    margin: 0.1rem 0 0;
+}
+
+.cvc-trash ul {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.cvc-trash li {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cvc-trash p {
+    margin: 0;
+    color: var(--cvc-text-muted);
+    font-size: 0.82rem;
+}
+
 .cvc-perspectives {
     display: grid;
     gap: 0.7rem;

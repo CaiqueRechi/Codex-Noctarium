@@ -300,6 +300,9 @@ final readonly class RestoreVaultVersion
     /** @param list<array<string, mixed>> $relations */
     private function restoreRelations(string $vaultId, array $relations): void
     {
+        KnowledgeRelation::withTrashed()
+            ->where('vault_id', $vaultId)
+            ->update(['cascade_deleted_by_entity_id' => null]);
         KnowledgeRelation::query()->where('vault_id', $vaultId)->delete();
 
         foreach ($relations as $snapshotRelation) {
@@ -315,6 +318,7 @@ final readonly class RestoreVaultVersion
                 'relation_type' => $snapshotRelation['relation_type'],
                 'is_directed' => $snapshotRelation['is_directed'],
                 'properties' => $snapshotRelation['properties'],
+                'cascade_deleted_by_entity_id' => null,
             ];
 
             if ($relation === null) {
