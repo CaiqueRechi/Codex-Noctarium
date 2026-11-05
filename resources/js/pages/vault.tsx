@@ -19,6 +19,8 @@ import '@xyflow/react/dist/style.css';
 import '../../css/presets.css';
 import '../../css/cvc.css';
 
+import { AttachmentsPanel } from '../attachments/attachments-panel';
+import type { AttachmentSummary } from '../attachments/types';
 import { KnowledgeNode } from '../canvas/knowledge-node';
 import type { KnowledgeCanvasNode } from '../canvas/knowledge-node';
 import {
@@ -85,6 +87,7 @@ type VaultPageProps = {
         versions?: string;
         search?: string;
         trash?: string;
+        attachments?: string;
         workspace: string;
     };
     workspace: {
@@ -907,6 +910,41 @@ export default function VaultPage({
         [endpoints.trash],
     );
 
+    const handleAttachmentUploaded = useCallback(
+        (attachment: AttachmentSummary) => {
+            if (!focusedDocument) {
+                return;
+            }
+
+            const addAttachment = <T extends { attachments?: AttachmentSummary[] }>(
+                document: T,
+            ): T => ({
+                ...document,
+                attachments: [...(document.attachments ?? []), attachment],
+            });
+
+            setUniverses((current) =>
+                current.map((universe) => ({
+                    ...universe,
+                    contexts: universe.contexts.map((context) => ({
+                        ...context,
+                        documents: context.documents.map((document) =>
+                            document.id === focusedDocument.id
+                                ? addAttachment(document)
+                                : document,
+                        ),
+                    })),
+                })),
+            );
+            setActiveDocument((current) =>
+                current?.id === focusedDocument.id
+                    ? addAttachment(current)
+                    : current,
+            );
+        },
+        [focusedDocument],
+    );
+
     const handleSave = useCallback(async () => {
         if (!activeDocument) {
             return;
@@ -1041,6 +1079,14 @@ export default function VaultPage({
                         document={focusedDocument}
                         onSave={handlePropertiesSave}
                     />
+                    {focusedDocument && endpoints.attachments && (
+                        <AttachmentsPanel
+                            document={focusedDocument}
+                            entitiesEndpoint={endpoints.entities}
+                            attachmentsEndpoint={endpoints.attachments}
+                            onUploaded={handleAttachmentUploaded}
+                        />
+                    )}
                     {focusedDocument && (
                         <RelationsPanel
                             document={focusedDocument}

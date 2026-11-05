@@ -8,7 +8,9 @@ use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
 use CrowVaultCanvas\Http\Controllers\RestoreEntityController;
 use CrowVaultCanvas\Http\Controllers\RestoreVersionController;
 use CrowVaultCanvas\Http\Controllers\SearchVaultController;
+use CrowVaultCanvas\Http\Controllers\ShowAttachmentController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
+use CrowVaultCanvas\Http\Controllers\StoreAttachmentController;
 use CrowVaultCanvas\Http\Controllers\StoreDocumentController;
 use CrowVaultCanvas\Http\Controllers\StorePerspectiveController;
 use CrowVaultCanvas\Http\Controllers\StoreRelationController;
@@ -31,6 +33,8 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('search');
         Route::get('/documents/{entity}', ShowDocumentController::class)->name('documents.show');
+        Route::get('/attachments/{attachment}', ShowAttachmentController::class)
+            ->name('attachments.show');
         Route::middleware(config('crow-vault-canvas.route.write_middleware'))
             ->group(function (): void {
                 Route::middleware(config('crow-vault-canvas.route.document_write_middleware'))
@@ -41,6 +45,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::patch('/entities/{entity}', UpdateEntityPropertiesController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
                     ->name('entities.update');
+                Route::post('/entities/{entity}/attachments', StoreAttachmentController::class)
+                    ->middleware(config('crow-vault-canvas.route.attachment_write_middleware'))
+                    ->name('entities.attachments.store');
                 Route::delete('/entities/{entity}', DestroyEntityController::class)
                     ->middleware(config('crow-vault-canvas.route.trash_write_middleware'))
                     ->name('entities.destroy');

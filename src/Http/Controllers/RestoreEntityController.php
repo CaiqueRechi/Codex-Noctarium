@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Http\Controllers;
 
+use CrowVaultCanvas\Application\Attachments\AttachmentSummary;
 use CrowVaultCanvas\Application\Trash\RestoreEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,9 @@ final class RestoreEntityController
                 'entityType' => $restoration->entity->entity_type,
                 'properties' => (object) ($restoration->entity->properties ?? []),
                 'tags' => array_values($restoration->entity->tags ?? []),
+                'attachments' => $restoration->entity->attachments
+                    ->map(fn ($attachment): array => AttachmentSummary::fromModel($attachment)->toArray())
+                    ->values(),
             ],
             'memberships' => $restoration->entity->contexts->map(fn ($context): array => [
                 'contextId' => (string) $context->getKey(),

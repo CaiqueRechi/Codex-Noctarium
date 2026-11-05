@@ -21,6 +21,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('crow-vault-canvas.route.version_write_middleware', []);
         $app['config']->set('crow-vault-canvas.route.search_middleware', []);
         $app['config']->set('crow-vault-canvas.route.trash_write_middleware', []);
+        $app['config']->set('crow-vault-canvas.route.attachment_write_middleware', []);
         $app['config']->set(
             'crow-vault-canvas.storage.root',
             storage_path('framework/testing/cvc-private'),

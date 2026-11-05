@@ -49,6 +49,9 @@ return [
         'trash_write_middleware' => [
             'throttle:30,1',
         ],
+        'attachment_write_middleware' => [
+            'throttle:10,1',
+        ],
         'workspace_write_middleware' => [
             'throttle:120,1',
         ],

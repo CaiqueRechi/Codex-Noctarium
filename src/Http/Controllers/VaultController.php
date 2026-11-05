@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Http\Controllers;
 
+use CrowVaultCanvas\Application\Attachments\AttachmentSummary;
 use CrowVaultCanvas\Application\OpenVault;
 use CrowVaultCanvas\Application\Workspace\OpenWorkspaceState;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
@@ -47,6 +48,9 @@ final class VaultController
                             'entityType' => $entity->entity_type,
                             'properties' => (object) ($entity->properties ?? []),
                             'tags' => array_values($entity->tags ?? []),
+                            'attachments' => $entity->attachments
+                                ->map(fn ($attachment): array => AttachmentSummary::fromModel($attachment)->toArray())
+                                ->values(),
                             'position' => $entity->pivot?->position_x === null
                                 ? null
                                 : [
@@ -84,6 +88,7 @@ final class VaultController
                 'perspectives' => route('cvc.perspectives.store'),
                 'versions' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/versions'),
                 'search' => route('cvc.search'),
+                'attachments' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/attachments'),
                 'trash' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/trash'),
                 'workspace' => route('cvc.workspace.update'),
             ],

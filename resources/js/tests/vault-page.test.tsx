@@ -1012,4 +1012,86 @@ describe('RF-02 vault canvas', () => {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
     });
+
+    it('uploads a private attachment for the focused document', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                attachment: {
+                    id: 'attachment-1',
+                    name: 'manual.pdf',
+                    mimeType: 'application/pdf',
+                    sizeBytes: 2048,
+                },
+            }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Projetos',
+                                    documents: [
+                                        {
+                                            id: 'entity-1',
+                                            title: 'Documento',
+                                            revision: 1,
+                                            entityType: null,
+                                            properties: {},
+                                            attachments: [],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    attachments: '/vault/attachments',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 0, y: 0, zoom: 1.4 },
+                    focusEntityId: 'entity-1',
+                }}
+            />,
+        );
+
+        const file = new File(['%PDF-1.4\n%%EOF'], 'manual.pdf', {
+            type: 'application/pdf',
+        });
+        fireEvent.change(screen.getByLabelText('Selecionar anexo'), {
+            target: { files: [file] },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Anexar' }));
+
+        const link = await screen.findByRole('link', { name: 'manual.pdf' });
+        expect(link).toHaveAttribute(
+            'href',
+            '/vault/attachments/attachment-1',
+        );
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/vault/entities/entity-1/attachments',
+            expect.objectContaining({
+                method: 'POST',
+                body: expect.any(FormData),
+            }),
+        );
+
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
 });

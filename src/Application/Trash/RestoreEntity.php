@@ -91,7 +91,7 @@ final class RestoreEntity
                 ->values();
             $entities->only($entitiesToIndex->all())
                 ->each(fn (KnowledgeEntity $candidate) => $candidate->advanceSearchVersion());
-            $entity->load(['document', 'contexts']);
+            $entity->load(['document', 'contexts', 'attachments']);
 
             return [
                 new EntityRestoration($entity, $restoredRelations, $brokenRelations),

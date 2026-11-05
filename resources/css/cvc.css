@@ -265,6 +265,51 @@
     font-size: 0.82rem;
 }
 
+.cvc-attachments {
+    display: grid;
+    gap: 0.7rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--cvc-border);
+}
+
+.cvc-attachments header h3,
+.cvc-attachments p {
+    margin: 0;
+}
+
+.cvc-attachments input {
+    min-width: 0;
+    color: var(--cvc-text-muted);
+    font: inherit;
+    font-size: 0.78rem;
+}
+
+.cvc-attachments ul {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.cvc-attachments li {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.cvc-attachments a {
+    overflow: hidden;
+    color: var(--cvc-accent);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cvc-attachments span,
+.cvc-attachments p {
+    color: var(--cvc-text-muted);
+    font-size: 0.75rem;
+}
+
 .cvc-perspectives {
     display: grid;
     gap: 0.7rem;

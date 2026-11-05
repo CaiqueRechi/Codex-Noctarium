@@ -1,3 +1,4 @@
+import type { AttachmentSummary } from '../attachments/types';
 import type { EntityProperties } from '../entities/types';
 
 export type DocumentSummary = {
@@ -7,6 +8,7 @@ export type DocumentSummary = {
     entityType: string | null;
     properties: EntityProperties;
     tags?: string[];
+    attachments?: AttachmentSummary[];
     position?: { x: number; y: number } | null;
     isPinned?: boolean;
 };

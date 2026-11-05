@@ -16,9 +16,11 @@ final readonly class OpenedDocument
         public array $properties,
         /** @var list<string> */
         public array $tags,
+        /** @var list<array{id: string, name: string, mimeType: string, sizeBytes: int}> */
+        public array $attachments,
     ) {}
 
-    /** @return array{id: string, title: string|null, content: string, revision: int, entityType: string|null, properties: object, tags: list<string>} */
+    /** @return array{id: string, title: string|null, content: string, revision: int, entityType: string|null, properties: object, tags: list<string>, attachments: list<array{id: string, name: string, mimeType: string, sizeBytes: int}>} */
     public function toArray(): array
     {
         return [
@@ -29,6 +31,7 @@ final readonly class OpenedDocument
             'entityType' => $this->entityType,
             'properties' => (object) $this->properties,
             'tags' => $this->tags,
+            'attachments' => $this->attachments,
         ];
     }
 }

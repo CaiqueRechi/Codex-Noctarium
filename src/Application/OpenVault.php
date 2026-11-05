@@ -15,6 +15,7 @@ final class OpenVault
         return Vault::query()
             ->with([
                 'universes.children.entities.document',
+                'universes.children.entities.attachments',
                 'relations',
                 'perspectives.layouts',
                 'perspectives.versions',
