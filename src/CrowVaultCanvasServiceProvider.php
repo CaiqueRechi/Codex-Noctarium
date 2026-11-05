@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CrowVaultCanvas;
 
 use CrowVaultCanvas\Console\Commands\InitializeVaultCommand;
+use CrowVaultCanvas\Console\Commands\ReindexVaultCommand;
 use CrowVaultCanvas\Infrastructure\Storage\LocalMarkdownStorage;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
@@ -23,7 +24,7 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom($this->packagePath('database/migrations'));
-        $this->commands([InitializeVaultCommand::class]);
+        $this->commands([InitializeVaultCommand::class, ReindexVaultCommand::class]);
 
         if (! $this->app['config']->boolean('crow-vault-canvas.enabled')) {
             return;

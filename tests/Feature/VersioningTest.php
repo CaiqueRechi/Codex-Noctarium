@@ -13,6 +13,7 @@ use CrowVaultCanvas\Application\Relations\CreateRelation;
 use CrowVaultCanvas\Application\Relations\DeleteRelation;
 use CrowVaultCanvas\Application\Versions\CreateVaultVersion;
 use CrowVaultCanvas\Application\Versions\RestoreVaultVersion;
+use CrowVaultCanvas\Application\Versions\SnapshotCodec;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
@@ -103,6 +104,9 @@ final class VersioningTest extends TestCase
         self::assertNotNull(KnowledgeRelation::query()->find($relation->getKey()));
         self::assertSoftDeleted('cvc_entities', ['id' => $extra->id]);
         self::assertSame(VaultVersion::KIND_RECOVERY, $restoration->recoveryVersion->kind);
+        $this->getJson('/vault/search?'.http_build_query(['q' => 'versão um']))
+            ->assertOk()
+            ->assertJsonPath('results.0.id', $source->id);
 
         $this->app->make(RestoreVaultVersion::class)->handle(
             (string) $restoration->recoveryVersion->getKey(),
@@ -115,6 +119,9 @@ final class VersioningTest extends TestCase
         self::assertNotNull(KnowledgeEntity::query()->find($extra->id));
         self::assertNull(KnowledgeRelation::query()->find($relation->getKey()));
         self::assertNotNull(KnowledgeRelation::withTrashed()->find($relation->getKey()));
+        $this->getJson('/vault/search?'.http_build_query(['q' => 'versão dois']))
+            ->assertOk()
+            ->assertJsonPath('results.0.id', $source->id);
         $this->assertDatabaseCount('cvc_versions', 3);
     }
 
@@ -147,5 +154,34 @@ final class VersioningTest extends TestCase
             self::assertNotNull(KnowledgeEntity::query()->find($document->id));
             $this->assertDatabaseCount('cvc_versions', 1);
         }
+    }
+
+    public function test_rf_10_restores_a_snapshot_created_before_tags_existed(): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $context = KnowledgeContext::query()
+            ->where('kind', KnowledgeContext::KIND_CONTEXT)
+            ->firstOrFail();
+        $perspective = Perspective::query()->firstOrFail();
+        $document = $this->app->make(CreateDocument::class)->handle((string) $context->getKey());
+        $version = $this->app->make(CreateVaultVersion::class)->handle(
+            (string) $perspective->getKey(),
+            'Antes das tags',
+            '42',
+        );
+        $snapshot = $version->snapshot;
+        unset($snapshot['entities'][0]['tags']);
+        $version->update([
+            'snapshot' => $snapshot,
+            'snapshot_hash' => $this->app->make(SnapshotCodec::class)->hash($snapshot),
+        ]);
+        KnowledgeEntity::query()->whereKey($document->id)->update(['tags' => ['temporária']]);
+
+        $this->app->make(RestoreVaultVersion::class)->handle(
+            (string) $version->getKey(),
+            '42',
+        );
+
+        self::assertSame([], KnowledgeEntity::query()->findOrFail($document->id)->tags);
     }
 }

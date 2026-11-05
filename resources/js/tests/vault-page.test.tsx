@@ -469,6 +469,7 @@ describe('RF-02 vault canvas', () => {
                     body: JSON.stringify({
                         type: 'referência',
                         properties: { status: 'ativo' },
+                        tags: [],
                     }),
                 }),
             ),
@@ -790,6 +791,98 @@ describe('RF-02 vault canvas', () => {
         expect(routerReloadMock).toHaveBeenCalledWith({
             only: ['vault', 'workspace'],
         });
+
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
+
+    it('searches the authorized vault and locates the selected result', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    results: [
+                        {
+                            id: 'entity-1',
+                            title: 'Mapa JWT',
+                            snippet: 'Autenticação segura',
+                            entityType: 'referência',
+                            tags: ['segurança'],
+                        },
+                    ],
+                }),
+            })
+            .mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [
+                                {
+                                    id: 'context-1',
+                                    name: 'Projetos',
+                                    documents: [
+                                        {
+                                            id: 'entity-1',
+                                            title: 'Mapa JWT',
+                                            revision: 2,
+                                            entityType: 'referência',
+                                            properties: {},
+                                            tags: ['segurança'],
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    search: '/vault/search',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 0, y: 0, zoom: 1.4 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        fireEvent.change(
+            screen.getByRole('searchbox', { name: 'Buscar no vault' }),
+            { target: { value: 'JWT' } },
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
+
+        const result = await screen.findByRole('button', {
+            name: /Mapa JWT/,
+        });
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            'http://localhost:3000/vault/search?q=JWT',
+            expect.objectContaining({ credentials: 'same-origin' }),
+        );
+
+        fireEvent.click(result);
+
+        await waitFor(() =>
+            expect(fitViewMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    nodes: [{ id: 'entity:context-1:entity-1' }],
+                }),
+            ),
+        );
 
         document.cookie =
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';

@@ -13,6 +13,7 @@ type PropertiesPanelProps = {
     onSave: (
         entityType: string | null,
         properties: EntityProperties,
+        tags: string[],
     ) => Promise<void>;
 };
 
@@ -32,6 +33,7 @@ export function PropertiesPanel({ document, onSave }: PropertiesPanelProps) {
     const [properties, setProperties] = useState<PropertyDraft[]>(() =>
         draftsFrom(document),
     );
+    const [tags, setTags] = useState(document?.tags?.join(', ') ?? '');
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +78,13 @@ export function PropertiesPanel({ document, onSave }: PropertiesPanelProps) {
                         property.value,
                     ]),
                 ),
+                tags
+                    .split(',')
+                    .map((tag) => tag.trim())
+                    .filter(
+                        (tag, index, values) =>
+                            Boolean(tag) && values.indexOf(tag) === index,
+                    ),
             );
         } catch (exception) {
             setError(
@@ -111,6 +120,17 @@ export function PropertiesPanel({ document, onSave }: PropertiesPanelProps) {
                                 setEntityType(event.target.value)
                             }
                             placeholder="Ex.: projeto"
+                        />
+                    </label>
+
+                    <label>
+                        <span>Tags</span>
+                        <input
+                            type="text"
+                            aria-label="Tags"
+                            value={tags}
+                            onChange={(event) => setTags(event.target.value)}
+                            placeholder="Ex.: segurança, jwt"
                         />
                     </label>
 

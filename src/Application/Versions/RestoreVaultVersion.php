@@ -9,8 +9,10 @@ use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
 use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
+use CrowVaultCanvas\Domain\Knowledge\Models\SearchDocument;
 use CrowVaultCanvas\Domain\Knowledge\Models\VaultVersion;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
+use CrowVaultCanvas\Jobs\IndexKnowledgeEntity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -27,7 +29,7 @@ final readonly class RestoreVaultVersion
 
     public function handle(string $versionId, string $restoredBy): VersionRestoration
     {
-        return DB::transaction(function () use ($versionId, $restoredBy): VersionRestoration {
+        $restoration = DB::transaction(function () use ($versionId, $restoredBy): VersionRestoration {
             $vaultId = (string) config('crow-vault-canvas.vault.id');
             $version = VaultVersion::query()
                 ->whereKey($versionId)
@@ -52,6 +54,17 @@ final readonly class RestoreVaultVersion
 
             return new VersionRestoration($version, $recoveryVersion);
         }, 3);
+
+        SearchDocument::query()
+            ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
+            ->pluck('entity_id')
+            ->merge(KnowledgeEntity::query()
+                ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
+                ->pluck('id'))
+            ->unique()
+            ->each(fn (string $entityId) => IndexKnowledgeEntity::dispatch($entityId)->afterCommit());
+
+        return $restoration;
     }
 
     /** @param array<string, mixed> $snapshot */
@@ -85,6 +98,8 @@ final readonly class RestoreVaultVersion
             'entities.*.title' => ['nullable', 'string', 'max:255'],
             'entities.*.entity_type' => ['nullable', 'string', 'max:64'],
             'entities.*.properties' => ['present', 'array'],
+            'entities.*.tags' => ['sometimes', 'array'],
+            'entities.*.tags.*' => ['required', 'string', 'max:64', 'distinct'],
             'entities.*.document' => ['nullable', 'array'],
             'entities.*.document.storage_path' => ['required_with:entities.*.document', 'string', 'max:512'],
             'entities.*.document.revision' => ['required_with:entities.*.document', 'integer', 'min:1'],
@@ -174,12 +189,14 @@ final readonly class RestoreVaultVersion
 
         $obsoleteIds = $obsoleteQuery->pluck('id');
         MarkdownDocument::query()->whereIn('entity_id', $obsoleteIds)->delete();
+        KnowledgeEntity::query()->whereIn('id', $obsoleteIds)->increment('search_version');
         KnowledgeEntity::query()->whereIn('id', $obsoleteIds)->delete();
 
         foreach ($entities as $snapshotEntity) {
             $entity = KnowledgeEntity::withTrashed()
                 ->whereKey($snapshotEntity['id'])
                 ->where('vault_id', $vaultId)
+                ->lockForUpdate()
                 ->first();
             $attributes = [
                 'vault_id' => $vaultId,
@@ -187,6 +204,7 @@ final readonly class RestoreVaultVersion
                 'title' => $snapshotEntity['title'],
                 'entity_type' => $snapshotEntity['entity_type'],
                 'properties' => $snapshotEntity['properties'],
+                'tags' => $snapshotEntity['tags'] ?? [],
             ];
 
             if ($entity === null) {
@@ -195,6 +213,7 @@ final readonly class RestoreVaultVersion
                     ...$attributes,
                 ]);
             } else {
+                $attributes['search_version'] = $entity->search_version + 1;
                 $entity->fill($attributes)->save();
                 $entity->restore();
             }

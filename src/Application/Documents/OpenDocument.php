@@ -43,6 +43,7 @@ final readonly class OpenDocument
             $document->revision,
             $entity->entity_type,
             $entity->properties ?? [],
+            array_values($entity->tags ?? []),
         );
     }
 }

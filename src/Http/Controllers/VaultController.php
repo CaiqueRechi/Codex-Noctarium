@@ -42,6 +42,7 @@ final class VaultController
                             'revision' => $entity->document?->revision,
                             'entityType' => $entity->entity_type,
                             'properties' => (object) ($entity->properties ?? []),
+                            'tags' => array_values($entity->tags ?? []),
                             'position' => $entity->pivot?->position_x === null
                                 ? null
                                 : [
@@ -73,6 +74,7 @@ final class VaultController
                 'relations' => route('cvc.relations.store'),
                 'perspectives' => route('cvc.perspectives.store'),
                 'versions' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/versions'),
+                'search' => route('cvc.search'),
                 'workspace' => route('cvc.workspace.update'),
             ],
         ]);

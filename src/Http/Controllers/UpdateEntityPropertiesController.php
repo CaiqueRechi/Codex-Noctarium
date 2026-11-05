@@ -17,10 +17,13 @@ final class UpdateEntityPropertiesController
     ): JsonResponse {
         /** @var array<string, bool|float|int|string|null> $properties */
         $properties = $request->validated('properties');
+        /** @var list<string>|null $tags */
+        $tags = $request->has('tags') ? $request->validated('tags') : null;
         $updatedEntity = $updateEntityProperties->handle(
             $entity,
             $request->validated('type'),
             $properties,
+            $tags,
         );
 
         return response()->json([
@@ -29,6 +32,7 @@ final class UpdateEntityPropertiesController
                 'title' => $updatedEntity->title,
                 'entityType' => $updatedEntity->entity_type,
                 'properties' => (object) ($updatedEntity->properties ?? []),
+                'tags' => array_values($updatedEntity->tags ?? []),
                 'revision' => $updatedEntity->document?->revision,
             ],
         ]);

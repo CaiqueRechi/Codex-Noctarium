@@ -7,6 +7,7 @@ namespace CrowVaultCanvas\Application\Relations;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
+use CrowVaultCanvas\Jobs\IndexKnowledgeEntity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -21,7 +22,7 @@ final class CreateRelation
         bool $isDirected,
         array $properties,
     ): KnowledgeRelation {
-        return DB::transaction(function () use (
+        $relation = DB::transaction(function () use (
             $sourceEntityId,
             $targetEntityId,
             $contextId,
@@ -86,7 +87,7 @@ final class CreateRelation
                 ]);
             }
 
-            return KnowledgeRelation::query()->create([
+            $relation = KnowledgeRelation::query()->create([
                 'vault_id' => $vaultId,
                 'source_entity_id' => $normalizedSource,
                 'target_entity_id' => $normalizedTarget,
@@ -95,6 +96,14 @@ final class CreateRelation
                 'is_directed' => $isDirected,
                 'properties' => $properties,
             ]);
+            $entities->each(fn (KnowledgeEntity $entity) => $entity->advanceSearchVersion());
+
+            return $relation;
         }, 3);
+
+        IndexKnowledgeEntity::dispatch($relation->source_entity_id)->afterCommit();
+        IndexKnowledgeEntity::dispatch($relation->target_entity_id)->afterCommit();
+
+        return $relation;
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
 use CrowVaultCanvas\Http\Controllers\RestoreVersionController;
+use CrowVaultCanvas\Http\Controllers\SearchVaultController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
 use CrowVaultCanvas\Http\Controllers\StoreDocumentController;
 use CrowVaultCanvas\Http\Controllers\StorePerspectiveController;
@@ -24,6 +25,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
     ->name(config('crow-vault-canvas.route.name'))
     ->group(function (): void {
         Route::get('/', VaultController::class)->name('vault');
+        Route::get('/search', SearchVaultController::class)
+            ->middleware(config('crow-vault-canvas.route.search_middleware'))
+            ->name('search');
         Route::get('/documents/{entity}', ShowDocumentController::class)->name('documents.show');
         Route::middleware(config('crow-vault-canvas.route.write_middleware'))
             ->group(function (): void {

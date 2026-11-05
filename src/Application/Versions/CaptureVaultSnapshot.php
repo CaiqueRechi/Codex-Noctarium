@@ -74,6 +74,7 @@ final class CaptureVaultSnapshot
                 'title' => $entity->title,
                 'entity_type' => $entity->entity_type,
                 'properties' => $entity->properties ?? [],
+                'tags' => $entity->tags ?? [],
                 'document' => $entity->document === null
                     ? null
                     : [

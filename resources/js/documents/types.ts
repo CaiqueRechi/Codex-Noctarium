@@ -6,6 +6,7 @@ export type DocumentSummary = {
     revision: number;
     entityType: string | null;
     properties: EntityProperties;
+    tags?: string[];
     position?: { x: number; y: number } | null;
     isPinned?: boolean;
 };

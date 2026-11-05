@@ -11,6 +11,7 @@ export async function updateEntityProperties(
     entityId: string,
     entityType: string | null,
     properties: EntityProperties,
+    tags: string[],
 ): Promise<DocumentSummary> {
     const response = await fetch(
         `${entitiesEndpoint}/${encodeURIComponent(entityId)}`,
@@ -22,7 +23,7 @@ export async function updateEntityProperties(
                 'Content-Type': 'application/json',
                 ...xsrfHeaders(),
             },
-            body: JSON.stringify({ type: entityType, properties }),
+            body: JSON.stringify({ type: entityType, properties, tags }),
         },
     );
     const payload = (await response.json()) as Partial<EntityResponse> & {

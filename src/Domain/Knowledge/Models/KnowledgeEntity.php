@@ -27,13 +27,22 @@ final class KnowledgeEntity extends Model
         'entity_type',
         'title',
         'properties',
+        'tags',
+        'search_version',
     ];
 
     protected function casts(): array
     {
         return [
             'properties' => 'array',
+            'tags' => 'array',
+            'search_version' => 'integer',
         ];
+    }
+
+    public function advanceSearchVersion(): void
+    {
+        $this->increment('search_version');
     }
 
     /** @return BelongsTo<Vault, $this> */

@@ -173,6 +173,66 @@
     font-size: 1rem;
 }
 
+.cvc-search {
+    display: grid;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--cvc-border);
+    padding-bottom: 1rem;
+}
+
+.cvc-search header h3 {
+    margin: 0.15rem 0 0;
+    font-size: 1rem;
+}
+
+.cvc-search input,
+.cvc-search select {
+    min-width: 0;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.55rem;
+    background: var(--cvc-background);
+    padding: 0.5rem;
+    color: var(--cvc-text);
+    font: inherit;
+}
+
+.cvc-search ul {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cvc-search li button {
+    display: grid;
+    width: 100%;
+    gap: 0.2rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.6rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.6rem;
+    color: var(--cvc-text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.cvc-search li button:hover,
+.cvc-search li button:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 1px;
+}
+
+.cvc-search li span,
+.cvc-search > p {
+    margin: 0;
+    color: var(--cvc-text-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
 .cvc-perspectives {
     display: grid;
     gap: 0.7rem;

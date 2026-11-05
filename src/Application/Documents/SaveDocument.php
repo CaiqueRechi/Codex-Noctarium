@@ -7,6 +7,7 @@ namespace CrowVaultCanvas\Application\Documents;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
+use CrowVaultCanvas\Jobs\IndexKnowledgeEntity;
 use Illuminate\Support\Facades\DB;
 
 final readonly class SaveDocument
@@ -47,7 +48,10 @@ final readonly class SaveDocument
                 'revision' => $revision,
                 'content_hash' => $stored->contentHash,
             ]);
+            $entity->advanceSearchVersion();
         }, 3);
+
+        IndexKnowledgeEntity::dispatch($entityId)->afterCommit();
 
         return $this->openDocument->handle($entityId);
     }

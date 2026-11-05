@@ -20,6 +20,8 @@ final class UpdateEntityPropertiesRequest extends FormRequest
         return [
             'type' => ['present', 'nullable', 'string', 'max:64'],
             'properties' => ['present', 'array', 'max:50'],
+            'tags' => ['sometimes', 'array', 'max:30'],
+            'tags.*' => ['required', 'string', 'max:64', 'distinct'],
         ];
     }
 

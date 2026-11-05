@@ -43,6 +43,9 @@ return [
         'version_write_middleware' => [
             'throttle:10,1',
         ],
+        'search_middleware' => [
+            'throttle:60,1',
+        ],
         'workspace_write_middleware' => [
             'throttle:120,1',
         ],

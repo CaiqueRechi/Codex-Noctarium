@@ -60,6 +60,7 @@ import {
 } from '../relations/api';
 import { RelationsPanel } from '../relations/relations-panel';
 import type { RelationSummary } from '../relations/types';
+import { SearchPanel } from '../search/search-panel';
 import { createVersion, restoreVersion } from '../versions/api';
 import { saveWorkspaceState } from '../workspace/api';
 
@@ -78,6 +79,7 @@ type VaultPageProps = {
         relations?: string;
         perspectives?: string;
         versions?: string;
+        search?: string;
         workspace: string;
     };
     workspace: {
@@ -593,7 +595,11 @@ export default function VaultPage({
     }, []);
 
     const handlePropertiesSave = useCallback(
-        async (entityType: string | null, properties: EntityProperties) => {
+        async (
+            entityType: string | null,
+            properties: EntityProperties,
+            tags: string[],
+        ) => {
             if (!focusedDocument) {
                 return;
             }
@@ -603,6 +609,7 @@ export default function VaultPage({
                 focusedDocument.id,
                 entityType,
                 properties,
+                tags,
             );
             setUniverses((current) =>
                 current.map((universe) => ({
@@ -693,6 +700,60 @@ export default function VaultPage({
             );
         },
         [focusEntityId, persistWorkspace],
+    );
+
+    const handleSearchSelect = useCallback(
+        (entityId: string) => {
+            const context = universes
+                .flatMap((universe) => universe.contexts)
+                .find((candidate) =>
+                    candidate.documents.some(
+                        (document) => document.id === entityId,
+                    ),
+                );
+
+            if (!context) {
+                setError('O resultado não está disponível no canvas atual.');
+
+                return;
+            }
+
+            const matchingPerspective = perspectives.find((perspective) =>
+                applyPerspective(universes, perspective).some((universe) =>
+                    universe.contexts.some((candidate) =>
+                        candidate.documents.some(
+                            (document) => document.id === entityId,
+                        ),
+                    ),
+                ),
+            );
+
+            if (
+                matchingPerspective &&
+                matchingPerspective.id !== activePerspectiveId
+            ) {
+                handlePerspectiveSelect(matchingPerspective.id);
+            } else if (!matchingPerspective && activePerspectiveId !== null) {
+                setActivePerspectiveId(null);
+                void persistWorkspace(viewport.current, entityId, null);
+            }
+
+            window.requestAnimationFrame(() => {
+                void handleLocate({
+                    nodeId: entityNodeId(context.id, entityId),
+                    entityId,
+                    kind: 'document',
+                });
+            });
+        },
+        [
+            activePerspectiveId,
+            handleLocate,
+            handlePerspectiveSelect,
+            perspectives,
+            persistWorkspace,
+            universes,
+        ],
     );
 
     const handleVersionCreate = useCallback(
@@ -840,6 +901,13 @@ export default function VaultPage({
                 </main>
 
                 <aside className="cvc-properties">
+                    {endpoints.search && (
+                        <SearchPanel
+                            endpoint={endpoints.search}
+                            universes={universes}
+                            onSelect={handleSearchSelect}
+                        />
+                    )}
                     <PerspectivesPanel
                         perspectives={perspectives}
                         activePerspectiveId={activePerspectiveId}

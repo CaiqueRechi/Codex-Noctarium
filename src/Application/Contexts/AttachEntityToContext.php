@@ -6,6 +6,7 @@ namespace CrowVaultCanvas\Application\Contexts;
 
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
+use CrowVaultCanvas\Jobs\IndexKnowledgeEntity;
 use Illuminate\Support\Facades\DB;
 
 final class AttachEntityToContext
@@ -20,12 +21,16 @@ final class AttachEntityToContext
                 ->where('kind', KnowledgeContext::KIND_CONTEXT)
                 ->lockForUpdate()
                 ->firstOrFail();
-            KnowledgeEntity::query()
+            $entity = KnowledgeEntity::query()
                 ->whereKey($entityId)
                 ->where('vault_id', $vaultId)
+                ->lockForUpdate()
                 ->firstOrFail();
 
             $context->entities()->syncWithoutDetaching([$entityId]);
+            $entity->advanceSearchVersion();
         }, 3);
+
+        IndexKnowledgeEntity::dispatch($entityId)->afterCommit();
     }
 }
