@@ -42,6 +42,14 @@ Version creation and restoration require the authenticated write permission, CSR
 
 A successful restoration first captures the complete current state as an automatic recovery version in the same transaction. It then restores entity metadata and soft-delete state, document revision pointers, context membership, perspective filters and layouts, and active relations. Restoring that recovery version returns to the replaced state, so restoration never makes the current state unreachable.
 
+## Authorized search index
+
+`cvc_search_index` is a derived, vault-scoped projection of active Markdown content and searchable metadata: title, entity type, tags, scalar properties, context names, and relation text. `GET /vault/search` remains behind the host authentication and read-permission middleware, validates every filter against the fixed vault, applies a dedicated throttle, and returns at most 50 escaped result summaries. The index itself never leaves the server; the browser requests result summaries only from the authorized vault interface.
+
+Document saves and metadata, membership, relation, and version-restoration mutations dispatch `IndexKnowledgeEntity` through the Laravel queue after their database transaction commits. `cvc:reindex` rebuilds existing data in bounded chunks without loading the complete vault into memory.
+
+Every searchable mutation increments the entity's monotonic `search_version`. An indexing job captures that version and may publish only while holding the entity row lock and confirming both the current version and Markdown content hash. Older out-of-order jobs therefore cannot overwrite a newer projection. Search also joins the live entity and document rows, rejects soft-deleted records, and requires the indexed hash to match the current Markdown hash as defense in depth.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.
