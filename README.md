@@ -20,10 +20,11 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Named, restorable vault versions with automatic recovery points.
 - Authorized full-vault search across Markdown, tags, properties, contexts, and relations.
 - Recoverable entity trash that preserves UUIDs, revisions, memberships, and valid relations.
+- Private image and PDF attachments with strict validation, integrity checks, and authorized download.
 - Read/write authorization inherited from Rechi OS.
 - Soft-deleted vault, context, entity, document, and relation records.
 
-Attachments, vault import/export, remote hosting, and encryption at rest are not implemented yet.
+Vault import/export, remote hosting, and encryption at rest are not implemented yet.
 
 ## Host integration
 
@@ -37,7 +38,7 @@ work/
 └── rechi-os/
 ```
 
-Rechi OS owns authentication, verified-user enforcement, screen permissions, database configuration, queue configuration, and the production build. CVC owns `/vault`, the knowledge domain, package migrations, private Markdown storage, and the canvas UI.
+Rechi OS owns authentication, verified-user enforcement, screen permissions, database configuration, queue configuration, and the production build. CVC owns `/vault`, the knowledge domain, package migrations, private Markdown and attachment storage, and the canvas UI.
 
 ## Local setup
 
@@ -67,6 +68,8 @@ Use the left explorer or authorized search to locate a universe, context, or doc
 `cvc:reindex` queues existing entities in configurable chunks. New writes update the derived index through the Laravel queue configured by Rechi OS.
 
 The trash panel moves the focused entity, its document, and active relations out of the normal canvas without erasing their records. Restoration returns the entity to every previous context with the same UUID, revision, and layout. Relations removed with the entity are restored only when both endpoints still exist; manually deleted relations never return automatically, and unresolved endpoints are reported in the panel.
+
+The attachment panel accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. CVC verifies the extension, detected MIME type, file signature, supported image structure or PDF envelope, and SHA-256 before storing the file outside the public web root. Downloads remain behind the vault read permission and are forced as non-cacheable attachments; duplicate bytes for the same entity are rejected.
 
 ## Verification
 
@@ -101,4 +104,4 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 
 All vault routes require the Rechi OS web, authentication, verified-user, and screen-access middleware outside testing. Mutations require `vault:write`, CSRF protection, validation, and throttling. The canvas sends Laravel's `XSRF-TOKEN` cookie as the `X-XSRF-TOKEN` header, so the host only has to keep that cookie enabled; if it is missing, the page asks for a reload instead of sending the request. Markdown is edited as plain text and is not rendered as raw HTML in this slice.
 
-Storage paths are generated from validated UUIDs, confined to the configured private root, created as immutable revision files, and checked with SHA-256 when reopened. A failed write never advances the database revision or reports a successful save.
+Storage paths are generated from validated UUIDs, confined to the configured private root, and checked with SHA-256 when reopened. Markdown revisions are immutable, and a failed write never advances the database revision or reports a successful save. Attachment filenames never determine storage paths; files are created exclusively with restrictive permissions and are not served by the public filesystem.

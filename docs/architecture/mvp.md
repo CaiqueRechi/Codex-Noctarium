@@ -58,6 +58,16 @@ Deleting an entity soft-deletes the entity, its Markdown document row, and every
 
 The trash endpoints inherit the host's authenticated and verified-user middleware, require `vault:write`, use CSRF protection, and add a dedicated mutation throttle. All entity and relation lookups are scoped to the fixed configured vault. Version restoration clears obsolete cascade provenance before applying its authoritative relation snapshot.
 
+## Secure private attachments
+
+`cvc_attachments` stores attachment identity, the active parent entity, sanitized display name, detected MIME type, byte size, SHA-256, generated private path, and soft-delete state. The database prevents the same content hash from being attached to one entity more than once. Creation locks the active document entity before duplicate detection, so concurrent requests cannot bypass that invariant.
+
+The upload endpoint requires authenticated write access, CSRF protection, and a dedicated throttle. It accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. `AttachmentInspector` requires agreement between the normalized extension, `finfo` MIME type, magic signature, and supported image structure or PDF envelope. SVG, unknown formats, mismatches, and oversized payloads are rejected before private storage is opened.
+
+`LocalAttachmentStorage` ignores the client filename when choosing a path. It writes to a UUID-derived path below the configured CVC private root with exclusive creation, verifies the exact copied byte count, flushes the file, and applies restrictive permissions. Reads revalidate path ownership and root confinement and verify the stored SHA-256 before returning a stream.
+
+Download resolution scopes both the attachment and its active parent entity to the configured vault. A trashed parent therefore makes its attachment unreachable without destroying the attachment record or bytes. The response uses `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, a sandboxed content security policy, and private no-store caching; CVC never embeds or executes uploaded files.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.
