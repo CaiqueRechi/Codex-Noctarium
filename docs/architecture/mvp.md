@@ -50,6 +50,14 @@ Document saves and metadata, membership, relation, and version-restoration mutat
 
 Every searchable mutation increments the entity's monotonic `search_version`. An indexing job captures that version and may publish only while holding the entity row lock and confirming both the current version and Markdown content hash. Older out-of-order jobs therefore cannot overwrite a newer projection. Search also joins the live entity and document rows, rejects soft-deleted records, and requires the indexed hash to match the current Markdown hash as defense in depth.
 
+## Trash and relation recovery
+
+Deleting an entity soft-deletes the entity, its Markdown document row, and every active relation that references it. Context membership, layout rows, immutable Markdown revisions, perspectives, and version snapshots remain intact. The mutation locks every affected entity in UUID order, increments each search version, and queues index refreshes only after the transaction commits; normal vault and search queries therefore stop exposing the entity immediately.
+
+`cascade_deleted_by_entity_id` records that a relation became inactive because an entity entered the trash. Manual relation deletion clears this provenance first. Restoration considers only relations with cascade provenance, restores one only when both endpoints are active in the configured vault, and returns unresolved endpoint IDs as broken-relation warnings. This distinction prevents a trash restore from reviving a relation the user explicitly deleted.
+
+The trash endpoints inherit the host's authenticated and verified-user middleware, require `vault:write`, use CSRF protection, and add a dedicated mutation throttle. All entity and relation lookups are scoped to the fixed configured vault. Version restoration clears obsolete cascade provenance before applying its authoritative relation snapshot.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.

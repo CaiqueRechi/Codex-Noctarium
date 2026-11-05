@@ -19,8 +19,9 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Named perspectives with independent filters and layouts.
 - Named, restorable vault versions with automatic recovery points.
 - Authorized full-vault search across Markdown, tags, properties, contexts, and relations.
+- Recoverable entity trash that preserves UUIDs, revisions, memberships, and valid relations.
 - Read/write authorization inherited from Rechi OS.
-- Soft-delete-ready vault, context, entity, and document records.
+- Soft-deleted vault, context, entity, document, and relation records.
 
 Attachments, vault import/export, remote hosting, and encryption at rest are not implemented yet.
 
@@ -64,6 +65,8 @@ Grant the intended Rechi OS user `write` access to the `vault` screen, then open
 Use the left explorer or authorized search to locate a universe, context, or document. Selecting a search result focuses every visual instance that shares its stable identity. Search accepts optional context, entity-type, and tag filters. The properties panel on the right accepts tags, an optional type, and up to 50 named scalar properties. Metadata changes do not alter the document ID, Markdown content, or revision.
 
 `cvc:reindex` queues existing entities in configurable chunks. New writes update the derived index through the Laravel queue configured by Rechi OS.
+
+The trash panel moves the focused entity, its document, and active relations out of the normal canvas without erasing their records. Restoration returns the entity to every previous context with the same UUID, revision, and layout. Relations removed with the entity are restored only when both endpoints still exist; manually deleted relations never return automatically, and unresolved endpoints are reported in the panel.
 
 ## Verification
 
