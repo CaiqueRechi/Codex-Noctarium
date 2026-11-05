@@ -82,6 +82,14 @@ The repository preserves the user-supplied definitive artwork at `resources/imag
 
 Vite imports the reduced mark through the package source and emits a hashed production asset in the Rechi OS build. The decorative header image has empty alternative text and `aria-hidden`; the visible CVC name remains the accessible identity.
 
+## Private-storage capacity guard
+
+Every Markdown revision and attachment write is serialized by a per-vault lock before opening its destination. While the lock is held, `StorageQuota` measures the current private tree and reserves the exact missing directory and file entries for the generated destination. It rejects the write when it would exceed cumulative bytes, filesystem entries, or the configured minimum free-space reserve. This closes the race in which two workers could independently pass a capacity check and overcommit the same vault.
+
+Markdown also has an independent per-revision byte ceiling. The defaults are 2 MiB per Markdown revision, 1 GiB cumulative vault bytes, 10,000 vault filesystem entries, and 100 MiB of host free space. They are replaceable through `CVC_MAX_MARKDOWN_BYTES`, `CVC_MAX_VAULT_BYTES`, `CVC_MAX_VAULT_ENTRIES`, and `CVC_MINIMUM_FREE_BYTES`. Missing, non-positive, or otherwise unsafe effective limits fail closed instead of disabling protection silently.
+
+The quota bounds host impact but does not decide product lifecycle. Immutable historical revisions, soft-deleted content, and orphan cleanup remain subject to the retention and physical-purge policy that must be approved before final MVP acceptance.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.
