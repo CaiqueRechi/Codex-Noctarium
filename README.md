@@ -21,6 +21,7 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Authorized full-vault search across Markdown, tags, properties, contexts, and relations.
 - Recoverable entity trash that preserves UUIDs, revisions, memberships, and valid relations.
 - Private image and PDF attachments with strict validation, integrity checks, and authorized download.
+- In-app save and queue status with visible pending, running, completed, failed, and stalled work.
 - Read/write authorization inherited from Rechi OS.
 - Soft-deleted vault, context, entity, document, and relation records.
 
@@ -49,6 +50,9 @@ CVC_ENABLED=true
 CVC_VAULT_NAME="Crow Vault Canvas"
 # Optional; defaults to storage/app/private/cvc
 CVC_STORAGE_ROOT=
+# Optional operational-history controls
+CVC_OPERATION_HISTORY_LIMIT=20
+CVC_OPERATION_STALE_AFTER_SECONDS=300
 ```
 
 Then run:
@@ -70,6 +74,8 @@ Use the left explorer or authorized search to locate a universe, context, or doc
 The trash panel moves the focused entity, its document, and active relations out of the normal canvas without erasing their records. Restoration returns the entity to every previous context with the same UUID, revision, and layout. Relations removed with the entity are restored only when both endpoints still exist; manually deleted relations never return automatically, and unresolved endpoints are reported in the panel.
 
 The attachment panel accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. CVC verifies the extension, detected MIME type, file signature, supported image structure or PDF envelope, and SHA-256 before storing the file outside the public web root. Downloads remain behind the vault read permission and are forced as non-cacheable attachments; duplicate bytes for the same entity are rejected.
+
+The operational panel keeps save state and recent queue work inside the vault interface. Search-index tasks move from waiting to running and only report completion after the worker returns successfully. Terminal or dispatch failures use safe messages without exception details. Pending or running work without a recent confirmation is marked as requiring attention; no e-mail, push, or external notification is sent.
 
 ## Verification
 

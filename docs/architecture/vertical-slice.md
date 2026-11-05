@@ -40,6 +40,7 @@ React Flow is a visual adapter. Its nodes, edges, viewport, and selection are no
 | `cvc_context_entity` | Many-to-many context participation |
 | `cvc_documents` | Current Markdown revision pointer and integrity hash |
 | `cvc_attachments` | Private image/PDF metadata, generated path, and integrity hash |
+| `cvc_operations` | Authorized background-task state and safe failure messages |
 | `cvc_workspace_states` | Camera and focused entity per host user |
 
 Markdown files use generated paths beneath the configured private root:
@@ -57,7 +58,7 @@ The files are immutable. The database selects the confirmed current revision. A 
 - Storage exceptions roll back relational changes.
 - The browser retains the draft and displays `failed`; leaving the editor remains disabled while the draft differs from the confirmed content.
 - Camera persistence is independent of document revisions.
-- Derived indexing and version compaction remain future queued jobs; they never gate canonical Markdown saving.
+- Derived indexing runs through tracked Laravel queue jobs and never gates canonical Markdown saving; future preview or compaction jobs must preserve the same rule.
 
 ## Security controls
 

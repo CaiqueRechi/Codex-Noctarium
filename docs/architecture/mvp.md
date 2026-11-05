@@ -68,8 +68,16 @@ The upload endpoint requires authenticated write access, CSRF protection, and a 
 
 Download resolution scopes both the attachment and its active parent entity to the configured vault. A trashed parent therefore makes its attachment unreachable without destroying the attachment record or bytes. The response uses `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, a sandboxed content security policy, and private no-store caching; CVC never embeds or executes uploaded files.
 
+## Operational state and queue failures
+
+`cvc_operations` records server-created task identity, fixed-vault scope, optional subject entity, operation type, progress, safe status message, error code, and timestamps. Search-index jobs are created as `pending`, become `running` when the worker starts, and become `succeeded` only after indexing returns without an exception. Laravel's terminal failure hook records `failed`; raw exception text remains in server logs and is never persisted for the browser.
+
+Task creation, dispatch, and status updates are best-effort observability. A tracking-table or queue-dispatch failure is logged and, when possible, represented by the safe `search_index_dispatch_failed` state, but it cannot convert an already durable canonical mutation into a failed response. Likewise, an unavailable tracking row cannot prevent the derived indexing job from running.
+
+The authorized `GET /vault/operations` endpoint inherits the host read middleware, scopes its bounded history to the configured vault, and uses a dedicated throttle. The React panel polls every ten seconds, supports manual refresh, preserves the previous state when refresh fails, and renders messages as escaped text. Pending or running work with no update beyond the configured threshold is presented as `attention`, never as completed. The MVP sends no e-mail, push, or external operational notification.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.
 
-Explorer, property, relation, perspective, and layout data are not cached because they are permission-bound, mutable, and already included in the live vault payload. A future cache must include vault and authorization identity in its key and be invalidated by every related write.
+Explorer, property, relation, perspective, layout, and operational data are not cached because they are permission-bound and mutable. A future cache must include vault and authorization identity in its key and be invalidated by every related write.
