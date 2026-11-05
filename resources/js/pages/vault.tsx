@@ -18,6 +18,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 import '../../css/presets.css';
 import '../../css/cvc.css';
+import cvcMark from '../../images/brand/cvc-mark-reduced.png';
 
 import { AttachmentsPanel } from '../attachments/attachments-panel';
 import type { AttachmentSummary } from '../attachments/types';
@@ -987,11 +988,21 @@ export default function VaultPage({
 
     return (
         <div className="cvc-theme cvc-shell">
-            <Head title="CVC" />
+            <Head title="CVC">
+                <link rel="icon" type="image/png" href={cvcMark} />
+            </Head>
             <header className="cvc-header">
-                <div>
-                    <span className="cvc-eyebrow">Crow Vault Canvas</span>
-                    <h1>{vault.name}</h1>
+                <div className="cvc-brand">
+                    <img
+                        className="cvc-brand-mark"
+                        src={cvcMark}
+                        alt=""
+                        aria-hidden="true"
+                    />
+                    <div>
+                        <span className="cvc-eyebrow">Crow Vault Canvas</span>
+                        <h1>{vault.name}</h1>
+                    </div>
                 </div>
                 <div className="cvc-header__actions">
                     <output className="cvc-zoom-state" aria-live="polite">
