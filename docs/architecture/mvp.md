@@ -76,6 +76,12 @@ Task creation, dispatch, and status updates are best-effort observability. A tra
 
 The authorized `GET /vault/operations` endpoint inherits the host read middleware, scopes its bounded history to the configured vault, and uses a dedicated throttle. The React panel polls every ten seconds, supports manual refresh, preserves the previous state when refresh fails, and renders messages as escaped text. Pending or running work with no update beyond the configured threshold is presented as `attention`, never as completed. The MVP sends no e-mail, push, or external operational notification.
 
+## Brand identity
+
+The repository preserves the user-supplied definitive artwork at `resources/images/brand/cvc-logo-official.png`. The header and PNG favicon consume a transparent reduced mark at `resources/images/brand/cvc-mark-reduced.png`; it adapts the composition for a square small-size surface without replacing the original source. A CSS monochrome preset transforms that same mark at render time, avoiding a second independently redrawn identity asset.
+
+Vite imports the reduced mark through the package source and emits a hashed production asset in the Rechi OS build. The decorative header image has empty alternative text and `aria-hidden`; the visible CVC name remains the accessible identity.
+
 ## Security and caching
 
 React renders explorer labels, types, keys, and values as escaped text. No raw HTML or executable URL is accepted by these flows. Mutations are authorized, throttled, and validated on the server.

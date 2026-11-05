@@ -22,6 +22,7 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Recoverable entity trash that preserves UUIDs, revisions, memberships, and valid relations.
 - Private image and PDF attachments with strict validation, integrity checks, and authorized download.
 - In-app save and queue status with visible pending, running, completed, failed, and stalled work.
+- Versioned official cosmic-crow artwork, reduced UI mark, favicon, and monochrome presentation preset.
 - Read/write authorization inherited from Rechi OS.
 - Soft-deleted vault, context, entity, document, and relation records.
 
@@ -105,6 +106,12 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 - [Vertical-slice architecture](docs/architecture/vertical-slice.md)
 - [MVP architecture](docs/architecture/mvp.md)
 - [Vertical-slice traceability](docs/traceability/vertical-slice.md)
+
+## Brand assets
+
+- `resources/images/brand/cvc-logo-official.png` preserves the definitive artwork supplied by Caique without modification.
+- `resources/images/brand/cvc-mark-reduced.png` is the transparent square derivative used in the vault header and favicon.
+- `.cvc-brand-mark--monochrome` applies a one-color presentation to the same reduced mark without maintaining a divergent redraw.
 
 ## Security boundary
 
