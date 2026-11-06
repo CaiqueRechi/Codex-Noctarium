@@ -74,7 +74,7 @@ Download resolution scopes both the attachment and its active parent entity to t
 
 Task creation, dispatch, and status updates are best-effort observability. A tracking-table or queue-dispatch failure is logged and, when possible, represented by the safe `search_index_dispatch_failed` state, but it cannot convert an already durable canonical mutation into a failed response. Likewise, an unavailable tracking row cannot prevent the derived indexing job from running.
 
-The authorized `GET /vault/operations` endpoint inherits the host read middleware, scopes its bounded history to the configured vault, and uses a dedicated throttle. The React panel polls every ten seconds, supports manual refresh, preserves the previous state when refresh fails, and renders messages as escaped text. Pending or running work with no update beyond the configured threshold is presented as `attention`, never as completed. The MVP sends no e-mail, push, or external operational notification.
+The authorized `GET /vault/operations` endpoint inherits the host read middleware, scopes its bounded history to the configured vault, and uses a dedicated throttle. The React panel refreshes after a successful document save and then polls every ten seconds only while a task remains pending or running. An in-flight refresh blocks overlapping timer requests. Manual refresh remains available, a failed refresh preserves the previous state, and messages render as escaped text. Pending or running work with no update beyond the configured threshold is presented as `attention`, never as completed. The MVP sends no e-mail, push, or external operational notification.
 
 ## Brand identity
 
