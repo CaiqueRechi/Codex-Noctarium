@@ -4,11 +4,21 @@ This document records the implemented MVP architecture after the accepted vertic
 
 ## Authorized explorer
 
-`OpenVault` loads the fixed authorized vault and its universe, context, entity, and document metadata after the Rechi OS middleware has authenticated and authorized the request. The explorer receives only this server-approved structure; it has no separate public endpoint or client-side cache.
+`OpenVault` loads the fixed authorized vault and the user's current hierarchy slice after the Rechi OS middleware has authenticated and authorized the request. A slice contains either all root universes or one focused node with its immediate children, entities, and document summaries. It never recursively serializes the complete vault.
+
+`GET /vault/contexts` returns root universes, and `GET /vault/contexts/{context}` returns an authorized focused slice plus breadcrumbs. `POST /vault/contexts` creates either a root universe or a child context. The hierarchy has no application-level depth limit; iterative breadcrumb resolution detects cycles, and the `(vault_id, parent_id, sort_order)` index supports sibling navigation. The active context is stored in `cvc_workspace_states.focus_context_id`, so reopening the vault restores the same location.
 
 An entity keeps one stable UUID even when it participates in several contexts. Each context creates a distinct React Flow visual node ID from the context ID and entity ID. Opening or editing always uses the stable entity ID, so visual instances never duplicate Markdown or history.
 
-Explorer selection updates semantic detail, focuses the matching canvas instance, and persists the resulting viewport through the authorized workspace endpoint.
+Explorer selection enters another server-approved slice, updates semantic detail, focuses matching canvas instances, and persists the resulting viewport and hierarchy focus through the authorized workspace endpoint. Search results carry a context ID so a result outside the loaded slice can be opened without loading the entire hierarchy.
+
+## Prepared database document revisions
+
+Private immutable Markdown files remain canonical for current create, open, save, search, version, quota, and recovery behavior. The schema extension is deliberately additive: it prepares the next integration without changing a proven write path in the same release.
+
+`cvc_document_revisions` stores an immutable UUID, entity ID, monotonic revision number, format, `LONGTEXT` content, extensible JSON metadata, SHA-256 hash, exact byte count, and timestamps. `(entity_id, revision)` is unique. `cvc_documents.current_revision_id` is a nullable restricted foreign key that can select the confirmed database revision while existing `storage_path`, `revision`, and `content_hash` fields continue to describe the canonical file.
+
+The later cutover is a separate change: backfill in bounded chunks, verify byte counts and hashes, dual-write while files remain authoritative, compare both stores, switch reads behind a reversible configuration, and only then decide whether file-backed Markdown can be retired. Attachments stay in private filesystem storage because relational blobs would not improve their current validation or delivery boundary.
 
 ## Entity properties
 

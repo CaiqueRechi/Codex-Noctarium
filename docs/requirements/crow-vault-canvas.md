@@ -61,6 +61,7 @@ A escala de negócio é um usuário agora e no horizonte considerado. A escala t
 
 - **Regra:** o conteúdo textual canônico do MVP é Markdown comum armazenado em área privada do servidor local.
 - **Exemplo:** editar um documento atualiza seu arquivo Markdown e mantém metadados relacionais separados quando necessário.
+- **Transição aprovada:** o banco já possui estrutura aditiva para receber revisões em `LONGTEXT` com metadados JSON, hash e tamanho; arquivos continuam canônicos até migração posterior validada e reversível.
 - **Exceção:** criptografia e formato próprio não fazem parte do MVP e só poderão substituir esta regra após análise específica.
 - **Responsável pela regra:** Caique.
 
@@ -71,10 +72,11 @@ A escala de negócio é um usuário agora e no horizonte considerado. A escala t
 - **Exceção:** uma relação visual entre formas livres futuras não precisa se tornar relação semântica.
 - **Responsável pela regra:** Caique.
 
-### RN-05 — Contextos não exclusivos
+### RN-05 — Contextos não exclusivos e recursivos
 
-- **Regra:** a mesma entidade pode participar de vários universos ou contextos sem duplicar seu conteúdo.
+- **Regra:** a mesma entidade pode participar de vários universos ou contextos sem duplicar seu conteúdo, e qualquer universo ou contexto pode conter novos contextos sem limite de profundidade imposto pela aplicação.
 - **Exemplo:** `JWT` aparece em `Estudos` e `Rechi OS`, mas ambos apontam para a mesma entidade.
+- **Exemplo de navegação:** cada entrada carrega apenas o nó atual e seus filhos imediatos; breadcrumbs mantêm o caminho até a raiz.
 - **Exceção:** uma duplicação explícita cria outra entidade com identidade e histórico independentes.
 - **Responsável pela regra:** Caique.
 
@@ -262,6 +264,8 @@ Não existem cálculos financeiros, impostos, aprovações por terceiros ou regr
 - **Regras:** RN-05, RN-06, RN-15.
 - **Critérios de aceite:**
   - O explorador mostra a estrutura autorizada sem impor propriedade exclusiva entre contextos.
+  - O usuário pode criar e percorrer subassuntos em profundidade arbitrária sem carregar a árvore completa.
+  - Fechar e reabrir o vault restaura o contexto ativo.
 - **Prioridade:** MVP.
 
 ### RF-06 — Buscar e filtrar
@@ -385,9 +389,10 @@ Não existe meta fiscal, monetária ou multiempresa. Proteção contra bots não
 | Entidade | Atributos principais | Origem | Volume (dia / 5 anos) |
 | --- | --- | --- | --- |
 | Vault | ID, nome, configuração, estado | CVC; um fixo no MVP | 1 / 1 |
-| Universo/Contexto | ID, nome, propriedades, participação de entidades | CVC | A definir pela PoC |
+| Universo/Contexto | ID, pai opcional, nome, ordem, participação de entidades | CVC | A definir pela PoC |
 | Entidade | ID estável, título, tipo opcional, propriedades, tags, referência de conteúdo | CVC | A definir pela PoC |
-| Documento | referência de entidade, caminho privado, conteúdo Markdown, revisão | CVC | A definir pela PoC |
+| Documento | referência de entidade, caminho privado atual, revisão e ponteiro opcional para revisão no banco | CVC | A definir pela PoC |
+| Revisão de documento | ID, entidade, revisão, formato, `LONGTEXT`, metadados JSON, hash e tamanho | CVC; preparada, ainda não canônica | A definir pela PoC |
 | Relação | ID, origem, destino, tipo, direção, escopo, propriedades | Markdown/sidecar CVC | A definir pela PoC |
 | Instância visual | entidade, perspectiva, contexto, representação | CVC | A definir pela PoC |
 | Perspectiva | ID, nome, finalidade, filtros, contextos, versão corrente | CVC | A definir pela PoC |
@@ -434,8 +439,8 @@ flowchart LR
     Host --> Pacote[Pacote CVC]
     Pacote --> UI[React + React Flow]
     Pacote --> Dominio[Serviços de domínio CVC]
-    Dominio --> Vault[(Markdown e anexos privados)]
-    Dominio --> Meta[(MySQL: metadados e índice)]
+    Dominio --> Vault[(Markdown canônico e anexos privados)]
+    Dominio --> Meta[(MySQL: metadados, índice e revisões preparadas)]
     Dominio --> Fila[Filas Laravel]
     Fila --> Worker[Workers em chunks]
     Dominio --> Cache[(Redis quando reutilizável)]
@@ -455,8 +460,9 @@ No navegador ficam interação, câmera, seleção, estado visual e renderizaç�
 | Canvas inicial | React Flow | MIT, React nativo, nós e conexões customizáveis |
 | Estilo | Tailwind CSS 4 e variáveis/presets CSS | stack existente e tema substituível |
 | Build | Vite 8 | stack existente |
-| Persistência relacional | MySQL existente | metadados, histórico, índice e filas conforme arquitetura do host |
-| Conteúdo | Markdown e arquivos privados | conteúdo canônico portátil no MVP |
+| Persistência relacional | MySQL existente | metadados, histórico, índice, filas e estrutura de revisão preparada conforme arquitetura do host |
+| Conteúdo atual | Markdown e arquivos privados | conteúdo canônico portátil durante a transição |
+| Conteúdo preparado | `LONGTEXT` + JSON no MySQL | migração futura incremental, verificável e reversível |
 | Cache e filas | Redis / filas Laravel | tarefas derivadas, chunks e reutilização segura |
 | Ambiente | Docker do Rechi OS | host local aprovado |
 | Testes | PHPUnit e ferramentas TypeScript já existentes | evitar nova tecnologia sem aprovação |
@@ -468,8 +474,8 @@ tldraw foi descartado para o MVP por exigir licença de produção e criar risco
 | Sistema | Direção | Gatilho | Contrato | Se falhar |
 | --- | --- | --- | --- | --- |
 | Rechi OS | host → CVC | acesso a `/vault` | pacote Laravel/React, sessão, autorização, feature flag | CVC indisponível; restante do Rechi OS continua |
-| Filesystem privado | CVC ↔ arquivos | criar, salvar, versionar, anexar | caminhos validados e confinados à raiz do vault | alteração fica pendente; erro visível; nenhum sucesso falso |
-| MySQL | CVC ↔ banco | metadados, histórico, busca | migrations reversíveis do pacote | transação falha e operação não é confirmada |
+| Filesystem privado | CVC ↔ arquivos | criar, salvar, versionar, anexar | Markdown permanece canônico; caminhos validados e confinados à raiz do vault | alteração fica pendente; erro visível; nenhum sucesso falso |
+| MySQL | CVC ↔ banco | metadados, histórico, busca e revisões preparadas | migrations reversíveis; conteúdo no banco ainda não participa do fluxo canônico | transação falha e operação não é confirmada |
 | Redis/fila | CVC → workers | indexar, gerar preview/snapshot, compactar | jobs idempotentes em chunks | erro registrado e visível; salvamento canônico permanece válido |
 
 Não existem APIs externas, e-mail, push, cobrança ou integrações governamentais no MVP. As credenciais pertencem ao Rechi OS e nunca são expostas ao frontend.

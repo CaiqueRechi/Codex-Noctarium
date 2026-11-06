@@ -1,5 +1,7 @@
 # Vertical-slice traceability
 
+This is the historical vertical-slice checkpoint. Current arbitrary-depth hierarchy and database revision preparation are tracked in [MVP technical readiness](mvp-readiness.md) and the [transition architecture](../architecture/unbounded-hierarchy-and-database-revisions.md).
+
 ## Acceptance coverage
 
 | Requirement | Implemented behavior | Primary automated evidence |

@@ -9,13 +9,14 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 ## Current scope
 
 - One fixed physical vault prepared for multiple vaults later.
-- Multiple universes and contexts inside the vault.
+- Arbitrarily deep universe/context hierarchies inside the vault, loaded one navigation slice at a time.
 - Semantic zoom rendered with React Flow.
 - Stable UUID document entities.
 - Private immutable Markdown revision files with relational metadata.
+- Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.
 - Serialized vault storage quotas for bytes, filesystem entries, document size, and minimum free space.
 - Explicit `pending`, `saving`, `saved`, and `failed` editor states.
-- Persisted camera and focused document per authenticated user.
+- Persisted camera, focused hierarchy node, and focused document per authenticated user.
 - Authorized vault explorer for locating universes, contexts, and documents.
 - Shared entities displayed in multiple contexts without content duplication.
 - Optional entity type and scalar properties managed after capture.
@@ -78,7 +79,9 @@ php artisan cvc:reindex
 
 Grant the intended Rechi OS user `write` access to the `vault` screen, then open `/vault` in Chrome. The initializer is explicit and idempotent; package installation does not create product data automatically.
 
-Use the left explorer or authorized search to locate a universe, context, or document. Selecting a search result focuses every visual instance that shares its stable identity. Search accepts optional context, entity-type, and tag filters. The properties panel on the right accepts tags, an optional type, and up to 50 named scalar properties. Metadata changes do not alter the document ID, Markdown content, or revision.
+Use the left explorer to enter any universe or context and create another level beneath it. The hierarchy has no application-level depth limit; the server returns only the active node and its immediate children, while breadcrumbs preserve the route back to the root. Authorized search can open the context that contains a result before focusing every visual instance that shares its stable identity. Search accepts optional context, entity-type, and tag filters. The properties panel on the right accepts tags, an optional type, and up to 50 named scalar properties. Metadata changes do not alter the document ID, Markdown content, or revision.
+
+Private Markdown files remain the canonical content store in this release. `cvc_document_revisions` can already receive immutable revision content in `LONGTEXT`, extensible JSON metadata, the SHA-256 hash, and the exact byte count; `cvc_documents.current_revision_id` can select the confirmed row. Production read/write paths do not use this table yet. The later cutover must backfill and verify every revision before changing reads, then dual-write and compare hashes before retiring file-backed content. Attachments remain in private file storage.
 
 `cvc:reindex` queues existing entities in configurable chunks. New writes update the derived index through the Laravel queue configured by Rechi OS.
 
@@ -115,6 +118,7 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 - [Product requirements](docs/requirements/crow-vault-canvas.md)
 - [Vertical-slice architecture](docs/architecture/vertical-slice.md)
 - [MVP architecture](docs/architecture/mvp.md)
+- [Unbounded hierarchy and database revision transition](docs/architecture/unbounded-hierarchy-and-database-revisions.md)
 - [Vertical-slice traceability](docs/traceability/vertical-slice.md)
 - [MVP technical readiness](docs/traceability/mvp-readiness.md)
 
@@ -126,7 +130,7 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 
 ## Security boundary
 
-All vault routes require the Rechi OS web, authentication, verified-user, and screen-access middleware outside testing. Mutations require `vault:write`, CSRF protection, validation, and throttling. The canvas sends Laravel's `XSRF-TOKEN` cookie as the `X-XSRF-TOKEN` header, so the host only has to keep that cookie enabled; if it is missing, the page asks for a reload instead of sending the request. Markdown is edited as plain text and is not rendered as raw HTML in this slice.
+All vault routes require the Rechi OS web, authentication, verified-user, and screen-access middleware outside testing. Mutations require `vault:write`, CSRF protection, validation, and throttling. Context creation is scoped to the configured vault, trims and validates names on the server, and serializes sibling ordering under a database lock. The canvas sends Laravel's `XSRF-TOKEN` cookie as the `X-XSRF-TOKEN` header, so the host only has to keep that cookie enabled; if it is missing, the page asks for a reload instead of sending the request. Markdown is edited as plain text and is not rendered as raw HTML in this slice.
 
 Storage paths are generated from validated UUIDs, confined to the configured private root, and checked with SHA-256 when reopened. Markdown revisions are immutable, and a failed write never advances the database revision or reports a successful save. Attachment filenames never determine storage paths; files are created exclusively with restrictive permissions and are not served by the public filesystem.
 

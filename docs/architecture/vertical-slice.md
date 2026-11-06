@@ -1,5 +1,7 @@
 # Vertical-slice architecture
 
+This document preserves the original file-backed vertical-slice design. The current arbitrary-depth navigation and the prepared database revision schema are documented in [Unbounded hierarchy and database revision transition](unbounded-hierarchy-and-database-revisions.md); private Markdown files remain canonical until that separate cutover is implemented.
+
 ## Boundary
 
 Crow Vault Canvas is a package, not a second Laravel application. Rechi OS is the runtime host and owns infrastructure concerns. The package exposes product behavior through service-provider registration, reversible migrations, routes, application services, domain models, private storage, and React source.
