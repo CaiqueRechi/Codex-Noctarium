@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchOperationalTasks } from './api';
 import type { OperationalSaveState, OperationalTask } from './types';
@@ -32,8 +32,17 @@ export function OperationalStatusPanel({
     const [tasks, setTasks] = useState(initialTasks);
     const [error, setError] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const refreshInFlight = useRef(false);
+    const hasActiveTasks = tasks.some(
+        (task) => task.status === 'pending' || task.status === 'running',
+    );
 
     const refresh = useCallback(async () => {
+        if (refreshInFlight.current) {
+            return;
+        }
+
+        refreshInFlight.current = true;
         setIsRefreshing(true);
 
         try {
@@ -46,15 +55,26 @@ export function OperationalStatusPanel({
                     : 'Não foi possível atualizar o estado operacional.',
             );
         } finally {
+            refreshInFlight.current = false;
             setIsRefreshing(false);
         }
     }, [endpoint]);
 
     useEffect(() => {
+        if (saveState === 'saved') {
+            void refresh();
+        }
+    }, [refresh, saveState]);
+
+    useEffect(() => {
+        if (!hasActiveTasks) {
+            return;
+        }
+
         const timer = window.setInterval(() => void refresh(), 10_000);
 
         return () => window.clearInterval(timer);
-    }, [refresh]);
+    }, [hasActiveTasks, refresh]);
 
     return (
         <section className="cvc-operations" aria-label="Estado operacional">

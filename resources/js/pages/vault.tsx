@@ -379,7 +379,11 @@ export default function VaultPage({
     );
 
     const handleMoveEnd = useCallback(
-        (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
+        (event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
+            if (event === null) {
+                return;
+            }
+
             void persistWorkspace(nextViewport, focusEntityId);
         },
         [focusEntityId, persistWorkspace],
