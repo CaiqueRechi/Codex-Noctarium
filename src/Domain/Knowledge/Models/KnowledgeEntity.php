@@ -70,6 +70,13 @@ final class KnowledgeEntity extends Model
         return $this->hasOne(MarkdownDocument::class, 'entity_id');
     }
 
+    /** @return HasMany<DocumentRevision, $this> */
+    public function documentRevisions(): HasMany
+    {
+        return $this->hasMany(DocumentRevision::class, 'entity_id')
+            ->orderBy('revision');
+    }
+
     /** @return HasMany<Attachment, $this> */
     public function attachments(): HasMany
     {

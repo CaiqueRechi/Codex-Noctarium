@@ -25,6 +25,7 @@ final class MarkdownDocument extends Model
         'storage_path',
         'revision',
         'content_hash',
+        'current_revision_id',
     ];
 
     protected function casts(): array
@@ -38,5 +39,11 @@ final class MarkdownDocument extends Model
     public function entity(): BelongsTo
     {
         return $this->belongsTo(KnowledgeEntity::class, 'entity_id');
+    }
+
+    /** @return BelongsTo<DocumentRevision, $this> */
+    public function currentRevision(): BelongsTo
+    {
+        return $this->belongsTo(DocumentRevision::class, 'current_revision_id');
     }
 }
