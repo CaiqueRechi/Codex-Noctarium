@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 final class SearchVault
 {
-    /** @return list<array{id: string, title: string|null, snippet: string, entityType: string|null, tags: list<string>}> */
+    /** @return list<array{id: string, contextId: string, title: string|null, snippet: string, entityType: string|null, tags: list<string>}> */
     public function handle(
         string $query,
         ?string $contextId,
@@ -20,6 +20,13 @@ final class SearchVault
         $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $query).'%';
         $results = SearchDocument::query()
             ->select('cvc_search_index.*')
+            ->addSelect([
+                'context_id' => DB::table('cvc_context_entity')
+                    ->select('context_id')
+                    ->whereColumn('entity_id', 'cvc_search_index.entity_id')
+                    ->orderBy('context_id')
+                    ->limit(1),
+            ])
             ->join('cvc_entities', 'cvc_entities.id', '=', 'cvc_search_index.entity_id')
             ->join('cvc_documents', 'cvc_documents.entity_id', '=', 'cvc_search_index.entity_id')
             ->where('cvc_search_index.vault_id', $vaultId)
@@ -48,6 +55,7 @@ final class SearchVault
 
         return $results->map(fn (SearchDocument $result): array => [
             'id' => (string) $result->getKey(),
+            'contextId' => (string) $result->getAttribute('context_id'),
             'title' => $result->title,
             'snippet' => $this->snippet($result->content, $query),
             'entityType' => $result->entity_type,

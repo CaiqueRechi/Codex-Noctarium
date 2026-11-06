@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { UniverseSummary } from '../explorer/vault-explorer';
+import {
+    flattenContexts,
+    type UniverseSummary,
+} from '../explorer/vault-explorer';
 import type { PerspectiveFilters, PerspectiveSummary } from './types';
 
 type PerspectivesPanelProps = {
@@ -46,10 +49,7 @@ export function PerspectivesPanel({
     const [versionName, setVersionName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const contexts = useMemo(
-        () => universes.flatMap((universe) => universe.contexts),
-        [universes],
-    );
+    const contexts = useMemo(() => flattenContexts(universes), [universes]);
 
     useEffect(() => {
         setName(activePerspective?.name ?? '');

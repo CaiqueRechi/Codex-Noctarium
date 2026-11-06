@@ -12,9 +12,10 @@ final readonly class WorkspaceSnapshot
         public float $zoom,
         public ?string $focusEntityId,
         public ?string $perspectiveId,
+        public ?string $focusContextId = null,
     ) {}
 
-    /** @return array{viewport: array{x: float, y: float, zoom: float}, focusEntityId: string|null, perspectiveId: string|null} */
+    /** @return array{viewport: array{x: float, y: float, zoom: float}, focusEntityId: string|null, perspectiveId: string|null, focusContextId: string|null} */
     public function toArray(): array
     {
         return [
@@ -25,6 +26,7 @@ final readonly class WorkspaceSnapshot
             ],
             'focusEntityId' => $this->focusEntityId,
             'perspectiveId' => $this->perspectiveId,
+            'focusContextId' => $this->focusContextId,
         ];
     }
 }

@@ -39,6 +39,9 @@ return [
         'entity_write_middleware' => [
             'throttle:60,1',
         ],
+        'context_write_middleware' => [
+            'throttle:30,1',
+        ],
         'relation_write_middleware' => [
             'throttle:60,1',
         ],

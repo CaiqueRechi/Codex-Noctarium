@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 
 import type { DocumentSummary } from '../documents/types';
-import type { UniverseSummary } from '../explorer/vault-explorer';
+import {
+    flattenContexts,
+    type UniverseSummary,
+} from '../explorer/vault-explorer';
 import type { RelationSummary } from './types';
 
 type RelationsPanelProps = {
@@ -26,7 +29,7 @@ export function RelationsPanel({
     onCreate,
     onDelete,
 }: RelationsPanelProps) {
-    const contexts = universes.flatMap((universe) => universe.contexts);
+    const contexts = flattenContexts(universes);
     const documents = useMemo(
         () =>
             Array.from(

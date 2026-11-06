@@ -31,6 +31,7 @@ final class OpenWorkspaceState
             $state->viewport_zoom,
             $state->focus_entity_id,
             $state->perspective_id ?? $defaultPerspectiveId,
+            $state->focus_context_id,
         );
     }
 }

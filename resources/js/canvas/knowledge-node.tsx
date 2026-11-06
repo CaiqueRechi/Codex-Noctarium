@@ -30,16 +30,16 @@ export function KnowledgeNode({
                 {data.kind === 'universe'
                     ? 'Universo'
                     : data.kind === 'context'
-                      ? 'Contexto'
+                      ? 'Assunto'
                       : 'Documento'}
             </span>
             <strong>{data.label}</strong>
             {showsDetails && (
                 <small>
                     {data.kind === 'universe'
-                        ? 'Aproxime para explorar seus contextos'
+                        ? 'Clique duas vezes para entrar'
                         : data.kind === 'context'
-                          ? 'Aproxime para explorar os documentos'
+                          ? 'Clique duas vezes para entrar'
                           : 'Clique duas vezes para editar'}
                 </small>
             )}

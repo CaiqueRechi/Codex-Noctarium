@@ -92,9 +92,7 @@ vi.mock('@xyflow/react', () => ({
                 </button>
                 <button
                     type="button"
-                    onClick={() =>
-                        onMoveEnd?.(null, { x: 0, y: 0, zoom: 1 })
-                    }
+                    onClick={() => onMoveEnd?.(null, { x: 0, y: 0, zoom: 1 })}
                 >
                     enquadramento programático
                 </button>
@@ -161,6 +159,198 @@ describe('RF-02 vault canvas', () => {
         expect(
             screen.queryByRole('textbox', { name: 'Conteúdo Markdown' }),
         ).not.toBeInTheDocument();
+    });
+
+    it('enters a context slice without loading the full hierarchy', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    slice: {
+                        contexts: [
+                            {
+                                id: 'universe-1',
+                                parentId: null,
+                                kind: 'universe',
+                                name: 'Meu Universo',
+                                hasChildren: true,
+                                documents: [],
+                                contexts: [
+                                    {
+                                        id: 'context-1',
+                                        parentId: 'universe-1',
+                                        kind: 'context',
+                                        name: 'Primeiro Contexto',
+                                        hasChildren: false,
+                                        documents: [],
+                                        contexts: [],
+                                    },
+                                ],
+                            },
+                        ],
+                        breadcrumbs: [
+                            { id: 'universe-1', name: 'Meu Universo' },
+                        ],
+                    },
+                }),
+            })
+            .mockResolvedValueOnce({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    contexts: '/vault/contexts',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+        await waitFor(() =>
+            expect(
+                within(
+                    screen.getByRole('navigation', { name: 'Caminho atual' }),
+                ).getByRole('button', { name: 'Meu Universo' }),
+            ).toBeInTheDocument(),
+        );
+        expect(screen.getByLabelText('Novo subassunto')).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            '/vault/contexts/universe-1',
+            expect.objectContaining({ credentials: 'same-origin' }),
+        );
+
+        vi.unstubAllGlobals();
+    });
+
+    it('creates a child under the active context and refreshes its slice', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    context: {
+                        id: 'context-2',
+                        parentId: 'context-1',
+                        kind: 'context',
+                        name: 'Subassunto',
+                        hasChildren: false,
+                        documents: [],
+                        contexts: [],
+                    },
+                }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    slice: {
+                        contexts: [
+                            {
+                                id: 'context-1',
+                                parentId: 'universe-1',
+                                kind: 'context',
+                                name: 'Primeiro Contexto',
+                                hasChildren: true,
+                                documents: [],
+                                contexts: [
+                                    {
+                                        id: 'context-2',
+                                        parentId: 'context-1',
+                                        kind: 'context',
+                                        name: 'Subassunto',
+                                        hasChildren: false,
+                                        documents: [],
+                                        contexts: [],
+                                    },
+                                ],
+                            },
+                        ],
+                        breadcrumbs: [
+                            { id: 'universe-1', name: 'Meu Universo' },
+                            {
+                                id: 'context-1',
+                                name: 'Primeiro Contexto',
+                            },
+                        ],
+                    },
+                }),
+            });
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    breadcrumbs: [
+                        { id: 'universe-1', name: 'Meu Universo' },
+                        { id: 'context-1', name: 'Primeiro Contexto' },
+                    ],
+                    universes: [
+                        {
+                            id: 'context-1',
+                            name: 'Primeiro Contexto',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    contexts: '/vault/contexts',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                    focusContextId: 'context-1',
+                }}
+            />,
+        );
+
+        fireEvent.change(screen.getByLabelText('Novo subassunto'), {
+            target: { value: 'Subassunto' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
+
+        await waitFor(() =>
+            expect(screen.getByText('Subassunto')).toBeInTheDocument(),
+        );
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            '/vault/contexts',
+            expect.objectContaining({
+                method: 'POST',
+                body: JSON.stringify({
+                    name: 'Subassunto',
+                    parent_id: 'context-1',
+                }),
+            }),
+        );
+
+        vi.unstubAllGlobals();
     });
 
     it('does not persist a viewport change emitted programmatically', () => {
@@ -825,7 +1015,9 @@ describe('RF-02 vault canvas', () => {
 
         fireEvent.change(
             screen.getByRole('textbox', { name: 'Nome da versão' }),
-            { target: { value: 'Marco inicial' } },
+            {
+                target: { value: 'Marco inicial' },
+            },
         );
         fireEvent.click(screen.getByRole('button', { name: 'Criar versão' }));
 
@@ -868,6 +1060,7 @@ describe('RF-02 vault canvas', () => {
                     results: [
                         {
                             id: 'entity-1',
+                            contextId: 'context-1',
                             title: 'Mapa JWT',
                             snippet: 'Autenticação segura',
                             entityType: 'referência',
@@ -1139,10 +1332,7 @@ describe('RF-02 vault canvas', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Anexar' }));
 
         const link = await screen.findByRole('link', { name: 'manual.pdf' });
-        expect(link).toHaveAttribute(
-            'href',
-            '/vault/attachments/attachment-1',
-        );
+        expect(link).toHaveAttribute('href', '/vault/attachments/attachment-1');
         expect(fetchMock).toHaveBeenCalledWith(
             '/vault/entities/entity-1/attachments',
             expect.objectContaining({

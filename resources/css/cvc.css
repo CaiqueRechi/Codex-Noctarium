@@ -122,6 +122,69 @@
     font-size: 1rem;
 }
 
+.cvc-breadcrumbs {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.3rem;
+    margin-bottom: 0.8rem;
+}
+
+.cvc-breadcrumbs button,
+.cvc-explorer__open {
+    border: 1px solid var(--cvc-border);
+    border-radius: 999px;
+    background: var(--cvc-surface-raised);
+    padding: 0.35rem 0.55rem;
+    color: var(--cvc-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.cvc-breadcrumbs button:hover,
+.cvc-breadcrumbs button:focus-visible,
+.cvc-explorer__open:hover,
+.cvc-explorer__open:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 3px solid var(--cvc-focus);
+    color: var(--cvc-text);
+}
+
+.cvc-explorer__create {
+    display: grid;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--cvc-border);
+    padding-bottom: 1rem;
+}
+
+.cvc-explorer__create label {
+    display: grid;
+    gap: 0.3rem;
+    color: var(--cvc-text-muted);
+    font-size: 0.75rem;
+}
+
+.cvc-explorer__create input {
+    min-width: 0;
+}
+
+.cvc-explorer__create p {
+    margin: 0;
+    color: var(--cvc-danger);
+    font-size: 0.75rem;
+}
+
+.cvc-explorer__context-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.cvc-explorer__open {
+    font-size: 0.7rem;
+}
+
 .cvc-explorer__tree,
 .cvc-explorer__tree ul {
     display: grid;

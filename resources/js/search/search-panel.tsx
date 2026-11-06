@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
 
-import type { UniverseSummary } from '../explorer/vault-explorer';
+import {
+    flattenContexts,
+    type UniverseSummary,
+} from '../explorer/vault-explorer';
 import { searchVault } from './api';
 import type { SearchResult } from './api';
 
 type SearchPanelProps = {
     endpoint: string;
     universes: UniverseSummary[];
-    onSelect: (entityId: string) => void;
+    onSelect: (entityId: string, contextId: string) => void;
 };
 
 export function SearchPanel({
@@ -22,10 +25,7 @@ export function SearchPanel({
     const [results, setResults] = useState<SearchResult[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isSearching, setIsSearching] = useState(false);
-    const contexts = useMemo(
-        () => universes.flatMap((universe) => universe.contexts),
-        [universes],
-    );
+    const contexts = useMemo(() => flattenContexts(universes), [universes]);
 
     const search = async () => {
         if (query.trim().length < 2) {
@@ -115,7 +115,9 @@ export function SearchPanel({
                     <li key={result.id}>
                         <button
                             type="button"
-                            onClick={() => onSelect(result.id)}
+                            onClick={() =>
+                                onSelect(result.id, result.contextId)
+                            }
                         >
                             <strong>{result.title ?? 'Sem título'}</strong>
                             <span>

@@ -26,8 +26,9 @@ final class WorkspaceStateTest extends TestCase
         $perspectiveId = (string) Perspective::query()->firstOrFail()->getKey();
 
         $saveWorkspace = $this->app->make(SaveWorkspaceState::class);
-        $saveWorkspace->handle('42', -320.5, 88.25, 1.4, $entityId, $perspectiveId);
-        $saveWorkspace->handle('42', -180.75, 41.5, 1.2, $entityId, $perspectiveId);
+        $contextId = (string) $context->getKey();
+        $saveWorkspace->handle('42', -320.5, 88.25, 1.4, $entityId, $perspectiveId, $contextId);
+        $saveWorkspace->handle('42', -180.75, 41.5, 1.2, $entityId, $perspectiveId, $contextId);
 
         $snapshot = $this->app->make(OpenWorkspaceState::class)->handle('42');
 
@@ -36,6 +37,7 @@ final class WorkspaceStateTest extends TestCase
         self::assertSame(1.2, $snapshot->zoom);
         self::assertSame($entityId, $snapshot->focusEntityId);
         self::assertSame($perspectiveId, $snapshot->perspectiveId);
+        self::assertSame($contextId, $snapshot->focusContextId);
         $this->assertDatabaseCount('cvc_workspace_states', 1);
         $this->assertDatabaseHas('cvc_documents', [
             'entity_id' => $entityId,
@@ -55,6 +57,7 @@ final class WorkspaceStateTest extends TestCase
         self::assertSame(0.65, $snapshot->zoom);
         self::assertNull($snapshot->focusEntityId);
         self::assertNotNull($snapshot->perspectiveId);
+        self::assertNull($snapshot->focusContextId);
         $this->assertDatabaseCount('cvc_workspace_states', 0);
     }
 }

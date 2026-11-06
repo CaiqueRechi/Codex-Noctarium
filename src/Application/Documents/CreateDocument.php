@@ -25,7 +25,6 @@ final readonly class CreateDocument
             $context = KnowledgeContext::query()
                 ->whereKey($contextId)
                 ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
-                ->where('kind', KnowledgeContext::KIND_CONTEXT)
                 ->lockForUpdate()
                 ->firstOrFail();
             $entityId = (string) Str::uuid();

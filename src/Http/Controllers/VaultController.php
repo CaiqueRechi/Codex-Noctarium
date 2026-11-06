@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Http\Controllers;
 
-use CrowVaultCanvas\Application\Attachments\AttachmentSummary;
+use CrowVaultCanvas\Application\Contexts\OpenContextSlice;
 use CrowVaultCanvas\Application\OpenVault;
 use CrowVaultCanvas\Application\Operations\ListOperationalTasks;
 use CrowVaultCanvas\Application\Workspace\OpenWorkspaceState;
-use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
+use CrowVaultCanvas\Http\ContextPresenter;
 use CrowVaultCanvas\Http\PerspectivePresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,12 +22,18 @@ final class VaultController
         Request $request,
         OpenVault $openVault,
         OpenWorkspaceState $openWorkspaceState,
+        OpenContextSlice $openContextSlice,
+        ContextPresenter $contextPresenter,
         PerspectivePresenter $perspectivePresenter,
         ListOperationalTasks $listOperationalTasks,
     ): Response {
         $userId = (string) $request->user()?->getAuthIdentifier();
         abort_if($userId === '', 401);
+        $workspace = $openWorkspaceState->handle($userId);
         $vault = $openVault->handle();
+        $contextSlice = $contextPresenter->slice(
+            $openContextSlice->handle($workspace->focusContextId),
+        );
         $trash = KnowledgeEntity::onlyTrashed()
             ->where('vault_id', (string) $vault->getKey())
             ->latest('deleted_at')
@@ -37,32 +43,8 @@ final class VaultController
             'vault' => [
                 'id' => $vault->getKey(),
                 'name' => $vault->name,
-                'universes' => $vault->universes->map(fn (KnowledgeContext $universe): array => [
-                    'id' => $universe->getKey(),
-                    'name' => $universe->name,
-                    'contexts' => $universe->children->map(fn (KnowledgeContext $context): array => [
-                        'id' => $context->getKey(),
-                        'name' => $context->name,
-                        'documents' => $context->entities->map(fn (KnowledgeEntity $entity): array => [
-                            'id' => $entity->getKey(),
-                            'title' => $entity->title,
-                            'revision' => $entity->document?->revision,
-                            'entityType' => $entity->entity_type,
-                            'properties' => (object) ($entity->properties ?? []),
-                            'tags' => array_values($entity->tags ?? []),
-                            'attachments' => $entity->attachments
-                                ->map(fn ($attachment): array => AttachmentSummary::fromModel($attachment)->toArray())
-                                ->values(),
-                            'position' => $entity->pivot?->position_x === null
-                                ? null
-                                : [
-                                    'x' => (float) $entity->pivot->position_x,
-                                    'y' => (float) $entity->pivot->position_y,
-                                ],
-                            'isPinned' => (bool) ($entity->pivot?->is_pinned ?? false),
-                        ])->values(),
-                    ])->values(),
-                ])->values(),
+                'universes' => $contextSlice['contexts'],
+                'breadcrumbs' => $contextSlice['breadcrumbs'],
                 'relations' => $vault->relations->map(fn (KnowledgeRelation $relation): array => [
                     'id' => $relation->getKey(),
                     'sourceEntityId' => $relation->source_entity_id,
@@ -84,7 +66,7 @@ final class VaultController
                     ->map(fn ($task): array => $task->toArray())
                     ->values(),
             ],
-            'workspace' => $openWorkspaceState->handle($userId)->toArray(),
+            'workspace' => $workspace->toArray(),
             'endpoints' => [
                 'documents' => route('cvc.documents.store'),
                 'entities' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/entities'),

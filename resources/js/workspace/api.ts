@@ -6,6 +6,7 @@ export async function saveWorkspaceState(
     viewport: Viewport,
     focusEntityId: string | null,
     perspectiveId: string | null,
+    focusContextId: string | null = null,
 ): Promise<void> {
     const response = await fetch(endpoint, {
         method: 'PATCH',
@@ -19,6 +20,7 @@ export async function saveWorkspaceState(
             viewport,
             focus_entity_id: focusEntityId,
             perspective_id: perspectiveId,
+            focus_context_id: focusContextId,
         }),
     });
 

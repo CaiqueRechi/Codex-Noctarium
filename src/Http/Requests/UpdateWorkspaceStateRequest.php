@@ -21,6 +21,7 @@ final class UpdateWorkspaceStateRequest extends FormRequest
             'viewport.y' => ['required', 'numeric', 'between:-10000000,10000000'],
             'viewport.zoom' => ['required', 'numeric', 'between:0.25,2'],
             'focus_entity_id' => ['nullable', 'uuid'],
+            'focus_context_id' => ['nullable', 'uuid'],
             'perspective_id' => ['nullable', 'uuid'],
         ];
     }

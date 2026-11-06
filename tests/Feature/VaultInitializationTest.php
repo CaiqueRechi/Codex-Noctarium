@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Tests\Feature;
 
+use CrowVaultCanvas\Application\Contexts\OpenContextSlice;
 use CrowVaultCanvas\Application\Documents\CreateDocument;
-use CrowVaultCanvas\Application\OpenVault;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -42,23 +42,22 @@ final class VaultInitializationTest extends TestCase
     {
         $this->artisan('cvc:initialize')->assertSuccessful();
 
-        $vault = $this->app->make(OpenVault::class)->handle();
+        $slice = $this->app->make(OpenContextSlice::class)->handle();
 
-        self::assertSame(config('crow-vault-canvas.vault.id'), $vault->getKey());
-        self::assertCount(1, $vault->universes);
-        self::assertSame('Meu Universo', $vault->universes->first()?->name);
-        self::assertCount(1, $vault->universes->first()?->children ?? []);
-        self::assertSame('Primeiro Contexto', $vault->universes->first()?->children->first()?->name);
+        self::assertCount(1, $slice->contexts);
+        self::assertSame('Meu Universo', $slice->contexts->first()?->name);
+        self::assertCount(1, $slice->contexts->first()?->children ?? []);
+        self::assertSame('Primeiro Contexto', $slice->contexts->first()?->children->first()?->name);
     }
 
     public function test_rf_05_explorer_keeps_one_entity_available_in_multiple_contexts(): void
     {
         $this->artisan('cvc:initialize')->assertSuccessful();
-        $vault = $this->app->make(OpenVault::class)->handle();
-        $universe = $vault->universes->firstOrFail();
+        $slice = $this->app->make(OpenContextSlice::class)->handle();
+        $universe = $slice->contexts->firstOrFail();
         $firstContext = $universe->children->firstOrFail();
         $secondContext = KnowledgeContext::query()->create([
-            'vault_id' => $vault->getKey(),
+            'vault_id' => $universe->vault_id,
             'parent_id' => $universe->getKey(),
             'kind' => KnowledgeContext::KIND_CONTEXT,
             'name' => 'Contexto Compartilhado',
@@ -70,8 +69,8 @@ final class VaultInitializationTest extends TestCase
 
         $secondContext->entities()->attach($document->id);
 
-        $reopenedVault = $this->app->make(OpenVault::class)->handle();
-        $contexts = $reopenedVault->universes->firstOrFail()->children;
+        $reopenedSlice = $this->app->make(OpenContextSlice::class)->handle();
+        $contexts = $reopenedSlice->contexts->firstOrFail()->children;
 
         self::assertCount(2, $contexts);
         self::assertTrue($contexts->every(
@@ -96,6 +95,7 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_search_index'));
         self::assertTrue(Schema::hasTable('cvc_attachments'));
         self::assertTrue(Schema::hasTable('cvc_operations'));
+        self::assertTrue(Schema::hasColumn('cvc_workspace_states', 'focus_context_id'));
         self::assertTrue(Schema::hasColumn('cvc_entities', 'tags'));
         self::assertTrue(Schema::hasColumn('cvc_relations', 'cascade_deleted_by_entity_id'));
 
@@ -126,6 +126,7 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_search_index'));
         self::assertTrue(Schema::hasTable('cvc_attachments'));
         self::assertTrue(Schema::hasTable('cvc_operations'));
+        self::assertTrue(Schema::hasColumn('cvc_workspace_states', 'focus_context_id'));
         self::assertTrue(Schema::hasColumn('cvc_entities', 'tags'));
         self::assertTrue(Schema::hasColumn('cvc_relations', 'cascade_deleted_by_entity_id'));
     }

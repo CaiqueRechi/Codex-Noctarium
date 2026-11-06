@@ -47,7 +47,8 @@ final class SearchTest extends TestCase
         ]))
             ->assertOk()
             ->assertJsonCount(1, 'results')
-            ->assertJsonPath('results.0.id', $sourceId);
+            ->assertJsonPath('results.0.id', $sourceId)
+            ->assertJsonPath('results.0.contextId', $firstContextId);
 
         $this->getJson('/vault/search?'.http_build_query([
             'q' => 'Documento',

@@ -15,6 +15,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('crow-vault-canvas.enabled', true);
         $app['config']->set('crow-vault-canvas.route.middleware', ['web']);
         $app['config']->set('crow-vault-canvas.route.write_middleware', []);
+        $app['config']->set('crow-vault-canvas.route.context_write_middleware', []);
         $app['config']->set('crow-vault-canvas.route.document_write_middleware', []);
         $app['config']->set('crow-vault-canvas.route.workspace_write_middleware', []);
         $app['config']->set('crow-vault-canvas.route.perspective_write_middleware', []);
