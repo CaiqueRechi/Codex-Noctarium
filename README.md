@@ -1,5 +1,9 @@
 # Crow Vault Canvas
 
+<p align="center">
+  <img src="resources/images/brand/cvc-logo-official.png" alt="Crow Vault Canvas cosmic crow logo" width="720">
+</p>
+
 Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowledge canvas to Rechi OS. The current vertical slice supports an authenticated path from universe to context to Markdown document, synchronous durable saving, and restoration of the user's canvas viewport.
 
 ## Current scope
