@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -24,8 +25,26 @@ final class KnowledgeEntity extends Model
         'id',
         'vault_id',
         'kind',
+        'entity_type',
         'title',
+        'properties',
+        'tags',
+        'search_version',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'properties' => 'array',
+            'tags' => 'array',
+            'search_version' => 'integer',
+        ];
+    }
+
+    public function advanceSearchVersion(): void
+    {
+        $this->increment('search_version');
+    }
 
     /** @return BelongsTo<Vault, $this> */
     public function vault(): BelongsTo
@@ -41,12 +60,19 @@ final class KnowledgeEntity extends Model
             'cvc_context_entity',
             'entity_id',
             'context_id',
-        )->withTimestamps();
+        )->withPivot(['position_x', 'position_y', 'is_pinned'])
+            ->withTimestamps();
     }
 
     /** @return HasOne<MarkdownDocument, $this> */
     public function document(): HasOne
     {
         return $this->hasOne(MarkdownDocument::class, 'entity_id');
+    }
+
+    /** @return HasMany<Attachment, $this> */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class, 'entity_id')->orderBy('created_at');
     }
 }

@@ -18,6 +18,7 @@ final class WorkspaceState extends Model
         'viewport_y',
         'viewport_zoom',
         'focus_entity_id',
+        'perspective_id',
     ];
 
     protected function casts(): array
@@ -39,5 +40,11 @@ final class WorkspaceState extends Model
     public function focusEntity(): BelongsTo
     {
         return $this->belongsTo(KnowledgeEntity::class, 'focus_entity_id');
+    }
+
+    /** @return BelongsTo<Perspective, $this> */
+    public function perspective(): BelongsTo
+    {
+        return $this->belongsTo(Perspective::class);
     }
 }

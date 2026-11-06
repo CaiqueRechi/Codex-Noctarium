@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CrowVaultCanvas\Application\Workspace;
 
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
+use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
 use CrowVaultCanvas\Domain\Knowledge\Models\WorkspaceState;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +17,7 @@ final class SaveWorkspaceState
         float $y,
         float $zoom,
         ?string $focusEntityId,
+        ?string $perspectiveId = null,
     ): WorkspaceSnapshot {
         $vaultId = (string) config('crow-vault-canvas.vault.id');
 
@@ -26,7 +28,14 @@ final class SaveWorkspaceState
                 ->firstOrFail();
         }
 
-        DB::transaction(function () use ($userId, $x, $y, $zoom, $focusEntityId, $vaultId): void {
+        if ($perspectiveId !== null) {
+            Perspective::query()
+                ->whereKey($perspectiveId)
+                ->where('vault_id', $vaultId)
+                ->firstOrFail();
+        }
+
+        DB::transaction(function () use ($userId, $x, $y, $zoom, $focusEntityId, $perspectiveId, $vaultId): void {
             WorkspaceState::query()->updateOrCreate(
                 [
                     'vault_id' => $vaultId,
@@ -37,10 +46,11 @@ final class SaveWorkspaceState
                     'viewport_y' => $y,
                     'viewport_zoom' => $zoom,
                     'focus_entity_id' => $focusEntityId,
+                    'perspective_id' => $perspectiveId,
                 ],
             );
         }, 3);
 
-        return new WorkspaceSnapshot($x, $y, $zoom, $focusEntityId);
+        return new WorkspaceSnapshot($x, $y, $zoom, $focusEntityId, $perspectiveId);
     }
 }

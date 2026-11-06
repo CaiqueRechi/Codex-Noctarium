@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Tests\Feature;
 
+use CrowVaultCanvas\Application\Documents\CreateDocument;
 use CrowVaultCanvas\Application\OpenVault;
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -20,6 +22,7 @@ final class VaultInitializationTest extends TestCase
 
         $this->assertDatabaseCount('cvc_vaults', 1);
         $this->assertDatabaseCount('cvc_contexts', 2);
+        $this->assertDatabaseCount('cvc_perspectives', 1);
         $this->assertDatabaseHas('cvc_vaults', [
             'id' => config('crow-vault-canvas.vault.id'),
             'name' => 'Crow Vault Canvas',
@@ -48,6 +51,38 @@ final class VaultInitializationTest extends TestCase
         self::assertSame('Primeiro Contexto', $vault->universes->first()?->children->first()?->name);
     }
 
+    public function test_rf_05_explorer_keeps_one_entity_available_in_multiple_contexts(): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $vault = $this->app->make(OpenVault::class)->handle();
+        $universe = $vault->universes->firstOrFail();
+        $firstContext = $universe->children->firstOrFail();
+        $secondContext = KnowledgeContext::query()->create([
+            'vault_id' => $vault->getKey(),
+            'parent_id' => $universe->getKey(),
+            'kind' => KnowledgeContext::KIND_CONTEXT,
+            'name' => 'Contexto Compartilhado',
+            'sort_order' => 1,
+        ]);
+        $document = $this->app->make(CreateDocument::class)->handle(
+            (string) $firstContext->getKey(),
+        );
+
+        $secondContext->entities()->attach($document->id);
+
+        $reopenedVault = $this->app->make(OpenVault::class)->handle();
+        $contexts = $reopenedVault->universes->firstOrFail()->children;
+
+        self::assertCount(2, $contexts);
+        self::assertTrue($contexts->every(
+            fn (KnowledgeContext $context): bool => $context->entities
+                ->contains(fn ($entity): bool => $entity->getKey() === $document->id),
+        ));
+        $this->assertDatabaseCount('cvc_entities', 1);
+        $this->assertDatabaseCount('cvc_documents', 1);
+        $this->assertDatabaseCount('cvc_context_entity', 2);
+    }
+
     public function test_vault_migration_can_be_rolled_back_and_reapplied(): void
     {
         self::assertTrue(Schema::hasTable('cvc_vaults'));
@@ -55,6 +90,14 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_entities'));
         self::assertTrue(Schema::hasTable('cvc_documents'));
         self::assertTrue(Schema::hasTable('cvc_workspace_states'));
+        self::assertTrue(Schema::hasTable('cvc_perspectives'));
+        self::assertTrue(Schema::hasTable('cvc_perspective_layouts'));
+        self::assertTrue(Schema::hasTable('cvc_versions'));
+        self::assertTrue(Schema::hasTable('cvc_search_index'));
+        self::assertTrue(Schema::hasTable('cvc_attachments'));
+        self::assertTrue(Schema::hasTable('cvc_operations'));
+        self::assertTrue(Schema::hasColumn('cvc_entities', 'tags'));
+        self::assertTrue(Schema::hasColumn('cvc_relations', 'cascade_deleted_by_entity_id'));
 
         $this->artisan('migrate:rollback')->assertSuccessful();
 
@@ -63,6 +106,12 @@ final class VaultInitializationTest extends TestCase
         self::assertFalse(Schema::hasTable('cvc_entities'));
         self::assertFalse(Schema::hasTable('cvc_documents'));
         self::assertFalse(Schema::hasTable('cvc_workspace_states'));
+        self::assertFalse(Schema::hasTable('cvc_perspectives'));
+        self::assertFalse(Schema::hasTable('cvc_perspective_layouts'));
+        self::assertFalse(Schema::hasTable('cvc_versions'));
+        self::assertFalse(Schema::hasTable('cvc_search_index'));
+        self::assertFalse(Schema::hasTable('cvc_attachments'));
+        self::assertFalse(Schema::hasTable('cvc_operations'));
 
         $this->artisan('migrate')->assertSuccessful();
 
@@ -71,5 +120,13 @@ final class VaultInitializationTest extends TestCase
         self::assertTrue(Schema::hasTable('cvc_entities'));
         self::assertTrue(Schema::hasTable('cvc_documents'));
         self::assertTrue(Schema::hasTable('cvc_workspace_states'));
+        self::assertTrue(Schema::hasTable('cvc_perspectives'));
+        self::assertTrue(Schema::hasTable('cvc_perspective_layouts'));
+        self::assertTrue(Schema::hasTable('cvc_versions'));
+        self::assertTrue(Schema::hasTable('cvc_search_index'));
+        self::assertTrue(Schema::hasTable('cvc_attachments'));
+        self::assertTrue(Schema::hasTable('cvc_operations'));
+        self::assertTrue(Schema::hasColumn('cvc_entities', 'tags'));
+        self::assertTrue(Schema::hasColumn('cvc_relations', 'cascade_deleted_by_entity_id'));
     }
 }

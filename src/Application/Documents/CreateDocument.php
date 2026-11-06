@@ -8,6 +8,7 @@ use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
+use CrowVaultCanvas\Jobs\IndexKnowledgeEntity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -51,6 +52,8 @@ final readonly class CreateDocument
 
             return $entity;
         }, 3);
+
+        IndexKnowledgeEntity::dispatchTracked((string) $entity->getKey());
 
         return $this->openDocument->handle($entity->getKey());
     }

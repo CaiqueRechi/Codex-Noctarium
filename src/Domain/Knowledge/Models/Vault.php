@@ -42,4 +42,22 @@ final class Vault extends Model
     {
         return $this->hasMany(KnowledgeEntity::class);
     }
+
+    /** @return HasMany<KnowledgeRelation, $this> */
+    public function relations(): HasMany
+    {
+        return $this->hasMany(KnowledgeRelation::class);
+    }
+
+    /** @return HasMany<Perspective, $this> */
+    public function perspectives(): HasMany
+    {
+        return $this->hasMany(Perspective::class)->orderBy('created_at');
+    }
+
+    /** @return HasMany<VaultVersion, $this> */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(VaultVersion::class)->latest();
+    }
 }

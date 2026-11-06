@@ -24,9 +24,9 @@
 | Migration is reversible | `VaultInitializationTest::test_vault_migration_can_be_rolled_back_and_reapplied` |
 | Known dependency vulnerabilities | `composer audit --locked` and `npm audit` both returned zero findings at phase close |
 
-## Phase-close verification
+## Historical vertical-slice verification
 
-Executed on 2026-10-30:
+The following numbers are the original vertical-slice checkpoint executed on 2026-10-30, not the current MVP totals:
 
 - CVC PHP: 14 tests, 83 assertions.
 - Rechi OS PHP: 70 tests, 347 assertions; 2 tests skipped by the existing suite.
@@ -47,3 +47,5 @@ The CVC branch `cm-crow-vault-canvas-vertical-slice` contains separate commits f
 The matching Rechi OS branch contains separate commits for package mounting, initialized-vault exposure, frontend compilation, secure document integration, workspace integration, and dependency security patches.
 
 No push or deployment is part of this phase close.
+
+Current technical-close evidence and remaining acceptance work are maintained in [MVP technical readiness](mvp-readiness.md).

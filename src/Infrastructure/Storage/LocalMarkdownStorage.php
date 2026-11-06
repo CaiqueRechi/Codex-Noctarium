@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CrowVaultCanvas\Infrastructure\Storage;
 
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -23,8 +24,37 @@ final class LocalMarkdownStorage implements MarkdownStorage
             throw new InvalidArgumentException('The document revision must be positive.');
         }
 
+        $maximumBytes = (int) config('crow-vault-canvas.storage.max_markdown_bytes');
+
+        if ($maximumBytes < 1) {
+            throw new RuntimeException('The Markdown size limit is not configured safely.');
+        }
+
+        if (strlen($content) > $maximumBytes) {
+            throw ValidationException::withMessages([
+                'content' => 'O documento excede o limite de tamanho configurado.',
+            ]);
+        }
+
         $writeId = (string) Str::uuid();
         $storagePath = "vaults/{$vaultId}/entities/{$entityId}/revisions/{$revision}-{$writeId}.md";
+
+        return app(StorageQuota::class)->store(
+            $vaultId,
+            strlen($content),
+            $storagePath,
+            'content',
+            fn (): StoredMarkdown => $this->writeRevisionWithoutQuota(
+                $storagePath,
+                $content,
+            ),
+        );
+    }
+
+    private function writeRevisionWithoutQuota(
+        string $storagePath,
+        string $content,
+    ): StoredMarkdown {
         $absolutePath = $this->absolutePath($storagePath);
         $directory = dirname($absolutePath);
 
