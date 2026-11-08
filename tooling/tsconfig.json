@@ -1,0 +1,19 @@
+{
+    "extends": "../../rechi-os/tsconfig.json",
+    "compilerOptions": {
+        "baseUrl": "../../rechi-os",
+        "paths": {
+            "react": ["node_modules/@types/react"],
+            "react/*": ["node_modules/@types/react/*"],
+            "react-dom/*": ["node_modules/@types/react-dom/*"],
+            "chai": ["node_modules/@types/chai"],
+            "*": ["node_modules/*", "node_modules/@types/*"]
+        }
+    },
+    "include": [
+        "../resources/js/**/*.ts",
+        "../resources/js/**/*.tsx",
+        "../../rechi-os/resources/js/types/vite-env.d.ts",
+        "../../rechi-os/resources/js/tests/setup.ts"
+    ]
+}
