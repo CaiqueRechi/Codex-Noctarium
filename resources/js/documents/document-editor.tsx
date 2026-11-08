@@ -27,7 +27,8 @@ export function DocumentEditor({
     onBack,
 }: DocumentEditorProps) {
     const isSaving = saveState === 'saving';
-    const hasPendingChanges = draft !== document.content;
+    const hasPendingChanges =
+        draft !== document.content || saveState === 'failed';
 
     return (
         <section className="cvc-editor" aria-label="Editor Markdown">
@@ -41,7 +42,14 @@ export function DocumentEditor({
                         className="cvc-save-state"
                         data-state={saveState}
                         aria-live="polite"
+                        aria-busy={isSaving}
                     >
+                        <span
+                            className="cvc-save-state__icon"
+                            aria-hidden="true"
+                        >
+                            ↻
+                        </span>{' '}
                         {statusLabels[saveState]}
                     </output>
                     <button
@@ -50,12 +58,11 @@ export function DocumentEditor({
                         disabled={isSaving || !hasPendingChanges}
                         onClick={onSave}
                     >
-                        Salvar
+                        {saveState === 'failed' ? 'Tentar novamente' : 'Salvar'}
                     </button>
                     <button
                         type="button"
                         className="cvc-button"
-                        disabled={isSaving || hasPendingChanges}
                         onClick={onBack}
                     >
                         Voltar ao canvas
@@ -65,7 +72,8 @@ export function DocumentEditor({
 
             {error && (
                 <p className="cvc-editor__error" role="alert">
-                    {error} O conteúdo continua neste editor.
+                    {error} Existem alterações não salvas apenas nesta aba.
+                    Fechar ou recarregar pode perder essas alterações.
                 </p>
             )}
 

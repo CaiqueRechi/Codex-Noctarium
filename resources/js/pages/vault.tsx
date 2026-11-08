@@ -13,7 +13,7 @@ import type {
     ReactFlowInstance,
     Viewport,
 } from '@xyflow/react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import '@xyflow/react/dist/style.css';
 import '../../css/presets.css';
@@ -35,13 +35,10 @@ import {
 } from '../canvas/semantic-zoom';
 import type { SemanticLevel } from '../canvas/semantic-zoom';
 import { createContext, openContextSlice } from '../contexts/api';
-import { createDocument, openDocument, saveDocument } from '../documents/api';
+import { createDocument, openDocument } from '../documents/api';
 import { DocumentEditor } from '../documents/document-editor';
-import type {
-    DocumentSummary,
-    OpenedDocument,
-    SaveState,
-} from '../documents/types';
+import type { DocumentSummary, OpenedDocument } from '../documents/types';
+import { useDocumentAutosave } from '../documents/use-document-autosave';
 import { updateEntityProperties } from '../entities/api';
 import { PropertiesPanel } from '../entities/properties-panel';
 import type { EntityProperties } from '../entities/types';
@@ -93,7 +90,8 @@ type ContextPayload = {
     contexts?: ContextPayload[];
 };
 
-type VaultPageProps = {
+export type VaultPageProps = {
+    navigation?: { home: string };
     vault: {
         id: string;
         name: string;
@@ -361,6 +359,7 @@ function buildRelationEdges(
 }
 
 export default function VaultPage({
+    navigation,
     vault,
     endpoints,
     workspace,
@@ -379,11 +378,30 @@ export default function VaultPage({
     const [semanticLevel, setSemanticLevel] = useState<SemanticLevel>(() =>
         initialSemanticLevel(workspace.viewport.zoom),
     );
-    const [activeDocument, setActiveDocument] = useState<OpenedDocument | null>(
-        null,
+    const {
+        session,
+        document: activeDocument,
+        draft,
+        saveState,
+        error: saveError,
+    } = useDocumentAutosave(endpoints.documents);
+    const setActiveDocument = useCallback(
+        (
+            update:
+                | OpenedDocument
+                | null
+                | ((current: OpenedDocument | null) => OpenedDocument | null),
+        ) => {
+            if (typeof update === 'function') {
+                session.updateDocument(update);
+            } else if (update === null) {
+                session.close();
+            } else {
+                session.open(update);
+            }
+        },
+        [session],
     );
-    const [draft, setDraft] = useState('');
-    const [saveState, setSaveState] = useState<SaveState>('saved');
     const [error, setError] = useState<string | null>(null);
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
     const [focusEntityId, setFocusEntityId] = useState(workspace.focusEntityId);
@@ -394,6 +412,7 @@ export default function VaultPage({
     > | null>(null);
     const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
+    const navigationPending = useRef(false);
     const activeContextId = breadcrumbs.at(-1)?.id ?? null;
     const activePerspective = useMemo(
         () =>
@@ -425,6 +444,60 @@ export default function VaultPage({
         [focusEntityId, visibleUniverses],
     );
     const documentContextId = activeContextId ?? universes[0]?.id;
+    const hasPendingDraft = session.hasPendingChanges();
+
+    useEffect(() => {
+        if (!hasPendingDraft && saveState !== 'saving') {
+            return;
+        }
+
+        const guardUnload = (event: BeforeUnloadEvent) => {
+            if (session.hasPendingChanges()) {
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        };
+        const guardNavigation = (event: Event) => {
+            if (!session.hasPendingChanges()) {
+                return;
+            }
+
+            event.preventDefault();
+
+            if (navigationPending.current) {
+                return;
+            }
+
+            type VisitOptions = NonNullable<Parameters<typeof router.visit>[1]>;
+            const visit = (
+                event as CustomEvent<{ visit?: VisitOptions & { url: URL } }>
+            ).detail?.visit;
+
+            if (!visit) {
+                return;
+            }
+
+            navigationPending.current = true;
+            void session
+                .flush()
+                .then((saved) => {
+                    if (saved && !session.hasPendingChanges()) {
+                        router.visit(visit.url, visit);
+                    }
+                })
+                .finally(() => {
+                    navigationPending.current = false;
+                });
+        };
+
+        window.addEventListener('beforeunload', guardUnload);
+        document.addEventListener('inertia:before', guardNavigation);
+
+        return () => {
+            window.removeEventListener('beforeunload', guardUnload);
+            document.removeEventListener('inertia:before', guardNavigation);
+        };
+    }, [hasPendingDraft, saveState, session]);
 
     const handleMove = useCallback(
         (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
@@ -474,16 +547,21 @@ export default function VaultPage({
         [focusEntityId, persistWorkspace],
     );
 
-    const showDocument = useCallback((document: OpenedDocument) => {
-        returnViewport.current = { ...viewport.current };
-        setActiveDocument(document);
-        setDraft(document.content);
-        setSaveState('saved');
-        setError(null);
-    }, []);
+    const showDocument = useCallback(
+        (document: OpenedDocument) => {
+            returnViewport.current = { ...viewport.current };
+            session.open(document);
+            setError(null);
+        },
+        [session],
+    );
 
     const handleOpenContext = useCallback(
         async (contextId: string | null) => {
+            if (!(await session.flush())) {
+                return;
+            }
+
             if (!endpoints.contexts) {
                 throw new Error('O endpoint de contextos não está disponível.');
             }
@@ -502,7 +580,14 @@ export default function VaultPage({
             );
             window.requestAnimationFrame(() => void flow?.fitView());
         },
-        [activePerspectiveId, endpoints.contexts, flow, persistWorkspace],
+        [
+            activePerspectiveId,
+            endpoints.contexts,
+            flow,
+            persistWorkspace,
+            session,
+            setActiveDocument,
+        ],
     );
 
     const handleCreateContext = useCallback(
@@ -531,6 +616,10 @@ export default function VaultPage({
         setError(null);
 
         try {
+            if (!(await session.flush())) {
+                return;
+            }
+
             const document = await createDocument(
                 endpoints.documents,
                 documentContextId,
@@ -558,6 +647,7 @@ export default function VaultPage({
         documentContextId,
         isCreating,
         persistWorkspace,
+        session,
         showDocument,
     ]);
 
@@ -587,6 +677,10 @@ export default function VaultPage({
                 return;
             }
 
+            if (!(await session.flush())) {
+                return;
+            }
+
             setError(null);
 
             try {
@@ -609,6 +703,7 @@ export default function VaultPage({
             endpoints.documents,
             handleOpenContext,
             persistWorkspace,
+            session,
             showDocument,
         ],
     );
@@ -748,11 +843,13 @@ export default function VaultPage({
         [flow, persistWorkspace],
     );
 
-    const handleDraftChange = useCallback((content: string) => {
-        setDraft(content);
-        setSaveState('pending');
-        setError(null);
-    }, []);
+    const handleDraftChange = useCallback(
+        (content: string) => {
+            session.change(content);
+            setError(null);
+        },
+        [session],
+    );
 
     const handlePropertiesSave = useCallback(
         async (
@@ -782,7 +879,7 @@ export default function VaultPage({
                     : current,
             );
         },
-        [endpoints.entities, focusedDocument],
+        [endpoints.entities, focusedDocument, setActiveDocument],
     );
 
     const requireRelationEndpoints = useCallback(() => {
@@ -955,14 +1052,26 @@ export default function VaultPage({
                 throw new Error('O endpoint de versões não está disponível.');
             }
 
+            if (!(await session.flush())) {
+                throw new Error(
+                    'Não foi possível salvar a nota antes de restaurar.',
+                );
+            }
+
             await restoreVersion(endpoints.versions, versionId);
             router.reload({ only: ['vault', 'workspace'] });
         },
-        [endpoints.versions],
+        [endpoints.versions, session],
     );
 
     const handleEntityDelete = useCallback(
         async (entityId: string) => {
+            if (activeDocument?.id === entityId && !(await session.flush())) {
+                throw new Error(
+                    'Não foi possível salvar a nota antes de mover para a lixeira.',
+                );
+            }
+
             const deletion = await deleteEntity(endpoints.entities, entityId);
 
             setUniverses((current) =>
@@ -993,10 +1102,13 @@ export default function VaultPage({
             }
         },
         [
+            activeDocument?.id,
             activePerspectiveId,
             endpoints.entities,
             focusEntityId,
             persistWorkspace,
+            session,
+            setActiveDocument,
         ],
     );
 
@@ -1089,44 +1201,37 @@ export default function VaultPage({
                     : current,
             );
         },
-        [focusedDocument],
+        [focusedDocument, setActiveDocument],
     );
 
-    const handleSave = useCallback(async () => {
-        if (!activeDocument) {
+    const handleBack = useCallback(async () => {
+        if (!(await session.flush())) {
             return;
         }
 
-        setSaveState('saving');
-        setError(null);
-
-        try {
-            const saved = await saveDocument(
-                endpoints.documents,
-                activeDocument,
-                draft,
-            );
-            setActiveDocument(saved);
-            setDraft(saved.content);
-            setSaveState('saved');
-        } catch (exception) {
-            setSaveState('failed');
-            setError(
-                exception instanceof Error
-                    ? exception.message
-                    : 'Não foi possível salvar o documento.',
-            );
-        }
-    }, [activeDocument, draft, endpoints.documents]);
-
-    const handleBack = useCallback(() => {
-        setActiveDocument(null);
+        session.close();
         setError(null);
 
         if (returnViewport.current) {
             void flow?.setViewport(returnViewport.current);
         }
-    }, [flow]);
+    }, [flow, session]);
+
+    const handleReturnHome = useCallback(async () => {
+        if (!navigation || navigationPending.current) {
+            return;
+        }
+
+        navigationPending.current = true;
+
+        try {
+            if (await session.flush()) {
+                router.visit(navigation.home);
+            }
+        } finally {
+            navigationPending.current = false;
+        }
+    }, [navigation, session]);
 
     return (
         <div className="cvc-theme cvc-shell">
@@ -1147,6 +1252,15 @@ export default function VaultPage({
                     </div>
                 </div>
                 <div className="cvc-header__actions">
+                    {navigation && (
+                        <button
+                            type="button"
+                            className="cvc-button"
+                            onClick={() => void handleReturnHome()}
+                        >
+                            Voltar ao Rechi OS
+                        </button>
+                    )}
                     <output className="cvc-zoom-state" aria-live="polite">
                         Nível: {semanticLevelLabels[semanticLevel]}
                     </output>
@@ -1330,10 +1444,10 @@ export default function VaultPage({
                     document={activeDocument}
                     draft={draft}
                     saveState={saveState}
-                    error={error}
+                    error={saveError ?? error}
                     onChange={handleDraftChange}
-                    onSave={() => void handleSave()}
-                    onBack={handleBack}
+                    onSave={() => void session.save()}
+                    onBack={() => void handleBack()}
                 />
             )}
         </div>

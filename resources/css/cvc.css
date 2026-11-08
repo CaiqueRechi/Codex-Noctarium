@@ -767,6 +767,20 @@
     color: var(--cvc-danger);
 }
 
+.cvc-save-state__icon {
+    display: inline-block;
+}
+
+.cvc-save-state[data-state='saving'] .cvc-save-state__icon {
+    animation: cvc-saving 1s linear infinite;
+}
+
+@keyframes cvc-saving {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .cvc-editor__textarea {
     width: 100%;
     min-height: 0;

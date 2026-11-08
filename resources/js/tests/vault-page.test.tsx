@@ -421,6 +421,7 @@ describe('RF-02 vault canvas', () => {
             .mockResolvedValueOnce({ ok: true })
             .mockResolvedValueOnce({
                 ok: false,
+                status: 403,
                 json: async () => ({ message: 'Falha de armazenamento.' }),
             });
         vi.stubGlobal('fetch', fetchMock);
@@ -465,13 +466,17 @@ describe('RF-02 vault canvas', () => {
 
         await waitFor(() =>
             expect(screen.getByRole('alert')).toHaveTextContent(
-                'Falha de armazenamento.',
+                'Você não tem permissão para salvar este documento.',
             ),
         );
         expect(editor).toHaveValue('# rascunho pendente');
         expect(
             screen.getByRole('button', { name: 'Voltar ao canvas' }),
-        ).toBeDisabled();
+        ).toBeEnabled();
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Voltar ao canvas' }),
+        );
+        expect(editor).toHaveValue('# rascunho pendente');
 
         document.cookie =
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
@@ -550,7 +555,9 @@ describe('RF-02 vault canvas', () => {
             screen.getByRole('button', { name: 'Voltar ao canvas' }),
         );
 
-        expect(setViewportMock).toHaveBeenCalledWith(persistedViewport);
+        await waitFor(() =>
+            expect(setViewportMock).toHaveBeenCalledWith(persistedViewport),
+        );
 
         document.cookie =
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
