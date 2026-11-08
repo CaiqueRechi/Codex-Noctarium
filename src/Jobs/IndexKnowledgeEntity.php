@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Jobs;
 
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
@@ -80,7 +81,7 @@ final class IndexKnowledgeEntity implements ShouldQueue
     private function index(MarkdownStorage $storage): void
     {
         $entity = KnowledgeEntity::withTrashed()
-            ->with(['document', 'contexts'])
+            ->with(['document', 'contexts', 'noteSpace.context'])
             ->whereKey($this->entityId)
             ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
             ->first();
@@ -125,6 +126,13 @@ final class IndexKnowledgeEntity implements ShouldQueue
             json_encode($relation->properties ?? [], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
         ])->filter()->implode(' ');
 
+        $contextNames = $entity->contexts->pluck('name');
+        $ownContext = $entity->noteSpace?->context;
+
+        if ($ownContext !== null && $ownContext->kind !== KnowledgeContext::KIND_NOTE_SPACE) {
+            $contextNames->push($ownContext->name);
+        }
+
         $this->publishIfCurrent($searchVersion, $entity->document->content_hash, [
             'vault_id' => $entity->vault_id,
             'title' => $entity->title,
@@ -136,7 +144,7 @@ final class IndexKnowledgeEntity implements ShouldQueue
                 $entity->properties ?? [],
                 JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE,
             ),
-            'contexts' => $entity->contexts->pluck('name')->implode(' '),
+            'contexts' => $contextNames->filter()->unique()->implode(' '),
             'relations' => $relationText,
         ]);
     }

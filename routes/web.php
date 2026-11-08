@@ -15,6 +15,7 @@ use CrowVaultCanvas\Http\Controllers\ShowContextController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
 use CrowVaultCanvas\Http\Controllers\StoreAttachmentController;
 use CrowVaultCanvas\Http\Controllers\StoreContextController;
+use CrowVaultCanvas\Http\Controllers\StoreContextDocumentController;
 use CrowVaultCanvas\Http\Controllers\StoreDocumentController;
 use CrowVaultCanvas\Http\Controllers\StoreNoteSpaceController;
 use CrowVaultCanvas\Http\Controllers\StorePerspectiveController;
@@ -55,6 +56,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                         Route::post('/documents/{entity}/space', StoreNoteSpaceController::class)
                             ->middleware('throttle:cvc-note-space-writes')
                             ->name('documents.space.store');
+                        Route::post('/contexts/{context}/document', StoreContextDocumentController::class)
+                            ->middleware('throttle:cvc-note-space-writes')
+                            ->name('contexts.document.store');
                     });
                 Route::patch('/entities/{entity}', UpdateEntityPropertiesController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))

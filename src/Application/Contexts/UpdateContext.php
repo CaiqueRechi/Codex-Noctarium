@@ -61,6 +61,13 @@ final class UpdateContext
                 'kind' => $parentId === null ? KnowledgeContext::KIND_UNIVERSE : KnowledgeContext::KIND_CONTEXT,
             ])->save();
 
+            $owner = $context->noteSpace?->entity;
+
+            if ($owner !== null) {
+                $owner->update(['title' => trim($name)]);
+                $owner->advanceSearchVersion();
+            }
+
             return $context->loadCount('children');
         }, 3);
 
@@ -69,6 +76,10 @@ final class UpdateContext
                 IndexKnowledgeEntity::dispatchTracked((string) $entity->getKey());
             }
         }, 'cvc_entities.id', 'id');
+
+        if ($updated->noteSpace?->entity !== null) {
+            IndexKnowledgeEntity::dispatchTracked((string) $updated->noteSpace->entity_id);
+        }
 
         return $updated;
     }

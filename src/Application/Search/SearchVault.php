@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Search;
 
+use CrowVaultCanvas\Domain\Knowledge\Models\NoteSpace;
 use CrowVaultCanvas\Domain\Knowledge\Models\SearchDocument;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +27,13 @@ final class SearchVault
                     ->whereColumn('entity_id', 'cvc_search_index.entity_id')
                     ->orderBy('context_id')
                     ->limit(1),
+                'owner_context_id' => DB::table('cvc_note_spaces')
+                    ->join('cvc_contexts', 'cvc_contexts.id', '=', 'cvc_note_spaces.context_id')
+                    ->select('cvc_note_spaces.context_id')
+                    ->whereColumn('cvc_note_spaces.entity_id', 'cvc_search_index.entity_id')
+                    ->where('cvc_contexts.vault_id', $vaultId)
+                    ->whereNull('cvc_contexts.deleted_at')
+                    ->limit(1),
             ])
             ->join('cvc_entities', 'cvc_entities.id', '=', 'cvc_search_index.entity_id')
             ->join('cvc_documents', 'cvc_documents.entity_id', '=', 'cvc_search_index.entity_id')
@@ -33,10 +41,9 @@ final class SearchVault
             ->whereNull('cvc_entities.deleted_at')
             ->whereNull('cvc_documents.deleted_at')
             ->whereColumn('cvc_search_index.content_hash', 'cvc_documents.content_hash')
-            ->when($contextId !== null, fn ($builder) => $builder->whereIn(
-                'cvc_search_index.entity_id',
-                DB::table('cvc_context_entity')->select('entity_id')->where('context_id', $contextId),
-            ))
+            ->when($contextId !== null, fn ($builder) => $builder->where(fn ($scope) => $scope
+                ->whereIn('cvc_search_index.entity_id', DB::table('cvc_context_entity')->select('entity_id')->where('context_id', $contextId))
+                ->orWhereIn('cvc_search_index.entity_id', NoteSpace::query()->select('entity_id')->where('context_id', $contextId))))
             ->when(
                 $entityType !== null,
                 fn ($builder) => $builder->where('cvc_search_index.entity_type', $entityType),
@@ -55,7 +62,7 @@ final class SearchVault
 
         return $results->map(fn (SearchDocument $result): array => [
             'id' => (string) $result->getKey(),
-            'contextId' => (string) $result->getAttribute('context_id'),
+            'contextId' => (string) ($result->getAttribute('context_id') ?? $result->getAttribute('owner_context_id')),
             'title' => $result->title,
             'snippet' => $this->snippet($result->content, $query),
             'entityType' => $result->entity_type,
