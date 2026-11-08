@@ -74,17 +74,53 @@ the markup test confirms an HTML-looking title creates no image element. No
 new record-writing surface or sensitive-data copy was introduced. No issue found
 in the changed rendering path. No live browser journey was performed.
 
+## Phase 3 — RF-03 mathematical foundation
+
+Branch: `cm-canvas-cosmico-math`, created from refreshed `origin/main` and
+fast-forwarded through the earlier validated phases. D-01 through D-06 and the
+note/subspace model of D-14 are approved in specification section 15.2.
+
+| Requirement | State | Implementation | Tests | Commits |
+| --- | --- | --- | --- | --- |
+| Own content, unique descendants, fixed area budget (D-01/D-02) | implemented as domain arithmetic | `resources/js/canvas/math/content-weight.ts`, `hierarchy-weight.ts`, `space-budget.ts`, `validate-measure.ts` | `cosmic-content.test.ts` (32 cases) | `f87af10` |
+| Scalar force laws, circular area, coordinate and camera arithmetic (D-03/D-06) | implemented as domain arithmetic | `resources/js/canvas/math/forces.ts`, `geometry.ts` | `cosmic-forces.test.ts` (13 cases) | `473176f` |
+| Complete RF-03 simulation and persistence | partial | Headless simulator, metric collection, renderer, hit testing, viewport observation, position/fixation persistence, and browser verification remain | Not claimed complete | Pending |
+
+Observed results: all 131 canonical frontend tests passed in 13 files. TypeScript
+and targeted lint passed for the package source and mathematical modules/tests.
+The numerical budget test conserves X within absolute tolerance 1e-12 for 1000
+allocations; an iterative hierarchy test handles 10000 levels without recursive
+stack overflow. These are test scenarios, not approved production volume targets.
+
+`measureOwnContent` takes source text and already-counted structural metrics.
+It does not parse Markdown into top-level blocks or fetch note bodies. The
+normal-note caller must supply raw Markdown and top-level block counts; the
+flowchart caller must supply editable node/edge text and structural counts,
+excluding serialization and external links. Metric collection is separate work.
+Unique descendants are memoized only within each traversal. No cross-space or
+persistent cache retains content; a new input snapshot produces fresh results.
+
+Security review: no endpoint, write path, browser storage, or rendered HTML was
+introduced. Numeric inputs reject invalid values/overflow, graphs reject cycles
+and missing references, and duplicate allocations are rejected. Input maps and
+source strings are not modified. No issue found in these changed paths.
+
+An isolated two-body numerical probe found that contact coefficient 20 could
+leave two area-0.4 bodies nearly coincident. Rechi explicitly approved correcting
+that coefficient to 32 before simulator implementation. This probe does not
+constitute validation of a production simulator or visual interaction.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
 | RF-02 | partial | RN-08 title display implemented; cosmic expansion, complete note properties/type UI, and camera integration remain |
-| RF-03 | blocked | D-01 through D-06 require aggregation, budget, units, constants, contact, minimum sizes, and viewport decisions |
+| RF-03 | partial | D-01 through D-06 approved; arithmetic tested; complete simulator and UI/persistence integration remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
-| RF-08 | blocked | Multiple memberships and movement need reconciliation under D-01/D-13/D-14 |
+| RF-08 | blocked | Shared subspace model approved under D-01/D-14; movement of a particular participation and D-13 policies remain |
 | RF-09 | blocked | D-10 directions/overlap/physics and transition parameters remain open |
 | RF-10 | blocked | D-09 counter events and prefix normalization remain open |
 | RF-11 | blocked | Fixture identity/tombstone handling, final persistence, and flowchart format must support examples without replacing edits |
@@ -94,7 +130,7 @@ No open physical constant, formula, migration policy, or content format has been
 silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
-Next dependency: the D-01 question is pending. Proposed aggregation is the sum
-of descendants' own content, counting each note once per evaluated space, without
-reapplying 0.8 at every depth. This is a proposal awaiting Rechi's answer, not an
-approved rule or implemented simulation. D-02 through D-06 also remain open.
+Next implementation: headless simulation under the approved D-03/D-04, followed
+by additive note/subspace integration under D-14. D-05/D-06 UI rules are approved
+but not implemented by their arithmetic helpers alone. Product questions for
+later requirements remain separate and must not be silently resolved.

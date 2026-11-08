@@ -49,16 +49,16 @@ Responsável por todas as regras abaixo: Rechi. Fórmulas, definições e exempl
 | RN-01 | Hierarquia cósmica navegada por zoom | Universo → constelação → planeta → continente | Nomes e aparência dos níveis posteriores não detalhados |
 | RN-02 | Duplo clique vazio cria nota normal no nível atual; ponto circular cria uma nota irmã conectada | Dentro de um planeta, criar um continente | Tipo de conteúdo só muda ao editar; equivalentes de criação por toque ainda abertos |
 | RN-03 | Clique abre o conteúdo com expansão/aproximação; zoom manual navega pela hierarquia | Abrir o conteúdo de um planeta sem confundir com seus filhos | Limiar e prevenção de gestos acidentais ainda abertos |
-| RN-04 | Tamanho segue conteúdo e subnotas, dentro de orçamento fixo por nível | Adicionar planeta redistribui o espaço disponível | Política quando os mínimos não couberem ainda aberta |
+| RN-04 | Tamanho segue conteúdo e subnotas, dentro de orçamento fixo por nível | Adicionar planeta redistribui o espaço disponível | D-02/D-05: orçamento de tamanhos, grafo com pan/zoom e alvo de toque mínimo separado |
 | RN-05 | Gravidade universal entre notas do mesmo espaço e Hooke nas conexões | Notas conectadas se mantêm mais próximas | Blocos internos do fluxograma não recebem essa física |
-| RN-06 | Contato suave e amortecimento até estabilizar | Duas notas encostam e se empurram | Fórmulas de contato e amortecimento ainda não escolhidas |
+| RN-06 | Contato suave e amortecimento até estabilizar | Duas notas encostam e se empurram | Calibração inicial D-04 aprovada na seção 15.2 |
 | RN-07 | Soltar livre acomoda; soltar com Ctrl fixa; posições e fixações são restauradas | Nota fixa atrai notas livres | Celular usa toque prolongado e menu “Fixar / Liberar” |
 | RN-08 | Nome exibido tem até 20 caracteres do título, com “…” adicional se truncado | Nome longo fica abreviado no canvas | Valor completo permanece na nota e não é truncado no banco |
 | RN-09 | Troca de tipo preserva descrição e pode converter o diagrama em bloco textual editável | Texto válido reconstrói o fluxograma | Estrutura inválida bloqueia; ausência de bloco cria diagrama vazio |
 | RN-10 | Autosave após 1,5 segundo sem alterações; sair inicia salvamento imediato | Nova edição reinicia o prazo | Terceira falha cancela o ciclo, informa erro e oferece nova tentativa |
 | RN-11 | Rascunho de reenvio fica apenas na memória da aba | Reenvio não perde conteúdo durante a sessão | Não recuperar após recarga; avisar sobre alterações pendentes ao fechar/recarregar |
 | RN-12 | Pesquisa separa “Neste universo” de “Outros universos” | Resultado próximo aproxima; distante usa fade curto | Voltar restaura local, zoom e câmera anteriores |
-| RN-13 | Mover pai leva subnotas e preserva relações externas | Conexões antigas continuam existindo | Impedimento de ciclos e política de múltiplas participações ainda precisam de conciliação com o modelo existente |
+| RN-13 | Mover pai leva subnotas e preserva relações externas | Conexões antigas continuam existindo | D-01/D-14: identidade e subespaço compartilhados; rejeitar ciclos; política de retirada de uma participação ainda requer definição |
 | RN-14 | Notas externas aparecem discretamente nos cantos relativos; clique percorre o ancestral comum | Entre universos, recuar à visão inicial das galáxias e entrar no destino | Não usar a regra de fade da pesquisa para esse percurso |
 | RN-15 | Comando de conexão oferece até cinco títulos que começam pelo texto digitado | `pla` encontra Planta, Planeta e similares | Sem correspondência de prefixo, não completar com títulos populares de outro início |
 | RN-16 | Ordenação dos candidatos: pontuação decrescente, depois alfabética | Pontuação = acessos + pesquisas + links | Eventos exatos de contagem ainda abertos; títulos iguais mostram o caminho |
@@ -72,10 +72,10 @@ Responsável por todas as regras abaixo: Rechi. Fórmulas, definições e exempl
 | --- | --- | --- |
 | Texto | Letras/números × 1 + espaços/especiais × 0,4 | Confirmado; incluir Markdown e letras acentuadas como letras |
 | Conteúdo próprio | `C = T + 0,8B + 0,8V + 0,4E` | Pesos complementares definidos por delegação do usuário |
-| Conteúdo e subnotas | `Q = 0,5C + 0,8H` | Coeficientes confirmados; agregação de H ainda aberta |
+| Conteúdo e subnotas | `Q = 0,5C + 0,8H` | H soma C dos descendentes únicos; D-01 aprovada |
 | Orçamento espacial | `X = soma(Ai) + espaço vazio` | X fixo; reserva vazia com peso 2 |
-| Distribuição | `Ai = (X − vazio) × wi / soma(w)` | Divisão proporcional; funções finais de reserva e peso ainda abertas |
-| Gravidade | `Fg = G × mi × mj / d²` | Lei confirmada; conversão tamanho/massa e constantes ainda abertas |
+| Distribuição | `Ai = (X − vazio) × wi / soma(w)` | D-02: X=1; wi=max(Qi,1); vazio=max(0,2; 2/(2+soma(w))) |
+| Gravidade | `Fg = G × mi × mj / d²` | D-03/D-04: massa=Ai, distância entre centros, G=0,0001; mínimo numérico de distância 0,001 |
 | Elasticidade | `Fe = k × (d − L)` | Hooke confirmado; quantidade de conexões reforça o componente elástico |
 | Autocomplete | `S = acessos + pesquisas + links` | Soma com pesos unitários, após filtrar o prefixo |
 
@@ -146,7 +146,7 @@ Este item é uma inclusão de escopo documental: a seeder ainda não foi impleme
 | ID | Categoria | Requisito | Verificação |
 | --- | --- | --- | --- |
 | RNF-01 | Responsividade | Mobile first e adaptação dinâmica | Testar toque e mouse em tamanhos de tela distintos, sem sobreposição dos controles |
-| RNF-02 | Legibilidade | Nota vazia selecionável confortavelmente; nome abreviado legível | Exibir nome e alvo de toque utilizáveis; dimensões exatas ainda abertas |
+| RNF-02 | Legibilidade | Nota vazia selecionável confortavelmente; nome abreviado legível | D-05: área de toque mínima de 44×44 px; seleção por títulos quando alvos coincidirem |
 | RNF-03 | Segurança | Não persistir rascunho no navegador | Ausência de conteúdo pendente em localStorage, sessionStorage, IndexedDB e cache persistente |
 | RNF-04 | Integridade | Não indicar salvo antes da confirmação | Testar lentidão, três falhas e retomada manual |
 | RNF-05 | Estabilidade | Simulação dissipa movimento | Testar contato, repouso, fixação e ausência de valores inválidos |
@@ -172,7 +172,7 @@ Modelo conceitual, não uma migração aprovada:
 
 ### 7.2 Relacionamentos
 
-Pai possui subnotas; mover o pai leva o conjunto. Relações conectam notas inclusive entre universos. O documento anterior permite múltiplas participações de uma entidade; esta entrevista não resolveu como esse modelo interage com o pai usado no tamanho e com a movimentação. Não impor árvore exclusiva silenciosamente.
+Pai possui subnotas; mover o pai leva o conjunto. Relações conectam notas inclusive entre universos. D-01/D-14 aprovadas no desenvolvimento: cada documento mantém sua identidade e recebe um espaço próprio de subnotas; aparições compartilham conteúdo e subnotas, com posição/fixação independentes. A política de mover/retirar uma participação ainda precisa respeitar esse modelo; não impor árvore exclusiva.
 
 ### 7.3 Histórico, retenção e migração
 
@@ -257,19 +257,13 @@ Encerradas as perguntas a pedido do usuário. Os pontos abaixo estão **não dis
 
 | # | Decisão | Área | Impacto |
 | --- | --- | --- | --- |
-| D-01 | Agregação recursiva de subnotas e compatibilidade com múltiplas participações | Domínio/pesos | Evitar dupla contagem e ciclos |
-| D-02 | Reserva mínima vazia, peso 2 e normalização; caso sem filhos | Espaço | Completar fórmula implementável |
-| D-03 | Área/raio, massa, distâncias, constantes e reforço por conexões | Física | Completar simulação sem trocar leis aprovadas |
-| D-04 | Colisão, amortecimento, integração e singularidade de distância zero | Física | Estabilidade e segurança numérica |
-| D-05 | Mínimo numérico legível e excesso de filhos no orçamento fixo | UI | Resolver conflito de capacidade |
-| D-06 | Câmera e coordenadas entre tamanhos de tela | Responsividade | Preservar posições e fixações |
 | D-07 | Formato do bloco textual e múltiplos blocos | Fluxograma | Conversão confiável |
 | D-09 | Contagem de acessos/pesquisas/links, normalização de prefixos e alias longo com $ | Autocomplete | Métrica consistente e sintaxe inequívoca |
 | D-10 | Direção, agrupamento e física das indicações externas | Conexões | Evitar cantos congestionados |
 | D-11 | Limiar perto/longe, duração do fade, busca sem universo aberto | Navegação | Completar comportamento visual |
 | D-12 | Gestos de criação no celular e detalhes de seleção/conexão no editor | Interação | Completar uso por toque |
 | D-13 | Exclusão/lixeira, retenção, histórico e migração | Dados | A pergunta de exclusão não foi respondida; não aprovar cascata por inferência |
-| D-14 | Integração final Rechi OS, esquema de banco e criptografia completa | Integração | Conciliar trabalho anterior e validar sem produção |
+| D-14 (parte restante) | Integração final Rechi OS, esquema detalhado e criptografia completa | Integração | Modelo nota/espaço aprovado em 15.2; implementação aditiva ainda precisa ser validada sem produção |
 | D-15 | Prioridades, carga, metas, ambientes, operação, custos e critérios herdados | Entrega | Planejamento de desenvolvimento ainda necessário |
 
 As demais áreas do checklist não redefinidas nesta entrevista conservam referências anteriores como contexto a verificar; não contam automaticamente como novas confirmações. Não declarar 100% de cobertura nem testes de produto concluídos.
@@ -290,6 +284,18 @@ Rechi aprovou nesta conversa de desenvolvimento:
 O desenvolvimento pode seguir automaticamente para outras fases, conforme autorização posterior de Rechi, preservando os bloqueios de decisões em aberto e a necessidade de consentimento específico para dependências.
 
 A implementação usa o endpoint existente `PATCH /vault/documents/{id}`, enviando `content` e a revisão esperada em `revision`. Uma resposta bem-sucedida precisa confirmar a mesma identidade, o conteúdo enviado e uma revisão numérica mais recente. A rastreabilidade e os limites de validação estão em `canvas-cosmico-traceability.md`.
+
+### 15.2 Decisões matemáticas, visuais e de domínio aprovadas em 2026-11-08
+
+- **D-01:** H é a soma do conteúdo próprio C de todos os descendentes, contando cada identidade uma vez no espaço avaliado. Q=0,5C+0,8H; não aplicar 0,8 novamente a cada profundidade. Rejeitar ciclos e referências ausentes.
+- **D-02:** orçamento lógico X=1. Cada filho recebe wi=max(Qi,1). Reserva E=max(0,2X; X×2/(2+soma(w))). Ai=(X−E)×wi/soma(w). Sem filhos, E=X. A implementação verifica conservação numérica com tolerância absoluta de 1e-12.
+- **D-03:** Ai é área circular; raio=sqrt(Ai/π), massa=Ai, distância entre centros. k efetivo=k×quantidade de conexões do par; L=soma dos raios+folga configurável.
+- **D-04:** calibração inicial configurável G=0,0001; k=0,2; folga=0,04; contato F=32×sobreposição; amortecimento v×exp(−6dt); integração em passos de 1/120 s, com avanço limitado a 1/15 s; distância mínima numérica 0,001; repouso após velocidade inferior a 0,0001 durante 0,5 s. Posição fixa não muda e continua exercendo forças. Coincidência de centros recebe direção determinística pelos IDs. O coeficiente de contato inicialmente aprovado em 20 foi corrigido para 32 com aprovação explícita após uma verificação isolada mostrar aprisionamento de duas notas grandes coincidentes.
+- **D-05:** X limita a soma dos tamanhos, não exige confinamento dos círculos numa região fechada de mesma área. Grafo pode se espalhar com pan/zoom. Alvo de toque mínimo 44×44 px, independente de Ai. Sobreposição de alvos oferece os títulos para seleção. Não esconder nomes por falta de espaço nem reduzir indefinidamente os alvos.
+- **D-06:** uma unidade lógica equivale a 1024 unidades do canvas. Posições existentes permanecem na convenção atual; a física converte durante o cálculo. Redimensionar preserva centro observado e zoom, ajustando somente a translação; posições e fixações não mudam por causa da tela.
+- **D-14 (modelo):** documentos mantêm identidade/conteúdo e recebem espaço próprio de subnotas. Nota compartilhada mantém o mesmo conteúdo e subnotas em todas as aparições, com posições/fixações por espaço. Contextos existentes são preservados e podem receber conteúdo ao editar. Evolução do esquema será aditiva e reversível, verificada em banco local com rollback. Isso não declara a criptografia completa nem autoriza produção.
+
+Estas aprovações definem contratos; não são evidência de que a simulação, as migrações ou a interface já estejam implementadas. Consulte os estados e resultados na rastreabilidade.
 
 ## 16. Glossário
 

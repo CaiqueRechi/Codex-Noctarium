@@ -12,6 +12,7 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Arbitrarily deep universe/context hierarchies inside the vault, loaded one navigation slice at a time.
 - Semantic zoom rendered with React Flow.
 - Canvas labels limited to 20 visible characters plus an ellipsis, preserving complete note names and composed characters.
+- Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`; the complete physical renderer is still in development.
 - Stable UUID document entities.
 - Private immutable Markdown revision files with relational metadata.
 - Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.

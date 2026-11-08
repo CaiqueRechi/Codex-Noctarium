@@ -6,7 +6,7 @@ Estado: entrevista encerrada a pedido do usuário. Anexo de referência de `canv
 
 **Estas fórmulas são requisitos de EXTREMA IMPORTÂNCIA. Elas definem o comportamento central da visualização e devem orientar implementação, calibração e testes. Não podem ser substituídas silenciosamente por um layout genérico.**
 
-O usuário confirmou gravitação universal, elasticidade pela lei de Hooke, colisões suaves, amortecimento e orçamento espacial fixo por nível. As constantes, unidades e algumas funções de transformação ainda estão abertas; as distinções abaixo impedem que uma sugestão seja tratada como decisão aprovada.
+O usuário confirmou gravitação universal, elasticidade pela lei de Hooke, colisões suaves, amortecimento e orçamento espacial fixo por nível. D-01 a D-06 foram aprovadas no desenvolvimento em 2026-11-08, conforme seção 15.2 da especificação e detalhes abaixo. Formato textual do fluxograma e outras decisões de interação continuam abertos.
 
 ## 1. Conteúdo e pesos
 
@@ -25,7 +25,7 @@ Uma notação parcial para registrar os pesos é:
 Q_i = 0{,}5\,C_i + 0{,}8\,H_i
 \]
 
-`Q_i` representa o peso de conteúdo da nota; `C_i`, a medida do conteúdo próprio; `H_i`, a contribuição das subnotas. Esta expressão registra os dois coeficientes aprovados. A combinação do conteúdo próprio está definida abaixo. A agregação recursiva das subnotas permanece aberta.
+`Q_i` representa o peso de conteúdo da nota; `C_i`, a medida do conteúdo próprio; `H_i`, a soma de C de todos os descendentes únicos no espaço avaliado (D-01). Uma nota compartilhada não é contada novamente por outro caminho. Aplicar 0,8 uma vez sobre H, sem multiplicá-lo a cada profundidade. Rejeitar ciclos e referências ausentes.
 
 ### Contagem ponderada do texto
 
@@ -87,21 +87,21 @@ X = \sum_{i=1}^{n} A_i + E
 
 Adicionar filhos redistribui o mesmo orçamento: os existentes diminuem proporcionalmente para que todos caibam. Um filho com maior peso de conteúdo recebe participação maior. Não dividir igualmente por `n` ignorando os pesos.
 
-A relação proporcional pode ser expressa sem escolher ainda a função completa de reserva:
+A relação proporcional usa a reserva e o peso definidos em D-02:
 
 \[
 A_i = (X-E)\frac{w_i}{\sum_{j=1}^{n}w_j}
 \]
 
-`w_i` é o peso relativo do filho. Esta expressão formaliza a divisão proporcional confirmada, quando a soma dos pesos é positiva. A contribuição de subnotas usa o coeficiente 0,8; ainda é necessário definir como essa contribuição se transforma em `w_i` e como o peso 2 produz `E`, respeitando o mínimo de espaço vazio solicitado.
+`w_i=max(Q_i,1)` é o peso relativo do filho. X=1 por espaço e `E=max(0,2X; X×2/(2+soma(w)))`. Sem filhos, E=X. A reserva conserva peso 2 e tem piso de 20% do orçamento. O piso 1 dos filhos garante participação para notas vazias; não é um mínimo em pixels. A soma Ai+E deve conservar X dentro de tolerância absoluta 1e-12.
 
 Exemplo matemático ilustrativo, sem fixar parâmetros do produto: se `X=100`, `E=20` e os pesos de dois filhos estão na razão `1:3`, as parcelas são `20` e `60`. A soma com o vazio é `100`.
 
-Uma nota vazia tem tamanho mínimo suficiente para exibir seu nome e permitir seleção confortável, inclusive por toque. Essa legibilidade deve coexistir com o orçamento fixo, sem encolher indefinidamente as notas quando novos filhos são adicionados. O valor numérico do mínimo e o tratamento de excesso de filhos ainda precisam ser definidos.
+Uma nota vazia mantém nome visível e alvo de toque de pelo menos 44×44 px (D-05). Esse alvo não infla Ai. Se vários alvos coincidirem, o toque oferece seus títulos para seleção. O grafo pode se espalhar com pan/zoom; X é orçamento da soma dos tamanhos, não confinamento dos círculos numa região fechada. Não esconder nomes por falta de espaço nem reduzir os alvos indefinidamente.
 
 O rótulo no canvas exibe no máximo **20 caracteres do nome**, acrescentando “…” quando houver truncamento. O nome completo permanece preservado e disponível dentro da nota. Esse limite é de apresentação; não limita nem altera o nome armazenado. Esta regra não aprova ocultar os nomes automaticamente por falta de espaço.
 
-**Ainda aberto:** unidade de `X` e `A_i` (área, por exemplo), percentual mínimo de vazio, transformação de peso em área/raio, dimensões numéricas mínimas e tratamento de zero filhos ou soma de pesos zero. O peso 2 não foi confirmado como 2%, dois pixels nem reserva fixa de duas unidades.
+**D-02/D-03/D-05 aprovadas:** X e Ai são áreas lógicas; raio=sqrt(Ai/π), massa=Ai. O mínimo de seleção é separado da área física. O peso 2 não significa 2%, dois pixels nem uma reserva fixa de duas unidades.
 
 ## 3. Gravitação universal
 
@@ -111,13 +111,13 @@ Fórmula confirmada explicitamente:
 F_g = G\frac{m_i m_j}{d_{ij}^{2}}
 \]
 
-- `G`: constante de intensidade da gravidade da simulação; valor ainda não definido.
+- `G`: intensidade configurável; calibração inicial aprovada 0,0001.
 - `m_i`, `m_j`: massas derivadas dos tamanhos das notas.
-- `d_ij`: distância entre as notas; convenção de medição ainda não definida.
+- `d_ij`: distância entre centros; usar mínimo numérico de 0,001 na gravidade.
 
 Todas as notas no mesmo espaço visual se atraem, mesmo sem relacionamento. Notas maiores exercem mais atração; a força diminui com o quadrado da distância. Uma nota fixada continua exercendo atração sobre as demais.
 
-A transformação exata de tamanho em massa ainda precisa ser definida. A fórmula não deve ser alterada silenciosamente. Distância zero é uma singularidade: o tratamento numérico precisa ser especificado e testado antes da implementação.
+Massa=Ai (D-03). D-04 aprova limitar o denominador à distância mínima de 0,001 e usar direção determinística pelos IDs em coincidência exata. Fora dessa proteção, conservar a lei inversa do quadrado. Verificar numericamente estabilidade e ausência de valores inválidos.
 
 ## 4. Elasticidade das conexões
 
@@ -133,13 +133,13 @@ F_e = k(d-L)
 
 Acima de `L`, a mola aproxima as notas; abaixo de `L`, afasta. A direção da força restaura o equilíbrio. A gravidade atua em conjunto com essa força: notas diretamente ligadas devem ficar mais próximas, formando agrupamentos semelhantes à proximidade de um sistema solar.
 
-O usuário também pediu que a quantidade de conexões aumente a força elástica. A função que relaciona essa quantidade com a rigidez ainda está aberta; não foi aprovado um valor de `k`, uma multiplicação linear nem outro expoente. A distância `L` também não foi escolhida.
+D-03/D-04: k efetivo=k×quantidade de conexões do par, com k inicial 0,2; L=raio_i+raio_j+folga, com folga inicial 0,04. Constantes são configuráveis e alterações de calibração precisam ser registradas.
 
 ## 5. Contato, colisão e amortecimento
 
-As notas podem encostar e devem empurrar umas às outras suavemente. A força de contato impede que permaneçam sobrepostas. A função e os coeficientes de colisão ainda não foram definidos; colisão não substitui a gravidade nem a elasticidade.
+As notas podem encostar e devem empurrar umas às outras suavemente. D-04 aprova Fcontato=32×max(0,raio_i+raio_j−d), com direção de separação. O coeficiente inicialmente aprovado em 20 foi corrigido explicitamente para 32 após verificação isolada revelar aprisionamento em sobreposição profunda. Colisão não substitui gravidade nem elasticidade.
 
-O movimento deve perder energia gradativamente até estabilizar. Não manter oscilação perpétua. A fórmula de amortecimento, seu coeficiente, a integração temporal e o limiar de repouso ainda não foram aprovados. Devem ser documentados antes de considerar o modelo completo, incluindo seu comportamento em diferentes taxas de quadros.
+O movimento perde energia com v×exp(−6dt). D-04 aprova passos de integração de 1/120 s, avanço limitado a 1/15 s, e repouso após velocidade inferior a 0,0001 durante 0,5 s. Essas aprovações não substituem testes em taxas de quadros distintas nem comprovam a simulação implementada.
 
 ## 6. Arraste e persistência
 
@@ -156,10 +156,10 @@ Requisito confirmado: interface caprichada, projetada primeiro para celular, com
 - Canvas, nomes e controles precisam continuar legíveis e utilizáveis em telas pequenas e grandes.
 - A nota vazia deve manter uma área confortável de seleção, incluindo interação por toque.
 - A distribuição proporcional por pesos deve funcionar nos diferentes tamanhos de tela; não assumir uma resolução de desktop como medida universal.
-- Mudanças de tamanho da tela devem preservar identidade das notas, hierarquia e estado de fixação. A política exata de transformação das coordenadas ainda precisa ser definida.
+- D-06: uma unidade lógica equivale a 1024 unidades do canvas. Mudanças de tela preservam identidade, hierarquia, posições, fixação, centro observado e zoom; ajustar só a translação da câmera.
 - As interações necessárias devem ter alternativa utilizável em dispositivos sem teclado. Para fixação, foi confirmado o toque prolongado que abre o menu “Fixar / Liberar”.
 
-O orçamento lógico fixo de cada nível não implica que sua dimensão em pixels seja idêntica em todos os dispositivos. A relação entre orçamento, câmera, zoom e viewport permanece uma decisão aberta. Também é necessário resolver o caso em que todos os filhos, em seu tamanho mínimo legível, não cabem simultaneamente no orçamento; não ocultar essa incompatibilidade reduzindo os alvos de toque sem limite.
+O orçamento lógico X=1 e a escala de 1024 unidades de canvas são constantes (D-02/D-06). A janela observa uma parte do grafo com pan/zoom. D-05 separa tamanho físico e alvo mínimo de seleção; quando alvos coincidirem, oferecer escolha por títulos. A adaptação não altera posições/fixações nem esconde nomes por falta de espaço.
 
 ## 8. Verificações exigidas para a futura implementação
 
@@ -171,15 +171,15 @@ Estes são critérios a verificar, não resultados de testes já executados:
 4. Com massas constantes, dobrar a distância reduz a gravidade a um quarto.
 5. Com distância constante, dobrar uma massa dobra a força gravitacional.
 6. A força elástica é zero em `d=L`; sua direção muda nos dois lados do equilíbrio.
-7. A quantidade de conexões reforça a elasticidade conforme função ainda a aprovar.
+7. A quantidade de conexões reforça linearmente a elasticidade (D-03).
 8. Notas sem ligação continuam sujeitas à gravidade do mesmo espaço.
 9. Contato permite encostar, com reação suave e recuperação da sobreposição.
 10. Após uma interação isolada, o movimento dissipa energia e se estabiliza.
 11. Notas fixadas não se deslocam, mas continuam atraindo as livres.
 12. Reabrir o nível restaura posições e fixações.
-13. Casos sem filhos, sem conteúdo, distância zero e muitos filhos não produzem valores inválidos; política de cada caso ainda precisa ser definida.
+13. Casos sem filhos, sem conteúdo, distância zero e muitos filhos respeitam D-01 a D-05 e não produzem valores inválidos.
 14. Notas vazias mostram seu nome e são selecionáveis confortavelmente em telas pequenas e grandes; testar também por toque.
-15. Redimensionar a tela preserva contexto e fixações, conforme política de coordenadas ainda a definir.
+15. Redimensionar a tela preserva contexto e fixações, centro observado e zoom conforme D-06.
 16. Os gestos necessários são utilizáveis no celular, incluindo uma alternativa à fixação por Ctrl.
 17. Nomes com até 20 caracteres aparecem completos no canvas; nomes maiores exibem os primeiros 20 caracteres com “…” e permanecem completos dentro da nota, sem alteração do valor armazenado.
 18. A contagem textual aplica peso 1 a letras, incluindo acentuadas, e números; aplica peso 0,4 a espaços e caracteres especiais. O exemplo “Olá, ç1!” resulta em 6,2 antes do coeficiente 0,5.
@@ -344,6 +344,6 @@ Critérios para futura verificação: comandos longo e abreviado encontram os me
 
 ## 14. Decisões abertas no encerramento
 
-Permanecem abertas: profundidade da agregação, reserva mínima de vazio, normalização do orçamento, conversão espacial e de massa, reforço elástico por conexões, constantes físicas, resposta de contato e amortecimento, dimensões mínimas, excesso de filhos, transformação de coordenadas entre telas, formato do bloco textual e tratamento de múltiplos blocos na troca de tipo. Responsável pelas decisões de produto: Rechi; prazo não definido.
+No encerramento original, estes temas permaneciam abertos. Em 2026-11-08, Rechi aprovou D-01 a D-06 e a conciliação nota/espaço da D-14, registradas na seção 15.2 da especificação e incorporadas acima. Continuam abertos o formato do bloco textual, múltiplos blocos, outros gestos/transições, contadores e detalhes restantes de persistência/criptografia. Aprovação de modelo não comprova implementação; consultar a rastreabilidade.
 
 Este registro complementa `crow-vault-canvas.md` para o redesenho em discussão. Não declara que o comportamento atual já segue estas regras.
