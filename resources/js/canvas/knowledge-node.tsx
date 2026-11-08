@@ -2,6 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 
 import type { SemanticLevel } from './semantic-zoom';
+import { truncateCanvasTitle } from './truncate-canvas-title';
 
 export type KnowledgeNodeData = {
     kind: 'universe' | 'context' | 'document';
@@ -33,7 +34,9 @@ export function KnowledgeNode({
                       ? 'Assunto'
                       : 'Documento'}
             </span>
-            <strong>{data.label}</strong>
+            <strong title={data.label}>
+                {truncateCanvasTitle(data.label)}
+            </strong>
             {showsDetails && (
                 <small>
                     {data.kind === 'universe'
