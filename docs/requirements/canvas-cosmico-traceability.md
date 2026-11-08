@@ -48,12 +48,38 @@ Security review for this phase:
 - No newly exposed secrets or security issue found in this change's reviewed
   paths. This is a scoped check, not a repository-wide security audit.
 
+## Phase 2 — RF-02 title presentation (RN-08)
+
+Branch: `cm-canvas-cosmico-labels`, created from refreshed `origin/main` and
+fast-forwarded through the validated autosave phase before continuing. Existing
+uncommitted work remains preserved in the working tree.
+
+| Requirement | State | Implementation | Tests | Commits |
+| --- | --- | --- | --- | --- |
+| RN-08 and title limit in RF-02/RNF-06 | implemented | `resources/js/canvas/truncate-canvas-title.ts`, `knowledge-node.tsx` | `resources/js/tests/canvas-title.test.tsx` (12 cases) | `17a5643`, `8b8184f` |
+| Complete RF-02 cosmic editor | partial | Existing editor and full names retained; cosmic expansion and full property/type editing remain | No claim of complete RF-02 acceptance | Pending |
+
+Labels show at most 20 grapheme clusters followed by an ellipsis only when
+truncated. Segmentation preserves composed accents, flags, and family emoji.
+The original string is unchanged and remains available in the title attribute
+and existing document editor. A reusable segmenter holds no note content.
+
+Observed phase results: 12 focused title tests passed; the full canonical
+frontend suite passed 86 tests in 11 files. TypeScript and targeted lint checks
+passed. No dependency, migration, endpoint, database mutation, or running-service
+restart was introduced.
+
+Security review: titles render as escaped React text and an escaped attribute;
+the markup test confirms an HTML-looking title creates no image element. No
+new record-writing surface or sensitive-data copy was introduced. No issue found
+in the changed rendering path. No live browser journey was performed.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
-| RF-02 | partial | Existing Markdown editor retained; cosmic expansion, complete note properties/type UI, and camera integration remain |
+| RF-02 | partial | RN-08 title display implemented; cosmic expansion, complete note properties/type UI, and camera integration remain |
 | RF-03 | blocked | D-01 through D-06 require aggregation, budget, units, constants, contact, minimum sizes, and viewport decisions |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
@@ -67,3 +93,8 @@ Follow-up questions are asked only when their decisions block the next phase.
 No open physical constant, formula, migration policy, or content format has been
 silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
+
+Next dependency: the D-01 question is pending. Proposed aggregation is the sum
+of descendants' own content, counting each note once per evaluated space, without
+reapplying 0.8 at every depth. This is a proposal awaiting Rechi's answer, not an
+approved rule or implemented simulation. D-02 through D-06 also remain open.
