@@ -15,7 +15,7 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Private immutable Markdown revision files with relational metadata.
 - Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.
 - Serialized vault storage quotas for bytes, filesystem entries, document size, and minimum free space.
-- Explicit `pending`, `saving`, `saved`, and `failed` editor states.
+- Debounced autosave after 1.5 seconds of inactivity, with explicit `pending`, `saving`, `saved`, and `failed` editor states.
 - Persisted camera, focused hierarchy node, and focused document per authenticated user.
 - Authorized vault explorer for locating universes, contexts, and documents.
 - Shared entities displayed in multiple contexts without content duplication.
@@ -93,6 +93,21 @@ The operational panel keeps save state and recent queue work inside the vault in
 
 ## Verification
 
+When the sibling Rechi OS toolchain is already available, run package frontend
+checks directly against these canonical sources, rather than a potentially
+stale installed copy under the host's `vendor` directory. From this repository:
+
+```bash
+node ../rechi-os/node_modules/vitest/vitest.mjs run --config tooling/vitest.config.mjs --configLoader native --pool=threads
+node ../rechi-os/node_modules/typescript/bin/tsc --noEmit --project tooling/tsconfig.json
+node ../rechi-os/node_modules/eslint/bin/eslint.js resources/js/documents resources/js/pages/vault.tsx
+```
+
+These configurations reuse the existing host dependencies and do not install
+anything. They expect the documented sibling layout. Refreshing a separately
+installed or running host copy is a separate integration step; testing the
+package source does not update a running app.
+
 Package PHP tests:
 
 ```bash
@@ -121,6 +136,36 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 - [Unbounded hierarchy and database revision transition](docs/architecture/unbounded-hierarchy-and-database-revisions.md)
 - [Vertical-slice traceability](docs/traceability/vertical-slice.md)
 - [MVP technical readiness](docs/traceability/mvp-readiness.md)
+- [Cosmic canvas requirements](docs/requirements/canvas-cosmico.md)
+- [Cosmic canvas formulas](docs/requirements/canvas-cosmico-formulas.md)
+- [Cosmic canvas implementation traceability](docs/requirements/canvas-cosmico-traceability.md)
+
+## Autosave and pending changes
+
+Editing starts a 1.5-second inactivity timer. Further typing resets it. Saving
+uses one request at a time and only shows `Salvo` after the server confirms the
+exact submitted content with a newer revision. Typing during a request remains
+pending and is saved using that confirmed revision; an earlier response cannot
+replace the newer draft.
+
+Transient network and HTTP failures are retried after 1.5 seconds, with at most
+three total attempts per cycle. During retries, the save indicator remains
+active. The third failure stops it, displays an error, and offers `Tentar
+novamente`, which starts a new cycle. Conflicts, expired sessions, authorization
+failures, validation errors, and invalid acknowledgements stop immediately.
+Resolve the session or revision conflict before retrying; no automatic overwrite
+or revision replacement occurs.
+
+Leaving the editor starts an immediate save and waits for all pending edits.
+Failure keeps the editor open. Once a cycle has failed, navigation does not
+silently start another cycle. Browser closing or reloading requests the native
+unsaved-changes warning while confirmation is pending, subject to browser rules.
+
+The draft and retry queue exist only in tab memory. No pending content is stored
+in localStorage, sessionStorage, IndexedDB, or a persistent browser cache.
+Closing or reloading can lose unconfirmed edits. Returning the draft to its old
+text after a failed request does not clear the warning because persistence may
+still be uncertain.
 
 ## Brand assets
 
