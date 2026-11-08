@@ -61,12 +61,32 @@ const props: VaultPageProps = {
         name: 'Vault',
         breadcrumbs: [{ id: 'context', name: 'Contexto' }],
         universes: [{ id: 'context', name: 'Contexto', documents: [note] }],
+        perspectives: [
+            {
+                id: 'perspective',
+                name: 'Principal',
+                sourcePerspectiveId: null,
+                filters: { contextIds: [], entityTypes: [] },
+                layouts: [],
+                versions: [
+                    {
+                        id: 'version',
+                        perspectiveId: 'perspective',
+                        name: 'Marco',
+                        kind: 'named',
+                        createdAt: '2026-11-08T00:00:00-03:00',
+                    },
+                ],
+            },
+        ],
     },
     endpoints: {
         documents: '/vault/documents',
         entities: '/vault/entities',
         workspace: '/vault/workspace',
         contexts: '/vault/contexts',
+        versions: '/vault/versions',
+        trash: '/vault/trash',
     },
     workspace: { viewport: { x: 1, y: 2, zoom: 1.4 }, focusEntityId: 'note' },
 };
@@ -215,6 +235,9 @@ describe('RF-06 editor integration and navigation', () => {
             screen.getByRole('button', { name: 'Voltar ao Rechi OS' }),
         );
         await tick(10000);
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Voltar ao Rechi OS' }),
+        );
         expect(visit).not.toHaveBeenCalled();
         expect(saves).toHaveBeenCalledTimes(3);
         expect(editor).toHaveValue('private draft');
@@ -296,6 +319,28 @@ describe('RF-06 editor integration and navigation', () => {
         expect(editor).toHaveValue('edited');
         expect(screen.getByRole('alert')).toHaveTextContent('outra sessão');
     });
+
+    it.each(['Restaurar', 'Mover selecionado para a lixeira'])(
+        'does not perform %s when saving the pending note fails',
+        async (action) => {
+            vi.spyOn(window, 'confirm').mockReturnValue(true);
+            const { editor, fetchMock } = await openEditor(
+                async () => new Response(null, { status: 403 }),
+            );
+            fireEvent.change(editor, { target: { value: 'private draft' } });
+            fireEvent.click(screen.getByRole('button', { name: action }));
+            await tick();
+            expect(
+                fetchMock.mock.calls.some(
+                    ([url, options]) =>
+                        url.includes('/vault/versions/') ||
+                        options?.method === 'DELETE',
+                ),
+            ).toBe(false);
+            expect(reload).not.toHaveBeenCalled();
+            expect(editor).toHaveValue('private draft');
+        },
+    );
 
     it('retains the exit warning and manual retry when typing back to the old content after a conflict', async () => {
         const { editor } = await openEditor(
