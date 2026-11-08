@@ -29,8 +29,10 @@ Observed results:
   encrypted revisions, stale revision protection, quota rollback, identity binding,
   backfill idempotence, and migration rollback/reapply. This is baseline evidence,
   not browser, HTTP, MySQL, or complete encryption validation.
-- Full PHPUnit invocation did not start: it reported that it could not open the
-  configured `vendor/autoload.php` bootstrap. No PHP code was changed for RF-06.
+- The initial sandboxed PHPUnit invocation could not open its configured
+  `vendor/autoload.php` bootstrap. A later approved execution outside that
+  restriction passed all 63 package PHP tests (427 assertions) before the
+  note/subspace migration phase. No PHP code was changed for RF-06.
 - No live browser journey or production host refresh was performed. Canonical
   source checks do not update the installed package copy or running local app.
 
@@ -110,13 +112,54 @@ leave two area-0.4 bodies nearly coincident. Rechi explicitly approved correctin
 that coefficient to 32 before simulator implementation. This probe does not
 constitute validation of a production simulator or visual interaction.
 
+## Phase 4 — RF-03 headless physical simulation
+
+Branch: `cm-canvas-cosmico-simulation`, based on refreshed main with prior phases
+integrated by fast-forward. Code and new capability tests: `f82bd41`.
+
+Implementation: `resources/js/canvas/physics/cosmic-simulation.ts`,
+`simulation-body.ts`, `simulation-parameters.ts`, and `spring-connections.ts`.
+The engine copies scene input, caches same-space connection counts for that
+immutable scene, accumulates fractional frame time, applies simultaneous pair
+forces, and integrates in fixed steps. Scene replacement must build a new engine
+so connection data cannot remain stale. No note content is stored by the engine.
+
+`cosmic-simulation.test.ts` passed 15 cases for unconnected gravity, fixed-body
+influence, link reinforcement, recovery from coincident large notes with contact
+32, deterministic ordering, damping/rest, wake after move/release, equal results
+at 30/60/120 Hz, bounded catch-up after suspended tabs, immutable inputs, and
+invalid scenes. Full frontend suite: 146 passing tests in 14 files; TypeScript
+passed. Scoped lint checks passed for the new engine and tests.
+
+The engine has no hard enclosing boundary under D-05. It does not animate
+flowchart content. Input links must refer to bodies inside its scene; exterior
+connection indicators are a separate UI concern. Configurations that would
+request more than 1024 substeps in one advance are rejected as unsafe; approved
+defaults use at most eight. Numeric errors fail closed instead of committing
+invalid body positions. Pinned positions are preserved exactly.
+
+Security review: no endpoint, record write, rendered user text, persistent cache,
+or secret was introduced. IDs only determine reproducible directions. Inputs and
+parameter values are checked, duplicate identities and foreign endpoints fail,
+and elapsed time cannot trigger unbounded catch-up under accepted settings.
+No issue found in these changed paths.
+
+The scene renderer, metric collection, note/subspace schema, touch hit targets,
+viewport observation, and position/fixation integration remain to be implemented.
+This engine is tested domain code, not a claim that the visible Vault already
+runs the new simulation.
+
+Backend baseline before schema work: 63 package PHP tests passed, with 427
+assertions, using the existing environment and an approved execution outside the
+Windows sandbox file-access restriction. No dependency download was needed.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
 | RF-02 | partial | RN-08 title display implemented; cosmic expansion, complete note properties/type UI, and camera integration remain |
-| RF-03 | partial | D-01 through D-06 approved; arithmetic tested; complete simulator and UI/persistence integration remain |
+| RF-03 | partial | Arithmetic and headless simulator tested; metric collection and UI/persistence integration remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
@@ -130,7 +173,7 @@ No open physical constant, formula, migration policy, or content format has been
 silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
-Next implementation: headless simulation under the approved D-03/D-04, followed
-by additive note/subspace integration under D-14. D-05/D-06 UI rules are approved
+Next implementation: additive note/subspace integration under D-14, followed
+by renderer/interaction wiring. D-05/D-06 UI rules are approved
 but not implemented by their arithmetic helpers alone. Product questions for
 later requirements remain separate and must not be silently resolved.
