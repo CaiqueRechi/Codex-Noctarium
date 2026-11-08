@@ -153,13 +153,74 @@ Backend baseline before schema work: 63 package PHP tests passed, with 427
 assertions, using the existing environment and an approved execution outside the
 Windows sandbox file-access restriction. No dependency download was needed.
 
+## Phase 5 — note/subspace backend checkpoint (in progress)
+
+Checkpoint requested by Rechi on 2026-11-08: stop development, save context, and
+push the current branch `cm-canvas-cosmico-note-spaces`. This is a review branch,
+not a completed release or acceptance of the whole redesign.
+
+| Change | Implementation / evidence | Commit |
+| --- | --- | --- |
+| Reconcile existing context movement | Existing rename/move endpoint and three tests retained as a prerequisite | `a574881` |
+| Keep new PHP test names in camelCase | Pint configuration follows standing conventions | `e6a3553` |
+| Stable shared note spaces | Additive `cvc_note_spaces` association, idempotent creation, cycle guards, independent layouts, deleted-owner checks, user/IP throttles, `spaceId` and `ownerEntityId` response fields | `5c020b5` |
+| Content for legacy contexts | Reusable private Markdown writer, one document per existing context, preserved children/identity, title synchronization, searchable context content | `7b805a4` |
+
+Observed validation:
+
+- Initial association tests: 11 passing tests / 69 assertions, including rollback
+  and reapplication of the new migration while preserving existing documents.
+- After rate-limit coverage, the exact staged package passed all 69 tracked PHP
+  tests / 519 assertions independently of the uncommitted storage prototype.
+- After adding legacy context content, the affected PHP selection passed 31
+  tests / 273 assertions (context documents, note spaces, editing, search, versions).
+- The last complete frontend run remains 146 passing tests in 14 files; no visual
+  integration was made in this backend phase.
+- A subsequent version-specific regression reproduction ran 2 tests / 6 assertions
+  with **1 failure**. This test file remains local and uncommitted. Do not report
+  the current phase as fully green or complete.
+
+### Confirmed pending integrity issue
+
+Restoring a membership snapshot can reintroduce a cycle after contexts have
+moved. Reproduction: capture V0 with note B outside context A; attach B to A and
+capture V1; restore V0; move A inside B's owned space; restore V1. The last step
+currently accepts A → B → A instead of rejecting it. The local reproduction is
+`tests/Feature/NoteSpaceVersionTest.php`, method
+`testRf03RejectsAnOlderMembershipSnapshotThatWouldCreateACycleWithCurrentContextPositions`.
+
+Next action: validate the resulting active context/note-space graph inside the
+version-restoration transaction and reject a cycle before commit. Serialize
+snapshot/restoration with the same per-vault lock order used by graph writes.
+Then rerun this regression and affected version/context tests. No fix was applied
+before the user's stop/save request. Valid restoration of legacy context content
+passed the other reproduction test without changing the owned-space identity.
+
+### Integration and rollback limits
+
+The new migration's down removes the association table. It preserves existing
+documents and content, but does not preserve newly populated ownership links.
+Do not treat rollback after adoption as lossless; plan preservation of those
+associations before using it on user data. Only local fixture rollback was run.
+
+New creation endpoints inherit session, authorization, CSRF, and existing write
+middleware, plus 30 requests/minute per identity and 60/minute per IP for the new
+space/context-content writes. IP keys are hashed. Foreign vaults and deleted
+owners are rejected; shared descendants are allowed, while direct/descendant
+attachment cycles are rejected. The confirmed restoration gap above remains open.
+
+No production migration, service restart, dependency installation, merge, or
+deployment was performed. The running host copy was not refreshed. Earlier
+uncommitted storage/navigation work remains local; it was not folded wholesale
+into these commits. Local context memory is excluded from Git separately.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
-| RF-02 | partial | RN-08 title display implemented; cosmic expansion, complete note properties/type UI, and camera integration remain |
-| RF-03 | partial | Arithmetic and headless simulator tested; metric collection and UI/persistence integration remain |
+| RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented; restoration cycle regression, metric collection and visual integration remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
@@ -173,7 +234,7 @@ No open physical constant, formula, migration policy, or content format has been
 silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
-Next implementation: additive note/subspace integration under D-14, followed
-by renderer/interaction wiring. D-05/D-06 UI rules are approved
-but not implemented by their arithmetic helpers alone. Product questions for
-later requirements remain separate and must not be silently resolved.
+Development is stopped at the user's checkpoint request. Next action on resume:
+fix the confirmed restoration cycle regression above, then continue metric and
+renderer/interaction integration. D-05/D-06/D-12 gesture rules are approved but
+not implemented by backend helpers alone. Later product decisions remain open.

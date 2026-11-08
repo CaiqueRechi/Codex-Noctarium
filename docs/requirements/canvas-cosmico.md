@@ -47,7 +47,7 @@ Responsável por todas as regras abaixo: Rechi. Fórmulas, definições e exempl
 | ID | Regra | Exemplo | Exceção ou limite |
 | --- | --- | --- | --- |
 | RN-01 | Hierarquia cósmica navegada por zoom | Universo → constelação → planeta → continente | Nomes e aparência dos níveis posteriores não detalhados |
-| RN-02 | Duplo clique vazio cria nota normal no nível atual; ponto circular cria uma nota irmã conectada | Dentro de um planeta, criar um continente | Tipo de conteúdo só muda ao editar; equivalentes de criação por toque ainda abertos |
+| RN-02 | Duplo clique vazio cria nota normal no nível atual; ponto circular cria uma nota irmã conectada | Dentro de um planeta, criar um continente | Tipo de conteúdo só muda ao editar; gestos por toque aprovados na seção 15.2 |
 | RN-03 | Clique abre o conteúdo com expansão/aproximação; zoom manual navega pela hierarquia | Abrir o conteúdo de um planeta sem confundir com seus filhos | Limiar e prevenção de gestos acidentais ainda abertos |
 | RN-04 | Tamanho segue conteúdo e subnotas, dentro de orçamento fixo por nível | Adicionar planeta redistribui o espaço disponível | D-02/D-05: orçamento de tamanhos, grafo com pan/zoom e alvo de toque mínimo separado |
 | RN-05 | Gravidade universal entre notas do mesmo espaço e Hooke nas conexões | Notas conectadas se mantêm mais próximas | Blocos internos do fluxograma não recebem essa física |
@@ -261,7 +261,7 @@ Encerradas as perguntas a pedido do usuário. Os pontos abaixo estão **não dis
 | D-09 | Contagem de acessos/pesquisas/links, normalização de prefixos e alias longo com $ | Autocomplete | Métrica consistente e sintaxe inequívoca |
 | D-10 | Direção, agrupamento e física das indicações externas | Conexões | Evitar cantos congestionados |
 | D-11 | Limiar perto/longe, duração do fade, busca sem universo aberto | Navegação | Completar comportamento visual |
-| D-12 | Gestos de criação no celular e detalhes de seleção/conexão no editor | Interação | Completar uso por toque |
+| D-12 (parte restante) | Limiares do zoom hierárquico e detalhes de seleção/conexão no editor | Interação | Gestos de criação por toque aprovados em 15.2; completar transições |
 | D-13 | Exclusão/lixeira, retenção, histórico e migração | Dados | A pergunta de exclusão não foi respondida; não aprovar cascata por inferência |
 | D-14 (parte restante) | Integração final Rechi OS, esquema detalhado e criptografia completa | Integração | Modelo nota/espaço aprovado em 15.2; implementação aditiva ainda precisa ser validada sem produção |
 | D-15 | Prioridades, carga, metas, ambientes, operação, custos e critérios herdados | Entrega | Planejamento de desenvolvimento ainda necessário |
@@ -294,6 +294,7 @@ A implementação usa o endpoint existente `PATCH /vault/documents/{id}`, envian
 - **D-05:** X limita a soma dos tamanhos, não exige confinamento dos círculos numa região fechada de mesma área. Grafo pode se espalhar com pan/zoom. Alvo de toque mínimo 44×44 px, independente de Ai. Sobreposição de alvos oferece os títulos para seleção. Não esconder nomes por falta de espaço nem reduzir indefinidamente os alvos.
 - **D-06:** uma unidade lógica equivale a 1024 unidades do canvas. Posições existentes permanecem na convenção atual; a física converte durante o cálculo. Redimensionar preserva centro observado e zoom, ajustando somente a translação; posições e fixações não mudam por causa da tela.
 - **D-14 (modelo):** documentos mantêm identidade/conteúdo e recebem espaço próprio de subnotas. Nota compartilhada mantém o mesmo conteúdo e subnotas em todas as aparições, com posições/fixações por espaço. Contextos existentes são preservados e podem receber conteúdo ao editar. Evolução do esquema será aditiva e reversível, verificada em banco local com rollback. Isso não declara a criptografia completa nem autoriza produção.
+- **D-12 (gestos):** no celular, toque prolongado no vazio abre “Nova nota” naquele ponto; toque simples numa nota abre o conteúdo; toque no ponto circular cria uma irmã conectada; toque prolongado na nota abre “Fixar / Liberar”. No desktop, manter duplo clique vazio para criar, clique para editar e Ctrl ao soltar para fixar. A aprovação define comportamento; a integração visual ainda está pendente.
 
 Estas aprovações definem contratos; não são evidência de que a simulação, as migrações ou a interface já estejam implementadas. Consulte os estados e resultados na rastreabilidade.
 
