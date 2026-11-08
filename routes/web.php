@@ -25,6 +25,7 @@ use CrowVaultCanvas\Http\Controllers\UpdateEntityPropertiesController;
 use CrowVaultCanvas\Http\Controllers\UpdatePerspectiveController;
 use CrowVaultCanvas\Http\Controllers\UpdatePerspectiveLayoutController;
 use CrowVaultCanvas\Http\Controllers\UpdateWorkspaceStateController;
+use CrowVaultCanvas\Http\Controllers\UpdateContextController;
 use CrowVaultCanvas\Http\Controllers\VaultController;
 use Illuminate\Support\Facades\Route;
 
@@ -57,6 +58,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::post('/contexts', StoreContextController::class)
                     ->middleware(config('crow-vault-canvas.route.context_write_middleware'))
                     ->name('contexts.store');
+                Route::patch('/contexts/{context}', UpdateContextController::class)
+                    ->middleware(config('crow-vault-canvas.route.context_write_middleware'))
+                    ->name('contexts.update');
                 Route::post('/entities/{entity}/attachments', StoreAttachmentController::class)
                     ->middleware(config('crow-vault-canvas.route.attachment_write_middleware'))
                     ->name('entities.attachments.store');

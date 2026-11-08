@@ -14,6 +14,7 @@ final class CreateContext
     {
         return DB::transaction(function () use ($name, $parentId): KnowledgeContext {
             $vaultId = (string) config('crow-vault-canvas.vault.id');
+            Vault::query()->whereKey($vaultId)->lockForUpdate()->firstOrFail();
 
             if ($parentId === null) {
                 Vault::query()->whereKey($vaultId)->lockForUpdate()->firstOrFail();
