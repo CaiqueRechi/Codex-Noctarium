@@ -19,7 +19,7 @@ final readonly class OpenDocument
             ->whereKey($entityId)
             ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
             ->where('kind', KnowledgeEntity::KIND_DOCUMENT)
-            ->with(['document', 'attachments'])
+            ->with(['document', 'attachments', 'noteSpace'])
             ->firstOrFail();
         $document = $entity->document;
 
@@ -49,6 +49,7 @@ final readonly class OpenDocument
                 ->map(fn ($attachment): array => AttachmentSummary::fromModel($attachment)->toArray())
                 ->values()
                 ->all(),
+            $entity->noteSpace?->context_id,
         );
     }
 }

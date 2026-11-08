@@ -22,7 +22,7 @@ final class ContextPresenter
             'breadcrumbs' => $slice->breadcrumbs
                 ->map(fn (KnowledgeContext $context): array => [
                     'id' => (string) $context->getKey(),
-                    'name' => $context->name,
+                    'name' => $this->contextName($context),
                 ])
                 ->values()
                 ->all(),
@@ -35,8 +35,9 @@ final class ContextPresenter
         return [
             'id' => (string) $context->getKey(),
             'parentId' => $context->parent_id,
-            'kind' => $context->kind,
-            'name' => $context->name,
+            'kind' => $context->kind === KnowledgeContext::KIND_NOTE_SPACE ? 'context' : $context->kind,
+            'name' => $this->contextName($context),
+            'ownerEntityId' => $context->noteSpace?->entity_id,
             'hasChildren' => (int) ($context->children_count ?? 0) > 0,
             'documents' => $context->relationLoaded('entities')
                 ? $context->entities
@@ -74,6 +75,16 @@ final class ContextPresenter
                     'y' => (float) $entity->pivot->position_y,
                 ],
             'isPinned' => (bool) ($entity->pivot?->is_pinned ?? false),
+            'spaceId' => $entity->noteSpace?->context_id,
         ];
+    }
+
+    private function contextName(KnowledgeContext $context): string
+    {
+        if ($context->noteSpace?->entity !== null) {
+            return $context->noteSpace->entity->title ?? 'Sem título';
+        }
+
+        return $context->name;
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class KnowledgeContext extends Model
@@ -19,6 +20,8 @@ final class KnowledgeContext extends Model
     public const KIND_CONTEXT = 'context';
 
     public const KIND_UNIVERSE = 'universe';
+
+    public const KIND_NOTE_SPACE = 'note_space';
 
     protected $table = 'cvc_contexts';
 
@@ -48,6 +51,11 @@ final class KnowledgeContext extends Model
         return $this->hasMany(self::class, 'parent_id')
             ->orderBy('sort_order')
             ->orderBy('name');
+    }
+
+    public function noteSpace(): HasOne
+    {
+        return $this->hasOne(NoteSpace::class, 'context_id');
     }
 
     /** @return BelongsToMany<KnowledgeEntity, $this> */

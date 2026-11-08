@@ -20,6 +20,7 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom($this->packagePath('config/crow-vault-canvas.php'), 'crow-vault-canvas');
+        $this->app->register(NoteSpaceServiceProvider::class);
         $this->app->singleton(MarkdownStorage::class, LocalMarkdownStorage::class);
         $this->app->singleton(AttachmentStorage::class, LocalAttachmentStorage::class);
     }

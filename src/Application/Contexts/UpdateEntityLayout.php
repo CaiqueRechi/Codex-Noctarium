@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 final class UpdateEntityLayout
 {
+    public function __construct(private readonly RequireAvailableContext $requireAvailableContext) {}
+
     public function handle(
         string $contextId,
         string $entityId,
@@ -19,8 +21,8 @@ final class UpdateEntityLayout
         $context = KnowledgeContext::query()
             ->whereKey($contextId)
             ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
-            ->where('kind', KnowledgeContext::KIND_CONTEXT)
             ->firstOrFail();
+        $this->requireAvailableContext->handle($context);
         $updated = $context->entities()->updateExistingPivot($entityId, [
             'position_x' => $positionX,
             'position_y' => $positionY,

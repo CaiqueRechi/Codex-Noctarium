@@ -16,16 +16,17 @@ use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
 use CrowVaultCanvas\Http\Controllers\StoreAttachmentController;
 use CrowVaultCanvas\Http\Controllers\StoreContextController;
 use CrowVaultCanvas\Http\Controllers\StoreDocumentController;
+use CrowVaultCanvas\Http\Controllers\StoreNoteSpaceController;
 use CrowVaultCanvas\Http\Controllers\StorePerspectiveController;
 use CrowVaultCanvas\Http\Controllers\StoreRelationController;
 use CrowVaultCanvas\Http\Controllers\StoreVersionController;
+use CrowVaultCanvas\Http\Controllers\UpdateContextController;
 use CrowVaultCanvas\Http\Controllers\UpdateDocumentController;
 use CrowVaultCanvas\Http\Controllers\UpdateEntityLayoutController;
 use CrowVaultCanvas\Http\Controllers\UpdateEntityPropertiesController;
 use CrowVaultCanvas\Http\Controllers\UpdatePerspectiveController;
 use CrowVaultCanvas\Http\Controllers\UpdatePerspectiveLayoutController;
 use CrowVaultCanvas\Http\Controllers\UpdateWorkspaceStateController;
-use CrowVaultCanvas\Http\Controllers\UpdateContextController;
 use CrowVaultCanvas\Http\Controllers\VaultController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                     ->group(function (): void {
                         Route::post('/documents', StoreDocumentController::class)->name('documents.store');
                         Route::patch('/documents/{entity}', UpdateDocumentController::class)->name('documents.update');
+                        Route::post('/documents/{entity}/space', StoreNoteSpaceController::class)
+                            ->middleware('throttle:cvc-note-space-writes')
+                            ->name('documents.space.store');
                     });
                 Route::patch('/entities/{entity}', UpdateEntityPropertiesController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))

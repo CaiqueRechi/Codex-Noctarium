@@ -12,6 +12,11 @@ use Illuminate\Validation\ValidationException;
 
 final class UpdateContext
 {
+    public function __construct(
+        private readonly NoteSpaceHierarchy $hierarchy,
+        private readonly RequireAvailableContext $requireAvailableContext,
+    ) {}
+
     public function handle(string $contextId, string $name, ?string $parentId): KnowledgeContext
     {
         $updated = DB::transaction(function () use ($contextId, $name, $parentId): KnowledgeContext {
@@ -19,6 +24,14 @@ final class UpdateContext
             Vault::query()->whereKey($vaultId)->lockForUpdate()->firstOrFail();
             $context = KnowledgeContext::query()->where('vault_id', $vaultId)
                 ->whereKey($contextId)->lockForUpdate()->firstOrFail();
+
+            if ($context->kind === KnowledgeContext::KIND_NOTE_SPACE) {
+                throw ValidationException::withMessages([
+                    'parent_id' => 'Use a ação de mover na participação da nota.',
+                ]);
+            }
+
+            $this->hierarchy->assertCanMove($contextId, $parentId);
             $ancestorId = $parentId;
             $visited = [];
 
@@ -30,8 +43,10 @@ final class UpdateContext
                 }
 
                 $visited[$ancestorId] = true;
-                $ancestorId = KnowledgeContext::query()->where('vault_id', $vaultId)
-                    ->whereKey($ancestorId)->firstOrFail()->parent_id;
+                $ancestor = KnowledgeContext::query()->where('vault_id', $vaultId)
+                    ->whereKey($ancestorId)->firstOrFail();
+                $this->requireAvailableContext->handle($ancestor);
+                $ancestorId = $ancestor->parent_id;
             }
 
             if ($context->parent_id !== $parentId) {

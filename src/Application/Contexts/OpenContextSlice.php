@@ -11,16 +11,20 @@ use UnexpectedValueException;
 
 final class OpenContextSlice
 {
+    public function __construct(private readonly RequireAvailableContext $requireAvailableContext) {}
+
     public function handle(?string $focusContextId = null): ContextSlice
     {
         if ($focusContextId === null) {
             return new ContextSlice(
-                $this->sliceQuery()->whereNull('parent_id')->get(),
+                $this->sliceQuery()->whereNull('parent_id')
+                    ->where('kind', '!=', KnowledgeContext::KIND_NOTE_SPACE)->get(),
                 collect(),
             );
         }
 
         $focus = $this->sliceQuery()->findOrFail($focusContextId);
+        $this->requireAvailableContext->handle($focus);
 
         return new ContextSlice(
             collect([$focus]),
@@ -37,9 +41,11 @@ final class OpenContextSlice
             ->with([
                 'entities.document',
                 'entities.attachments',
+                'entities.noteSpace',
+                'noteSpace.entity',
                 'children' => fn ($query) => $query
                     ->withCount('children')
-                    ->with(['entities.document', 'entities.attachments']),
+                    ->with(['entities.document', 'entities.attachments', 'entities.noteSpace', 'noteSpace.entity']),
             ])
             ->orderBy('sort_order')
             ->orderBy('name');
@@ -68,6 +74,7 @@ final class OpenContextSlice
 
             $current = KnowledgeContext::query()
                 ->where('vault_id', $this->vaultId())
+                ->with('noteSpace.entity')
                 ->findOrFail($current->parent_id);
         }
 

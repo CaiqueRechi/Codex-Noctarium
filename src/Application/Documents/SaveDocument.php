@@ -6,6 +6,7 @@ namespace CrowVaultCanvas\Application\Documents;
 
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
+use CrowVaultCanvas\Domain\Knowledge\Models\Vault;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
 use CrowVaultCanvas\Jobs\IndexKnowledgeEntity;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,8 @@ final readonly class SaveDocument
     public function handle(string $entityId, string $content, int $expectedRevision): OpenedDocument
     {
         DB::transaction(function () use ($entityId, $content, $expectedRevision): void {
+            $vaultId = (string) config('crow-vault-canvas.vault.id');
+            Vault::query()->whereKey($vaultId)->lockForUpdate()->firstOrFail();
             $entity = KnowledgeEntity::query()
                 ->whereKey($entityId)
                 ->where('vault_id', (string) config('crow-vault-canvas.vault.id'))
@@ -47,6 +50,7 @@ final readonly class SaveDocument
                 'storage_path' => $stored->path,
                 'revision' => $revision,
                 'content_hash' => $stored->contentHash,
+                'current_revision_id' => $stored->revisionId,
             ]);
             $entity->advanceSearchVersion();
         }, 3);

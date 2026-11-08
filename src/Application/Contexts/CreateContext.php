@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 final class CreateContext
 {
+    public function __construct(private readonly RequireAvailableContext $requireAvailableContext) {}
+
     public function handle(string $name, ?string $parentId): KnowledgeContext
     {
         return DB::transaction(function () use ($name, $parentId): KnowledgeContext {
@@ -19,11 +21,12 @@ final class CreateContext
             if ($parentId === null) {
                 Vault::query()->whereKey($vaultId)->lockForUpdate()->firstOrFail();
             } else {
-                KnowledgeContext::query()
+                $parent = KnowledgeContext::query()
                     ->whereKey($parentId)
                     ->where('vault_id', $vaultId)
                     ->lockForUpdate()
                     ->firstOrFail();
+                $this->requireAvailableContext->handle($parent);
             }
 
             $siblings = KnowledgeContext::query()->where('vault_id', $vaultId);

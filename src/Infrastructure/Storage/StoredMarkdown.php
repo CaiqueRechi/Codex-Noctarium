@@ -9,5 +9,6 @@ final readonly class StoredMarkdown
     public function __construct(
         public string $path,
         public string $contentHash,
+        public ?string $revisionId = null,
     ) {}
 }

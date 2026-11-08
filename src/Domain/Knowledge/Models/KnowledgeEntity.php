@@ -70,6 +70,11 @@ final class KnowledgeEntity extends Model
         return $this->hasOne(MarkdownDocument::class, 'entity_id');
     }
 
+    public function noteSpace(): HasOne
+    {
+        return $this->hasOne(NoteSpace::class, 'entity_id');
+    }
+
     /** @return HasMany<DocumentRevision, $this> */
     public function documentRevisions(): HasMany
     {
