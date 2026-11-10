@@ -1,3 +1,4 @@
+import { countTopLevelMarkdownBlocks } from './markdown-blocks';
 import { requireCount, requireNonNegativeFinite } from './validate-measure';
 
 const characters = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
@@ -24,6 +25,15 @@ export function measureTextWeight(text: string): number {
     }
 
     return weightUnits / 5;
+}
+
+export function measureNormalNoteContent(markdown: string): number {
+    return measureOwnContent({
+        text: markdown,
+        markdownBlockCount: countTopLevelMarkdownBlocks(markdown),
+        flowchartNodeCount: 0,
+        flowchartEdgeCount: 0,
+    });
 }
 
 export function measureOwnContent(measure: OwnContentMeasure): number {
