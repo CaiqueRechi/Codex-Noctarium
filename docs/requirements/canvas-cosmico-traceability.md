@@ -98,7 +98,8 @@ stack overflow. These are test scenarios, not approved production volume targets
 It does not parse Markdown into top-level blocks or fetch note bodies. The
 normal-note caller must supply raw Markdown and top-level block counts; the
 flowchart caller must supply editable node/edge text and structural counts,
-excluding serialization and external links. Metric collection is separate work.
+excluding serialization and external links. Metric collection for normal notes
+arrived later, in phase 6.
 Unique descendants are memoized only within each traversal. No cross-space or
 persistent cache retains content; a new input snapshot produces fresh results.
 
@@ -229,13 +230,86 @@ deployment was performed. The running host copy was not refreshed. Earlier
 uncommitted storage/navigation work remains local; it was not folded wholesale
 into these commits. Local context memory is excluded from Git separately.
 
+## Phase 6 — RF-03 normal-note metric collection
+
+Branch: `cm-implementação-canva`, 2026-11-10. This closes the gap left by phase
+3 for normal notes: the caller no longer has to count blocks itself.
+
+| Requirement | State | Implementation | Tests |
+| --- | --- | --- | --- |
+| `B_i`, top-level Markdown blocks of a normal note | implemented as domain arithmetic | `resources/js/canvas/math/markdown-blocks.ts` (`countTopLevelMarkdownBlocks`) | `cosmic-markdown-blocks.test.ts` (16 cases) |
+| `C_i` of a normal note from its raw Markdown | implemented as domain arithmetic | `measureNormalNoteContent` in `content-weight.ts` | same file (3 cases) |
+| Metrics of a flowchart note (`V_i`, `E_i`, editable text) | blocked | Needs the flowchart format of RF-04 | — |
+| Delivering each note's measure to the canvas | not started | Needs the decision below | — |
+
+How to use it: pass the note's raw Markdown source to
+`measureNormalNoteContent`; the result is `C_i`, ready to be an `ownContent` in
+`calculateHierarchicalContentWeight`. Use it only for normal notes. A flowchart
+note measured this way would count its serialization as text, which the
+formulas forbid.
+
+The counter is a single line-by-line pass with no dependency, because adding a
+Markdown parser needs explicit consent. It applies the rule of section 1 of
+`canvas-cosmico-formulas.md` (a paragraph, heading, list, quote, table or code
+block counts once; descendants are not counted again; blank lines create
+nothing) and takes these details from CommonMark. They are implementation
+readings of that rule, not new product decisions, and are easy to change:
+
+- a list is one block across blank lines and nested content; changing the
+  bullet character, or `.` to `)`, starts another list;
+- a paragraph is interrupted by a bullet item or by an ordered item numbered 1,
+  never by an empty item or another number;
+- fenced code runs to a closing fence of the same character and at least the
+  same length, or to the end of the note;
+- a quote ends at a blank line; unindented text right after a quote, list or
+  paragraph continues it;
+- `---` or `===` under a paragraph makes it a heading, not a second block;
+- a thematic break is a block of its own.
+
+Known limits: raw HTML is counted as paragraphs, so an HTML comment or `<pre>`
+containing blank lines counts more than once; fenced code inside a list item
+is followed by indentation only; a table is not validated, it counts as the
+run of lines it occupies. None of these changes the text measure `T_i`.
+
+Observed results: the 19 new cases pass; the complete frontend suite passed 157
+tests in 12 files; TypeScript and ESLint passed for the package source, and the
+new files follow the host Prettier options. In this checkout the baseline before
+the change was 138 tests in 11 files, not the 146 in 14 files recorded in phase
+4: the difference matches test files that were never committed. The checks ran
+through local copies of `tooling/` pointing at the host by absolute path,
+because this checkout has no sibling `../rechi-os`. No browser journey was run,
+and nothing visible uses the measure yet.
+
+Security and performance review: pure functions with no endpoint, storage,
+rendered text or secret. A test feeds 20000 paragraphs and a 40000-character
+line of repeated list markers to confirm the pass stays linear and does not
+backtrack. Nothing is cached here; the measure depends only on the source, so a
+caller may cache it per document revision. No issue found in the changed paths.
+
+### Open decision: where each note's measure is computed
+
+The canvas needs `C_i` for every note of a space, and it holds only the body of
+the note being edited. Two ways to get there:
+
+1. The server stores the measure of each document when it is saved and sends
+   it with the context slice. One number per note, cached by revision, nothing
+   extra to download; it requires the same rules in PHP, kept equal to the
+   TypeScript ones by shared test cases, plus a reversible migration and a
+   backfill.
+2. The browser downloads the bodies of every note in the space and measures
+   them with the existing code. No duplicated rules, but it ships all content
+   of a space to draw circles and puts the cost on the slowest device.
+
+Recommendation: option 1. Not implemented; it changes the schema and the slice
+contract, so it waits for Rechi's answer.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed; metric collection and visual integration remain |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, normal-note measure implemented; delivery of measures to the canvas (open decision in phase 6), flowchart metrics and visual integration remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
@@ -249,6 +323,7 @@ No open physical constant, formula, migration policy, or content format has been
 silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
-Development resumed on 2026-11-10 with the restoration cycle fix above. Next
-action: continue metric collection and renderer/interaction integration. D-05/D-06/D-12 gesture rules are approved but
+Development resumed on 2026-11-10 with the restoration cycle fix and the
+normal-note measure above. Next action: answer the open decision of phase 6,
+then deliver the measures and continue renderer/interaction integration. D-05/D-06/D-12 gesture rules are approved but
 not implemented by backend helpers alone. Later product decisions remain open.
