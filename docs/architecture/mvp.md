@@ -24,6 +24,8 @@ The later cutover is a separate change: backfill in bounded chunks, verify byte 
 
 The cosmic canvas sizes a note by its own content, `C_i` in `docs/requirements/canvas-cosmico-formulas.md`. The server keeps that number in `cvc_documents.own_content` and the context slice sends it as `ownContent` on every document. A context that is itself a note (it has `ownerEntityId`) carries the `ownContent` of the document that owns it. No body is sent for this purpose.
 
+Next to it the slice sends `descendantContent`: the content of every unique note beneath that document or context, at any depth. It is the `H_i` of the formulas, which the browser cannot compute because a slice holds only the node in focus and its immediate children. It excludes the node's own content and notes in the trash, counts a shared note once, and treats an unmeasured descendant as zero. A document without a space has `0`. It is `null` only in responses that are not a slice, such as the context returned right after creating or renaming one. It is computed on every read, without a cache; see phase 8 of `docs/requirements/canvas-cosmico-traceability.md` for the cost and the reason.
+
 `ownContent` is `null` when the document has not been measured: it was saved before the column existed and `cvc:measure-documents` has not run yet. `null` means unknown, not empty; an empty note is `0`.
 
 The measure is rewritten in the same transaction as every change of a document's content: creation (zero), save, and version restoration. Moving a note to the trash and back does not change it. Only normal notes are measured; when flowchart notes exist they need their own measure, because counting a serialized flowchart as Markdown text is forbidden by the formulas.

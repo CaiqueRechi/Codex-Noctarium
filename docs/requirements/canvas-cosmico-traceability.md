@@ -349,13 +349,69 @@ Deployment order: run the migration, deploy the code, then run
 `php artisan cvc:measure-documents` once. Until it runs, older notes are sent
 with `ownContent: null`.
 
+## Phase 8 — RF-03 descendant content and the simulator scene
+
+Branch: `cm-implementação-canva`, 2026-11-10. Headless work; nothing visible
+changed.
+
+The weight of a note is `Q = 0.5 C + 0.8 H`, and `H` is the content of every
+unique descendant. The slice carries only the node in focus and its immediate
+children, so the browser cannot compute `H`; the server now sends it.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| `H` of each shown note and context | `src/Application/Contexts/DescendantContent.php`; `descendantContent` added by `OpenContextSlice` and `ContextPresenter` | `tests/Feature/ContextSliceDescendantContentTest.php` (7 cases) |
+| Coefficients in one place | `combineContentWeight` in `resources/js/canvas/math/hierarchy-weight.ts` | existing `cosmic-content.test.ts` |
+| Scene for the simulator | `resources/js/canvas/physics/cosmic-scene.ts` (`buildCosmicScene`) | `cosmic-scene.test.ts` (9 cases) |
+
+What counts as a descendant: the notes inside a note's space, the notes inside
+their spaces, the notes of nested contexts, and the document of a nested
+context that is itself a note. A note reached by several paths counts once per
+node. The node's own content, notes in the trash and unmeasured notes add
+nothing; an unmeasured descendant counts as zero until
+`cvc:measure-documents` runs.
+
+How to use the scene: give `buildCosmicScene` the notes of one space (`id`,
+`ownContent`, `descendantContent`, stored `position`, `isPinned`) and its
+relations. It returns the bodies and connections `CosmicSimulation` takes, the
+empty area of the budget and the ids of notes sized without a measure. Links to
+notes outside the space are dropped, because the engine rejects them; showing
+them is the external-connection indicator of RF-09.
+
+Decisions taken here that are implementation defaults, not approved product
+rules, and are easy to change:
+
+- A note with unknown measure is sized like an empty one, at the minimum
+  weight, and listed in `unmeasuredNoteIds` so the interface can mark it.
+- A note never positioned starts on a golden-angle spiral around the origin, in
+  id order, spaced by twice the largest radius among those notes. The physics
+  then settles it. D-12 puts new notes where the user touched, so this covers
+  only notes created before positions existed.
+- `H` is computed on every slice read, without a cache. The traversal is
+  batched (a few queries per level of depth, 200 contexts at a time) but its
+  cost grows with everything beneath the shown nodes; the root listing walks
+  the whole vault. A cache needs an invalidation signal for every write that
+  changes content, membership, position in the hierarchy or trash state, and
+  volume targets (D-15) are still open, so it was left out on purpose.
+
+Observed results: the complete package suite passed 139 PHP tests / 732
+assertions on SQLite; the frontend suite passed 206 tests in 13 files;
+TypeScript and ESLint passed. Not verified: MySQL, response time on a large
+vault, any browser journey. Pint is not installed.
+
+Security review: the sums are numbers derived from notes of the configured
+vault only; every query is scoped by vault and skips trashed records. A reader
+of a slice learns an aggregate of content beneath nodes that the same
+authorization already lets them open. No new endpoint, write path or storage.
+No issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, normal-note measure implemented, stored by the server and sent with the slice; flowchart metrics and visual integration (renderer, hit testing, viewport, position/fixation persistence) remain |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8); flowchart metrics and the visible part (renderer in `vault.tsx`, animation loop, hit testing, viewport, position/fixation persistence) remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
@@ -370,7 +426,7 @@ silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
 Development resumed on 2026-11-10 with the restoration cycle fix and the
-content measure above (phases 6 and 7). Next action: renderer/interaction
-integration, starting by feeding the delivered measures into the weights and
-the simulator. D-05/D-06/D-12 gesture rules are approved but
+content measure and the simulator scene above (phases 6 to 8). Next action:
+render the scene in `vault.tsx` and run the simulation there, which needs a
+running Rechi OS to be checked in a browser. D-05/D-06/D-12 gesture rules are approved but
 not implemented by backend helpers alone. Later product decisions remain open.
