@@ -18,12 +18,13 @@ const tabStop = 4;
 const codeIndent = 4;
 const noBlock: OpenBlock = { kind: 'none' };
 const blankLine = /^[ \t]*$/;
-const fenceOpening = /^(`{3,}|~{3,})(.*)$/;
+const leadingSpaces = /^ */;
+const fenceOpening = /^(`{3,}|~{3,})(.*)$/s;
 const fenceClosing = /^ {0,3}(`+|~+)[ \t]*$/;
 const setextUnderline = /^(=+|-+)[ \t]*$/;
 const thematicBreak = /^([-*_])([ \t]*\1){2,}[ \t]*$/;
 const atxHeading = /^#{1,6}([ \t]|$)/;
-const listMarker = /^(?:([-+*])|(\d{1,9})([.)]))([ \t]+|$)(.*)$/;
+const listMarker = /^(?:([-+*])|(\d{1,9})([.)]))([ \t]+|$)(.*)$/s;
 
 export function countTopLevelMarkdownBlocks(markdown: string): number {
     let blockCount = 0;
@@ -58,7 +59,7 @@ function readLine(
     line: string,
     followsBlankLine: boolean,
 ): LineOutcome {
-    const indent = line.length - line.trimStart().length;
+    const indent = leadingSpaces.exec(line)![0].length;
     const text = line.slice(indent);
     const continuesLazily = !followsBlankLine && acceptsLazyText(open);
 
@@ -130,7 +131,7 @@ function readListItem(text: string, indent: number): ListItem | null {
 
     const [, bullet, number, delimiter, gap, content] = marker;
     const markerWidth = (bullet ?? `${number}${delimiter}`).length;
-    const isEmpty = content.trim() === '';
+    const isEmpty = blankLine.test(content);
     const gapWidth = isEmpty || gap.length > codeIndent ? 1 : gap.length;
 
     return {
