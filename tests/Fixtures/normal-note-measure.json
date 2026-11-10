@@ -1,0 +1,242 @@
+[
+    {
+        "name": "empty note",
+        "markdown": "",
+        "blockCount": 0,
+        "ownContent": 0
+    },
+    {
+        "name": "only blank lines",
+        "markdown": "\n \n\t\n",
+        "blockCount": 0,
+        "ownContent": 2
+    },
+    {
+        "name": "approved single paragraph example",
+        "markdown": "**Olá**",
+        "blockCount": 1,
+        "ownContent": 5.3999999999999995
+    },
+    {
+        "name": "approved text example as one paragraph",
+        "markdown": "Olá, ç1!",
+        "blockCount": 1,
+        "ownContent": 7
+    },
+    {
+        "name": "one block of each kind",
+        "markdown": "# Título\n\nUm parágrafo\nem duas linhas.\n\n- item\n- outro item\n\n> citação\n\n| a | b |\n| - | - |\n| 1 | 2 |\n\n```\ncódigo\n```",
+        "blockCount": 6,
+        "ownContent": 87
+    },
+    {
+        "name": "blank lines never create blocks",
+        "markdown": "\n\n\nUm\n\n\n\nDois\n\n\n",
+        "blockCount": 2,
+        "ownContent": 11.6
+    },
+    {
+        "name": "fenced code keeps blank and Markdown-looking lines",
+        "markdown": "```ts\n# não é título\n\n- não é lista\n```\nDepois",
+        "blockCount": 2,
+        "ownContent": 36.2
+    },
+    {
+        "name": "fence closes only with the same character and length",
+        "markdown": "````\n```\n~~~~\n````\nDepois",
+        "blockCount": 2,
+        "ownContent": 15.2
+    },
+    {
+        "name": "tilde fence ignores backtick fences inside",
+        "markdown": "~~~\n```\n\n~~~",
+        "blockCount": 1,
+        "ownContent": 5.6
+    },
+    {
+        "name": "unclosed fence runs to the end",
+        "markdown": "Antes\n\n```\nUm\n\nDois",
+        "blockCount": 2,
+        "ownContent": 15.799999999999999
+    },
+    {
+        "name": "backtick fence info cannot contain a backtick",
+        "markdown": "``` a`b\ntexto",
+        "blockCount": 1,
+        "ownContent": 10.200000000000001
+    },
+    {
+        "name": "nested list content is not counted again",
+        "markdown": "- pai\n  - filho\n    - neto\n\n- irmão\n\n  parágrafo dentro do item\n\n  > citação dentro do item",
+        "blockCount": 1,
+        "ownContent": 71.39999999999999
+    },
+    {
+        "name": "list ends at blank line before outside text",
+        "markdown": "- item\n\nParágrafo",
+        "blockCount": 2,
+        "ownContent": 16.2
+    },
+    {
+        "name": "unindented text right after an item continues it",
+        "markdown": "- item\ncontinuação do item",
+        "blockCount": 1,
+        "ownContent": 23.8
+    },
+    {
+        "name": "bullet character change starts another list",
+        "markdown": "- a\n- b\n+ c",
+        "blockCount": 2,
+        "ownContent": 7.800000000000001
+    },
+    {
+        "name": "ordered delimiter change starts another list",
+        "markdown": "1. a\n2. b\n1) c",
+        "blockCount": 2,
+        "ownContent": 10.799999999999999
+    },
+    {
+        "name": "loose ordered list stays one block",
+        "markdown": "1. a\n\n2. b",
+        "blockCount": 1,
+        "ownContent": 7.2
+    },
+    {
+        "name": "tab after the list marker",
+        "markdown": "-\titem\n-\toutro",
+        "blockCount": 1,
+        "ownContent": 11.8
+    },
+    {
+        "name": "bullet interrupts a paragraph",
+        "markdown": "Texto\n- item",
+        "blockCount": 2,
+        "ownContent": 11.799999999999999
+    },
+    {
+        "name": "ordered item numbered one interrupts a paragraph",
+        "markdown": "Texto\n1. item",
+        "blockCount": 2,
+        "ownContent": 12.799999999999999
+    },
+    {
+        "name": "other numbers do not interrupt a paragraph",
+        "markdown": "Em 2026\n2026. foi assim",
+        "blockCount": 1,
+        "ownContent": 20.8
+    },
+    {
+        "name": "empty item does not interrupt a paragraph",
+        "markdown": "Texto\n-",
+        "blockCount": 1,
+        "ownContent": 6.6
+    },
+    {
+        "name": "ATX headings need a space",
+        "markdown": "# Um\n## Dois\n#SemEspaço",
+        "blockCount": 3,
+        "ownContent": 20.6
+    },
+    {
+        "name": "setext heading with equals",
+        "markdown": "Título\n===\nTexto",
+        "blockCount": 2,
+        "ownContent": 14.6
+    },
+    {
+        "name": "setext heading with dashes",
+        "markdown": "Título\n---\nTexto",
+        "blockCount": 2,
+        "ownContent": 14.6
+    },
+    {
+        "name": "thematic break between paragraphs",
+        "markdown": "Texto\n\n---\n\nTexto",
+        "blockCount": 3,
+        "ownContent": 15.200000000000001
+    },
+    {
+        "name": "spaced asterisks are a thematic break",
+        "markdown": "* * *",
+        "blockCount": 1,
+        "ownContent": 2.8
+    },
+    {
+        "name": "dashes after a list are a thematic break",
+        "markdown": "- a\n---",
+        "blockCount": 2,
+        "ownContent": 5
+    },
+    {
+        "name": "quote with lazy continuation",
+        "markdown": "> a\n> # b\n> - c\nainda citação",
+        "blockCount": 1,
+        "ownContent": 21.400000000000002
+    },
+    {
+        "name": "blank line separates quotes",
+        "markdown": "> a\n\n> b",
+        "blockCount": 2,
+        "ownContent": 6
+    },
+    {
+        "name": "indented code across blank lines",
+        "markdown": "    um\n\n    dois\n\nTexto",
+        "blockCount": 2,
+        "ownContent": 17.400000000000002
+    },
+    {
+        "name": "tab-indented code",
+        "markdown": "\tcódigo",
+        "blockCount": 1,
+        "ownContent": 7.2
+    },
+    {
+        "name": "indented line continues a paragraph",
+        "markdown": "Texto\n    continua o parágrafo",
+        "blockCount": 1,
+        "ownContent": 26.6
+    },
+    {
+        "name": "Windows line endings",
+        "markdown": "# A\r\n\r\nB\r\n\r\n- c\r\n",
+        "blockCount": 3,
+        "ownContent": 9
+    },
+    {
+        "name": "classic Mac line endings",
+        "markdown": "# A\r\rB\r\r- c\r",
+        "blockCount": 3,
+        "ownContent": 9
+    },
+    {
+        "name": "no-break spaces are not indentation",
+        "markdown": "    um\n\n    dois",
+        "blockCount": 2,
+        "ownContent": 11.6
+    },
+    {
+        "name": "a line of no-break spaces is not blank",
+        "markdown": "a\n \nb",
+        "blockCount": 1,
+        "ownContent": 4
+    },
+    {
+        "name": "Unicode line separator stays inside its line",
+        "markdown": "- a b\n- c\n\nfim",
+        "blockCount": 2,
+        "ownContent": 10.799999999999999
+    },
+    {
+        "name": "combined accents, emoji sequences and decomposed Hangul",
+        "markdown": "é 👨‍👩‍👧 🇧🇷 1️⃣ 한",
+        "blockCount": 1,
+        "ownContent": 5.6
+    },
+    {
+        "name": "two blocks with structural bonus",
+        "markdown": "# Olá\n\n- a\n- b",
+        "blockCount": 2,
+        "ownContent": 10.2
+    }
+]

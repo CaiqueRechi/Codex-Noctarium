@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import sharedCases from '../../../tests/Fixtures/normal-note-measure.json?raw';
 import { measureNormalNoteContent } from '../canvas/math/content-weight';
 import { countTopLevelMarkdownBlocks } from '../canvas/math/markdown-blocks';
 
@@ -169,5 +170,19 @@ describe('RF-03 own content of a normal note', () => {
 
     it('measures an empty note as zero', () => {
         expect(measureNormalNoteContent('')).toBe(0);
+    });
+});
+
+describe('RF-03 measure cases shared with the server', () => {
+    const cases: {
+        name: string;
+        markdown: string;
+        blockCount: number;
+        ownContent: number;
+    }[] = JSON.parse(sharedCases);
+
+    it.each(cases)('$name', ({ markdown, blockCount, ownContent }) => {
+        expect(countTopLevelMarkdownBlocks(markdown)).toBe(blockCount);
+        expect(measureNormalNoteContent(markdown)).toBeCloseTo(ownContent, 12);
     });
 });
