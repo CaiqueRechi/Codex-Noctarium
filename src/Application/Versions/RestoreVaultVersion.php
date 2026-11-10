@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Versions;
 
+use CrowVaultCanvas\Application\Contexts\NoteSpaceHierarchy;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
 use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
 use CrowVaultCanvas\Domain\Knowledge\Models\SearchDocument;
+use CrowVaultCanvas\Domain\Knowledge\Models\Vault;
 use CrowVaultCanvas\Domain\Knowledge\Models\VaultVersion;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
 use CrowVaultCanvas\Jobs\IndexKnowledgeEntity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -25,12 +28,14 @@ final readonly class RestoreVaultVersion
         private CreateVaultVersion $createVersion,
         private SnapshotCodec $snapshotCodec,
         private MarkdownStorage $storage,
+        private NoteSpaceHierarchy $hierarchy,
     ) {}
 
     public function handle(string $versionId, string $restoredBy): VersionRestoration
     {
         $restoration = DB::transaction(function () use ($versionId, $restoredBy): VersionRestoration {
             $vaultId = (string) config('crow-vault-canvas.vault.id');
+            Vault::query()->whereKey($vaultId)->lockForUpdate()->firstOrFail();
             $version = VaultVersion::query()
                 ->whereKey($versionId)
                 ->where('vault_id', $vaultId)
@@ -49,6 +54,7 @@ final readonly class RestoreVaultVersion
 
             $this->restoreEntities($vaultId, $snapshot['entities']);
             $this->restoreMemberships($vaultId, $snapshot['context_entities']);
+            $this->rejectSubnoteCycle();
             $this->restorePerspective($version, $snapshot['perspective']);
             $this->restoreRelations($vaultId, $snapshot['relations']);
 
@@ -266,6 +272,17 @@ final readonly class RestoreVaultVersion
 
         if ($rows !== []) {
             DB::table('cvc_context_entity')->insert($rows);
+        }
+    }
+
+    // Context positions are not versioned, so memberships that were acyclic
+    // when captured can close a cycle with where the contexts sit today.
+    private function rejectSubnoteCycle(): void
+    {
+        if ($this->hierarchy->containsCycle()) {
+            throw ValidationException::withMessages([
+                'version' => 'Esta versão criaria um ciclo de subnotas com a organização atual dos assuntos.',
+            ]);
         }
     }
 
