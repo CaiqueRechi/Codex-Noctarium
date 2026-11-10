@@ -16,7 +16,7 @@ final class ContextPresenter
     {
         return [
             'contexts' => $slice->contexts
-                ->map(fn (KnowledgeContext $context): array => $this->context($context))
+                ->map(fn (KnowledgeContext $context): array => $this->context($context, $slice->descendantContents))
                 ->values()
                 ->all(),
             'breadcrumbs' => $slice->breadcrumbs
@@ -29,8 +29,11 @@ final class ContextPresenter
         ];
     }
 
-    /** @return array<string, mixed> */
-    public function context(KnowledgeContext $context): array
+    /**
+     * @param  array<string, float>  $descendantContents  by context id; a context missing from it is reported as unknown
+     * @return array<string, mixed>
+     */
+    public function context(KnowledgeContext $context, array $descendantContents = []): array
     {
         return [
             'id' => (string) $context->getKey(),
@@ -39,30 +42,37 @@ final class ContextPresenter
             'name' => $this->contextName($context),
             'ownerEntityId' => $context->noteSpace?->entity_id,
             'ownContent' => $context->noteSpace?->entity?->document?->own_content,
+            'descendantContent' => $descendantContents[(string) $context->getKey()] ?? null,
             'hasChildren' => (int) ($context->children_count ?? 0) > 0,
             'documents' => $context->relationLoaded('entities')
                 ? $context->entities
-                    ->map(fn (KnowledgeEntity $entity): array => $this->document($entity))
+                    ->map(fn (KnowledgeEntity $entity): array => $this->document($entity, $descendantContents))
                     ->values()
                     ->all()
                 : [],
             'contexts' => $context->relationLoaded('children')
                 ? $context->children
-                    ->map(fn (KnowledgeContext $child): array => $this->context($child))
+                    ->map(fn (KnowledgeContext $child): array => $this->context($child, $descendantContents))
                     ->values()
                     ->all()
                 : [],
         ];
     }
 
-    /** @return array<string, mixed> */
-    private function document(KnowledgeEntity $entity): array
+    /**
+     * @param  array<string, float>  $descendantContents
+     * @return array<string, mixed>
+     */
+    private function document(KnowledgeEntity $entity, array $descendantContents): array
     {
+        $spaceId = $entity->noteSpace?->context_id;
+
         return [
             'id' => (string) $entity->getKey(),
             'title' => $entity->title,
             'revision' => $entity->document?->revision,
             'ownContent' => $entity->document?->own_content,
+            'descendantContent' => $spaceId === null ? 0.0 : ($descendantContents[$spaceId] ?? null),
             'entityType' => $entity->entity_type,
             'properties' => (object) ($entity->properties ?? []),
             'tags' => array_values($entity->tags ?? []),
@@ -77,7 +87,7 @@ final class ContextPresenter
                     'y' => (float) $entity->pivot->position_y,
                 ],
             'isPinned' => (bool) ($entity->pivot?->is_pinned ?? false),
-            'spaceId' => $entity->noteSpace?->context_id,
+            'spaceId' => $spaceId,
         ];
     }
 
