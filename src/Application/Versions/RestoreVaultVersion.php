@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CrowVaultCanvas\Application\Versions;
 
 use CrowVaultCanvas\Application\Contexts\NoteSpaceHierarchy;
+use CrowVaultCanvas\Domain\Knowledge\Content\NormalNoteContent;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
@@ -29,6 +30,7 @@ final readonly class RestoreVaultVersion
         private SnapshotCodec $snapshotCodec,
         private MarkdownStorage $storage,
         private NoteSpaceHierarchy $hierarchy,
+        private NormalNoteContent $noteContent,
     ) {}
 
     public function handle(string $versionId, string $restoredBy): VersionRestoration
@@ -44,7 +46,7 @@ final readonly class RestoreVaultVersion
             $snapshot = $version->snapshot;
 
             $this->validateSnapshot($version, $snapshot);
-            $this->verifyDocuments($vaultId, $snapshot['entities']);
+            $ownContents = $this->verifiedOwnContents($vaultId, $snapshot['entities']);
             $recoveryVersion = $this->createVersion->handle(
                 (string) $version->perspective_id,
                 Str::limit("Recuperação antes de restaurar {$version->name}", 120, ''),
@@ -52,7 +54,7 @@ final readonly class RestoreVaultVersion
                 VaultVersion::KIND_RECOVERY,
             );
 
-            $this->restoreEntities($vaultId, $snapshot['entities']);
+            $this->restoreEntities($vaultId, $snapshot['entities'], $ownContents);
             $this->restoreMemberships($vaultId, $snapshot['context_entities']);
             $this->rejectSubnoteCycle();
             $this->restorePerspective($version, $snapshot['perspective']);
@@ -163,9 +165,14 @@ final readonly class RestoreVaultVersion
         }
     }
 
-    /** @param list<array<string, mixed>> $entities */
-    private function verifyDocuments(string $vaultId, array $entities): void
+    /**
+     * @param  list<array<string, mixed>>  $entities
+     * @return array<string, float> own content of each versioned document, by entity id
+     */
+    private function verifiedOwnContents(string $vaultId, array $entities): array
     {
+        $ownContents = [];
+
         foreach ($entities as $entity) {
             if ($entity['document'] === null) {
                 continue;
@@ -180,11 +187,18 @@ final readonly class RestoreVaultVersion
             if (! hash_equals($entity['document']['content_hash'], hash('sha256', $content))) {
                 throw new RuntimeException('A versioned Markdown revision failed its integrity check.');
             }
+
+            $ownContents[$entity['id']] = $this->noteContent->measure($content);
         }
+
+        return $ownContents;
     }
 
-    /** @param list<array<string, mixed>> $entities */
-    private function restoreEntities(string $vaultId, array $entities): void
+    /**
+     * @param  list<array<string, mixed>>  $entities
+     * @param  array<string, float>  $ownContents
+     */
+    private function restoreEntities(string $vaultId, array $entities, array $ownContents): void
     {
         $entityIds = collect($entities)->pluck('id')->all();
         $obsoleteQuery = KnowledgeEntity::query()->where('vault_id', $vaultId);
@@ -224,12 +238,16 @@ final readonly class RestoreVaultVersion
                 $entity->restore();
             }
 
-            $this->restoreDocument($entity, $snapshotEntity['document']);
+            $this->restoreDocument(
+                $entity,
+                $snapshotEntity['document'],
+                $ownContents[$snapshotEntity['id']] ?? null,
+            );
         }
     }
 
     /** @param array<string, mixed>|null $snapshotDocument */
-    private function restoreDocument(KnowledgeEntity $entity, ?array $snapshotDocument): void
+    private function restoreDocument(KnowledgeEntity $entity, ?array $snapshotDocument, ?float $ownContent): void
     {
         $document = MarkdownDocument::withTrashed()->whereKey($entity->getKey())->first();
 
@@ -243,6 +261,7 @@ final readonly class RestoreVaultVersion
             'storage_path' => $snapshotDocument['storage_path'],
             'revision' => $snapshotDocument['revision'],
             'content_hash' => $snapshotDocument['content_hash'],
+            'own_content' => $ownContent,
         ];
 
         if ($document === null) {

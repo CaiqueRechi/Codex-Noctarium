@@ -14,6 +14,8 @@ use Illuminate\Support\Str;
 
 final readonly class CreateMarkdownEntity
 {
+    private const EMPTY_NOTE_OWN_CONTENT = 0.0;
+
     public function __construct(
         private MarkdownStorage $storage,
         private DatabaseManager $database,
@@ -37,6 +39,7 @@ final readonly class CreateMarkdownEntity
                 'storage_path' => $stored->path,
                 'revision' => 1,
                 'content_hash' => $stored->contentHash,
+                'own_content' => self::EMPTY_NOTE_OWN_CONTENT,
                 'current_revision_id' => $stored->revisionId,
             ]);
 
