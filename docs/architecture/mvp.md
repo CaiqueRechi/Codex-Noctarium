@@ -52,6 +52,10 @@ Version creation and restoration require the authenticated write permission, CSR
 
 A successful restoration first captures the complete current state as an automatic recovery version in the same transaction. It then restores entity metadata and soft-delete state, document revision pointers, context membership, perspective filters and layouts, and active relations. Restoring that recovery version returns to the replaced state, so restoration never makes the current state unreachable.
 
+A snapshot does not version where contexts sit: `parent_id` and note-space ownership stay as they are today. Memberships that were acyclic when captured can therefore close a subnote cycle after a context has been moved. Once the memberships are back, the restoration checks the whole active containment graph of the vault (child contexts plus the owned spaces of member notes) and, if it finds a cycle, answers 422 with a `version` validation error and rolls back every change, including the recovery version. To restore such a version, first move the context out of the note's space.
+
+Version capture and restoration take the vault row lock before any other lock, the same order used by context moves, attachments, and note-space creation. A graph write therefore cannot interleave with the cycle check, and a snapshot never records a half-applied graph change.
+
 ## Authorized search index
 
 `cvc_search_index` is a derived, vault-scoped projection of active Markdown content and searchable metadata: title, entity type, tags, scalar properties, context names, and relation text. `GET /vault/search` remains behind the host authentication and read-permission middleware, validates every filter against the fixed vault, applies a dedicated throttle, and returns at most 50 escaped result summaries. The index itself never leaves the server; the browser requests result summaries only from the authorized vault interface.

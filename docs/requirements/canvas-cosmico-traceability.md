@@ -1,6 +1,6 @@
 # Cosmic canvas implementation traceability
 
-Updated: 2026-11-08. Contract: `canvas-cosmico.md` and
+Updated: 2026-11-10. Contract: `canvas-cosmico.md` and
 `canvas-cosmico-formulas.md`. No production changes or push performed.
 
 ## Phase 1 — RF-06 autosave
@@ -177,24 +177,39 @@ Observed validation:
 - The last complete frontend run remains 146 passing tests in 14 files; no visual
   integration was made in this backend phase.
 - A subsequent version-specific regression reproduction ran 2 tests / 6 assertions
-  with **1 failure**. This test file remains local and uncommitted. Do not report
-  the current phase as fully green or complete.
+  with **1 failure**. That local test file was never committed; it was rewritten
+  from the reproduction below on 2026-11-10, when the issue was fixed.
 
-### Confirmed pending integrity issue
+### Restoration cycle integrity issue (fixed 2026-11-10)
 
-Restoring a membership snapshot can reintroduce a cycle after contexts have
+Restoring a membership snapshot could reintroduce a cycle after contexts had
 moved. Reproduction: capture V0 with note B outside context A; attach B to A and
 capture V1; restore V0; move A inside B's owned space; restore V1. The last step
-currently accepts A → B → A instead of rejecting it. The local reproduction is
+accepted A → B → A instead of rejecting it. The reproduction is
 `tests/Feature/NoteSpaceVersionTest.php`, method
 `testRf03RejectsAnOlderMembershipSnapshotThatWouldCreateACycleWithCurrentContextPositions`.
 
-Next action: validate the resulting active context/note-space graph inside the
-version-restoration transaction and reject a cycle before commit. Serialize
-snapshot/restoration with the same per-vault lock order used by graph writes.
-Then rerun this regression and affected version/context tests. No fix was applied
-before the user's stop/save request. Valid restoration of legacy context content
-passed the other reproduction test without changing the owned-space identity.
+Fix, on branch `cm-implementação-canva`: after the memberships are restored,
+`RestoreVaultVersion` asks `NoteSpaceHierarchy::containsCycle()` about the whole
+active context/note-space graph and rejects the restoration with a 422 `version`
+validation error, inside the transaction, so memberships and the recovery
+version are rolled back. `CreateVaultVersion` and `RestoreVaultVersion` now take
+the vault row lock first, the order used by graph writes. Behaviour and the way
+out for the user are described in `docs/architecture/mvp.md`.
+
+Observed on 2026-11-10: the regression failed before the fix (422 expected, 200
+received) and passes after it; the file's 2 tests pass with 12 assertions,
+including valid restoration of legacy context content without changing the
+owned-space identity. The complete package suite passed 77 PHP tests / 576
+assertions on SQLite, from 75 / 564 before the change. Not verified: the lock
+order under real concurrency or on MySQL, which a single-connection SQLite run
+cannot exercise; the frontend suite, untouched by this change, was not rerun;
+Pint is not installed in the package, so the formatter was not run.
+
+Security review: the rejection message is fixed text with no identifiers or
+server detail. The endpoint keeps its session, authorization, CSRF and version
+throttle. No new write path, cache or stored data; the graph is read live inside
+the transaction on purpose. No issue found in the changed paths.
 
 ### Integration and rollback limits
 
@@ -207,7 +222,7 @@ New creation endpoints inherit session, authorization, CSRF, and existing write
 middleware, plus 30 requests/minute per identity and 60/minute per IP for the new
 space/context-content writes. IP keys are hashed. Foreign vaults and deleted
 owners are rejected; shared descendants are allowed, while direct/descendant
-attachment cycles are rejected. The confirmed restoration gap above remains open.
+attachment cycles are rejected. The restoration gap above is closed.
 
 No production migration, service restart, dependency installation, merge, or
 deployment was performed. The running host copy was not refreshed. Earlier
@@ -220,7 +235,7 @@ into these commits. Local context memory is excluded from Git separately.
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented; restoration cycle regression, metric collection and visual integration remain |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed; metric collection and visual integration remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
@@ -234,7 +249,6 @@ No open physical constant, formula, migration policy, or content format has been
 silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
-Development is stopped at the user's checkpoint request. Next action on resume:
-fix the confirmed restoration cycle regression above, then continue metric and
-renderer/interaction integration. D-05/D-06/D-12 gesture rules are approved but
+Development resumed on 2026-11-10 with the restoration cycle fix above. Next
+action: continue metric collection and renderer/interaction integration. D-05/D-06/D-12 gesture rules are approved but
 not implemented by backend helpers alone. Later product decisions remain open.
