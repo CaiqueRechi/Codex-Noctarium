@@ -78,6 +78,7 @@ npm ci
 php artisan migrate
 php artisan cvc:initialize
 php artisan cvc:reindex
+php artisan cvc:measure-documents
 ```
 
 Grant the intended Rechi OS user `write` access to the `vault` screen, then open `/vault` in Chrome. The initializer is explicit and idempotent; package installation does not create product data automatically.
@@ -87,6 +88,8 @@ Use the left explorer to enter any universe or context and create another level 
 Private Markdown files remain the canonical content store in this release. `cvc_document_revisions` can already receive immutable revision content in `LONGTEXT`, extensible JSON metadata, the SHA-256 hash, and the exact byte count; `cvc_documents.current_revision_id` can select the confirmed row. Production read/write paths do not use this table yet. The later cutover must backfill and verify every revision before changing reads, then dual-write and compare hashes before retiring file-backed content. Attachments remain in private file storage.
 
 `cvc:reindex` queues existing entities in configurable chunks. New writes update the derived index through the Laravel queue configured by Rechi OS.
+
+`cvc:measure-documents` stores the content measure of documents that do not have one, in configurable chunks (`--chunk`, 100 by default). Run it once after upgrading a vault that already has notes; new saves keep the measure current by themselves. It never overwrites an existing measure, so running it again is safe. It exits with failure, after measuring everything it can, when the stored content of a document cannot be read or fails its hash.
 
 The trash panel moves the focused entity, its document, and active relations out of the normal canvas without erasing their records. Restoration returns the entity to every previous context with the same UUID, revision, and layout. Relations removed with the entity are restored only when both endpoints still exist; manually deleted relations never return automatically, and unresolved endpoints are reported in the panel.
 

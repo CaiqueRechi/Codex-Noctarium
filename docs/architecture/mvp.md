@@ -20,6 +20,16 @@ Private immutable Markdown files remain canonical for current create, open, save
 
 The later cutover is a separate change: backfill in bounded chunks, verify byte counts and hashes, dual-write while files remain authoritative, compare both stores, switch reads behind a reversible configuration, and only then decide whether file-backed Markdown can be retired. Attachments stay in private filesystem storage because relational blobs would not improve their current validation or delivery boundary.
 
+## Content measure of a note
+
+The cosmic canvas sizes a note by its own content, `C_i` in `docs/requirements/canvas-cosmico-formulas.md`. The server keeps that number in `cvc_documents.own_content` and the context slice sends it as `ownContent` on every document. A context that is itself a note (it has `ownerEntityId`) carries the `ownContent` of the document that owns it. No body is sent for this purpose.
+
+`ownContent` is `null` when the document has not been measured: it was saved before the column existed and `cvc:measure-documents` has not run yet. `null` means unknown, not empty; an empty note is `0`.
+
+The measure is rewritten in the same transaction as every change of a document's content: creation (zero), save, and version restoration. Moving a note to the trash and back does not change it. Only normal notes are measured; when flowchart notes exist they need their own measure, because counting a serialized flowchart as Markdown text is forbidden by the formulas.
+
+The rules exist twice, in `src/Domain/Knowledge/Content` and in `resources/js/canvas/math`, and `tests/Fixtures/normal-note-measure.json` is read by both test suites so they cannot drift apart. Change the two implementations and that file together.
+
 ## Entity properties
 
 Capture remains unstructured. A document may later receive an optional `entity_type` and up to 50 scalar properties without changing its UUID, Markdown, or revision. Properties are stored as JSON metadata in `cvc_entities`; Markdown remains the canonical document content in private revision files.

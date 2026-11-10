@@ -240,7 +240,7 @@ Branch: `cm-implementação-canva`, 2026-11-10. This closes the gap left by phas
 | `B_i`, top-level Markdown blocks of a normal note | implemented as domain arithmetic | `resources/js/canvas/math/markdown-blocks.ts` (`countTopLevelMarkdownBlocks`) | `cosmic-markdown-blocks.test.ts` (16 cases) |
 | `C_i` of a normal note from its raw Markdown | implemented as domain arithmetic | `measureNormalNoteContent` in `content-weight.ts` | same file (3 cases) |
 | Metrics of a flowchart note (`V_i`, `E_i`, editable text) | blocked | Needs the flowchart format of RF-04 | — |
-| Delivering each note's measure to the canvas | not started | Needs the decision below | — |
+| Delivering each note's measure to the canvas | implemented in phase 7 | Server-side measure sent with the context slice | see phase 7 |
 
 How to use it: pass the note's raw Markdown source to
 `measureNormalNoteContent`; the result is `C_i`, ready to be an `ownContent` in
@@ -286,22 +286,68 @@ line of repeated list markers to confirm the pass stays linear and does not
 backtrack. Nothing is cached here; the measure depends only on the source, so a
 caller may cache it per document revision. No issue found in the changed paths.
 
-### Open decision: where each note's measure is computed
+### Decision: the server computes each note's measure
 
 The canvas needs `C_i` for every note of a space, and it holds only the body of
-the note being edited. Two ways to get there:
+the note being edited. On 2026-11-10 Rechi chose to have the server store the
+measure of each document and send it with the context slice, instead of having
+the browser download every body. Phase 7 implements it.
 
-1. The server stores the measure of each document when it is saved and sends
-   it with the context slice. One number per note, cached by revision, nothing
-   extra to download; it requires the same rules in PHP, kept equal to the
-   TypeScript ones by shared test cases, plus a reversible migration and a
-   backfill.
-2. The browser downloads the bodies of every note in the space and measures
-   them with the existing code. No duplicated rules, but it ships all content
-   of a space to draw circles and puts the cost on the slowest device.
+## Phase 7 — RF-03 content measure stored and delivered by the server
 
-Recommendation: option 1. Not implemented; it changes the schema and the slice
-contract, so it waits for Rechi's answer.
+Branch: `cm-implementação-canva`, 2026-11-10.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Same measure in PHP | `src/Domain/Knowledge/Content/NormalNoteContent.php`, `MarkdownBlockCounter.php`, `MarkdownOpenBlock.php` | `tests/Unit/NormalNoteContentTest.php` |
+| Cases shared by both languages | `tests/Fixtures/normal-note-measure.json` (40 notes) | read by the PHP test above and by `cosmic-markdown-blocks.test.ts` |
+| Measure kept on the document | migration `2026_11_10_000016`, column `cvc_documents.own_content`; written by `CreateMarkdownEntity`, `SaveDocument`, `RestoreVaultVersion` | `tests/Feature/DocumentOwnContentTest.php` |
+| Measure in the context slice | `ContextPresenter`, `OpenContextSlice`; `ownContent` in `resources/js/documents/types.ts` | `tests/Feature/ContextSliceOwnContentTest.php` |
+| Backfill of earlier documents | `cvc:measure-documents`, `MeasureStoredDocument` | `tests/Feature/MeasureDocumentsCommandTest.php` |
+
+Contract for the canvas, described in full in `docs/architecture/mvp.md`:
+`ownContent` is a number, or `null` when the document has not been measured
+yet. `null` is not zero; a caller must not size an unmeasured note as empty.
+
+Keeping the two implementations equal: both suites read the same JSON file and
+fail if a block count or a measure differs beyond 1e-12. Block counts in that
+file were written by hand; the measures were produced by the TypeScript code.
+Any change to the rules must change both languages and the file together. Two
+inputs made the first TypeScript version disagree with a faithful port and
+were fixed there first: no-break spaces counted as indentation, and a Unicode
+line separator hid a list item or a fence.
+
+Known difference: characters are split by PCRE on the server and by ICU in the
+browser. They agree on every shared case, including combined accents, emoji
+sequences, flags, keycaps and decomposed Hangul, but scripts whose clusters
+changed in recent Unicode versions may weigh slightly differently. The server
+value is the one the canvas uses, so this affects only code that measures in
+the browser. Invalid UTF-8, which only the server can receive, is scrubbed
+before measuring instead of failing the save.
+
+Observed results on 2026-11-10: the complete package suite passed 132 PHP tests
+/ 708 assertions on SQLite; the frontend suite passed 197 tests in 12 files;
+TypeScript and ESLint passed. The new migration was rolled back and reapplied
+in a test with documents present. Measuring 1.15 MB of accented text took
+about 0.6 s and 1.16 MB of CJK text about 1.3 s on the development machine;
+2 MB of plain ASCII took 0.04 s. Not verified: MySQL, a browser journey, and
+the backfill on real data. Pint is not installed, so the PHP formatter was not
+run. Nothing visible uses `ownContent` yet.
+
+Security and performance review: no new endpoint or write path; the measure is
+derived from content the same request already stores, and a number per note
+reveals less than the body the reader is already authorised to open through
+the same slice. The slice loads the owner's document with the existing eager
+load, so there is no query per context. The stored column is the cache: it is
+keyed by the document and rewritten in the same transaction as every change of
+its content. One pre-existing point was noticed and not changed: the save
+request has no explicit size limit on `content`; it is bounded by the storage
+quota and the PHP request limits, and the measure adds time proportional to
+that size to each save.
+
+Deployment order: run the migration, deploy the code, then run
+`php artisan cvc:measure-documents` once. Until it runs, older notes are sent
+with `ownContent: null`.
 
 ## Remaining requirements
 
@@ -309,7 +355,7 @@ contract, so it waits for Rechi's answer.
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, normal-note measure implemented; delivery of measures to the canvas (open decision in phase 6), flowchart metrics and visual integration remain |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, normal-note measure implemented, stored by the server and sent with the slice; flowchart metrics and visual integration (renderer, hit testing, viewport, position/fixation persistence) remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
@@ -324,6 +370,7 @@ silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
 Development resumed on 2026-11-10 with the restoration cycle fix and the
-normal-note measure above. Next action: answer the open decision of phase 6,
-then deliver the measures and continue renderer/interaction integration. D-05/D-06/D-12 gesture rules are approved but
+content measure above (phases 6 and 7). Next action: renderer/interaction
+integration, starting by feeding the delivered measures into the weights and
+the simulator. D-05/D-06/D-12 gesture rules are approved but
 not implemented by backend helpers alone. Later product decisions remain open.
