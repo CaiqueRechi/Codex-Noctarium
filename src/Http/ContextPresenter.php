@@ -38,6 +38,7 @@ final class ContextPresenter
             'kind' => $context->kind === KnowledgeContext::KIND_NOTE_SPACE ? 'context' : $context->kind,
             'name' => $this->contextName($context),
             'ownerEntityId' => $context->noteSpace?->entity_id,
+            'ownContent' => $context->noteSpace?->entity?->document?->own_content,
             'hasChildren' => (int) ($context->children_count ?? 0) > 0,
             'documents' => $context->relationLoaded('entities')
                 ? $context->entities
@@ -61,6 +62,7 @@ final class ContextPresenter
             'id' => (string) $entity->getKey(),
             'title' => $entity->title,
             'revision' => $entity->document?->revision,
+            'ownContent' => $entity->document?->own_content,
             'entityType' => $entity->entity_type,
             'properties' => (object) ($entity->properties ?? []),
             'tags' => array_values($entity->tags ?? []),

@@ -42,10 +42,10 @@ final class OpenContextSlice
                 'entities.document',
                 'entities.attachments',
                 'entities.noteSpace',
-                'noteSpace.entity',
+                'noteSpace.entity.document',
                 'children' => fn ($query) => $query
                     ->withCount('children')
-                    ->with(['entities.document', 'entities.attachments', 'entities.noteSpace', 'noteSpace.entity']),
+                    ->with(['entities.document', 'entities.attachments', 'entities.noteSpace', 'noteSpace.entity.document']),
             ])
             ->orderBy('sort_order')
             ->orderBy('name');
