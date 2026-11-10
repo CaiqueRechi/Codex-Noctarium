@@ -1,7 +1,10 @@
 # Cosmic canvas implementation traceability
 
 Updated: 2026-11-10. Contract: `canvas-cosmico.md` and
-`canvas-cosmico-formulas.md`. No production changes or push performed.
+`canvas-cosmico-formulas.md`. No production changes. Phases 1 to 5 are on
+`main`; the work of 2026-11-10 was pushed on `cm-implementação-canva` for a pull
+request into `main`. The latest state and how to resume are in the checkpoint at
+the end of this page.
 
 ## Phase 1 — RF-06 autosave
 
@@ -430,3 +433,70 @@ content measure and the simulator scene above (phases 6 to 8). Next action:
 render the scene in `vault.tsx` and run the simulation there, which needs a
 running Rechi OS to be checked in a browser. D-05/D-06/D-12 gesture rules are approved but
 not implemented by backend helpers alone. Later product decisions remain open.
+
+## Checkpoint — 2026-11-10
+
+Rechi asked to stop for the day, save the context, push the branch and open a
+pull request into `main`. This section is the place to resume from.
+
+### Repository state
+
+- Earlier in the day every branch was compared with the newest one,
+  `cm-canvas-cosmico-note-spaces`. All of them were already contained in it, so
+  `main` was fast-forwarded to it, made the default branch on GitHub, and the
+  four `cm-*` branches were deleted. Nothing had to be merged by hand.
+- Today's work is on `cm-implementação-canva`, created from that `main`: the
+  restoration cycle fix and phases 6 to 8 above.
+- The uncommitted files mentioned in phases 4 and 5 (three frontend test files,
+  the first version of `NoteSpaceVersionTest.php`, a storage and navigation
+  prototype) were not on the machine used today and are not in the repository.
+  The regression test was rewritten from its description. If the others still
+  exist on the original machine, they have to be brought in from there.
+
+### What works now, verified by tests only
+
+- Restoring a version that would close a subnote cycle is refused with 422.
+- The server measures every normal note on create, save and version
+  restoration, and `cvc:measure-documents` measures the earlier ones.
+- A context slice carries `ownContent` and `descendantContent` for each note and
+  context, without any body.
+- `buildCosmicScene` turns the notes and relations of a space into the bodies
+  and connections of `CosmicSimulation`.
+
+Last complete runs: 139 PHP tests / 732 assertions on SQLite; 206 frontend tests
+in 13 files; TypeScript and ESLint clean. Never verified: MySQL, a browser, real
+vault data, lock order under concurrency, response time on a large vault. Pint
+is not installed in the package, so PHP formatting was not checked by a tool.
+
+### Before deploying this branch
+
+1. Run the migrations (`2026_11_10_000016` adds `cvc_documents.own_content`).
+2. Deploy the code.
+3. Run `php artisan cvc:measure-documents` once.
+
+### Next step
+
+Render the scene in `resources/js/pages/vault.tsx`: feed the slice into
+`buildCosmicScene`, run `CosmicSimulation` in an animation loop, draw each note
+as a circle of its radius with a touch target of at least 44×44 px, and persist
+positions and pins through the existing layout endpoint. D-05, D-06 and the
+gestures of D-12 are approved and not implemented. This step needs a running
+Rechi OS to be checked in a browser; component tests alone do not show it.
+
+### Open points for Rechi
+
+- The descendant sum is not cached (phase 8). Decide on a cache once volume
+  targets exist (D-15).
+- The save request has no explicit size limit on `content` (phase 7).
+- Product decisions still blocking requirements: D-07, D-09, D-10, D-11, D-13,
+  the rest of D-12 and D-14, and D-15. See the table of remaining requirements.
+
+### Running the checks without a sibling `../rechi-os`
+
+`tooling/` expects the host at `../rechi-os`. Where the host lives elsewhere, a
+directory junction does not work, because Vite resolves it to the real path and
+then refuses to serve files outside the allowed roots. Use a local copy of
+`tooling/vitest.config.mjs` and `tooling/tsconfig.json` with the absolute path
+of the host instead, kept outside the repository. PHP tests need only
+`composer install`, or an existing `vendor` directory built from the same
+`composer.lock`.

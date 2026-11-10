@@ -6,7 +6,7 @@
 | Solicitante e aprovador | Rechi |
 | Status | Levantamento encerrado a pedido do usuário |
 | Cobertura | Parcial; não declarar 100%. Decisões não discutidas estão na seção 15 |
-| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados e validados em testes locais em 2026-11-08; demais itens pendentes conforme rastreabilidade |
+| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados em 2026-11-08. Em 2026-11-10: regressão de ciclo na restauração de versões corrigida; medida de conteúdo das notas calculada e enviada pelo servidor; cena do simulador montada a partir dela. Tudo validado apenas por testes locais; a parte visível do RF-03 e os demais itens seguem pendentes conforme a [rastreabilidade](canvas-cosmico-traceability.md) |
 | Referência matemática | [Fórmulas e regras detalhadas](canvas-cosmico-formulas.md) |
 
 ## 1. Resumo
