@@ -11,12 +11,15 @@ use UnexpectedValueException;
 
 final class OpenContextSlice
 {
-    public function __construct(private readonly RequireAvailableContext $requireAvailableContext) {}
+    public function __construct(
+        private readonly RequireAvailableContext $requireAvailableContext,
+        private readonly DescendantContent $descendantContent,
+    ) {}
 
     public function handle(?string $focusContextId = null): ContextSlice
     {
         if ($focusContextId === null) {
-            return new ContextSlice(
+            return $this->measured(
                 $this->sliceQuery()->whereNull('parent_id')
                     ->where('kind', '!=', KnowledgeContext::KIND_NOTE_SPACE)->get(),
                 collect(),
@@ -26,10 +29,21 @@ final class OpenContextSlice
         $focus = $this->sliceQuery()->findOrFail($focusContextId);
         $this->requireAvailableContext->handle($focus);
 
-        return new ContextSlice(
-            collect([$focus]),
-            $this->breadcrumbs($focus),
-        );
+        return $this->measured(collect([$focus]), $this->breadcrumbs($focus));
+    }
+
+    /**
+     * @param  Collection<int, KnowledgeContext>  $contexts
+     * @param  Collection<int, KnowledgeContext>  $breadcrumbs
+     */
+    private function measured(Collection $contexts, Collection $breadcrumbs): ContextSlice
+    {
+        $shown = $contexts->concat($contexts->flatMap->children);
+        $containers = $shown->map->getKey()
+            ->concat($shown->flatMap->entities->map(fn ($entity) => $entity->noteSpace?->context_id))
+            ->filter()->unique()->values()->all();
+
+        return new ContextSlice($contexts, $breadcrumbs, $this->descendantContent->beneath($containers));
     }
 
     /** @return Builder<KnowledgeContext> */
@@ -42,10 +56,10 @@ final class OpenContextSlice
                 'entities.document',
                 'entities.attachments',
                 'entities.noteSpace',
-                'noteSpace.entity',
+                'noteSpace.entity.document',
                 'children' => fn ($query) => $query
                     ->withCount('children')
-                    ->with(['entities.document', 'entities.attachments', 'entities.noteSpace', 'noteSpace.entity']),
+                    ->with(['entities.document', 'entities.attachments', 'entities.noteSpace', 'noteSpace.entity.document']),
             ])
             ->orderBy('sort_order')
             ->orderBy('name');

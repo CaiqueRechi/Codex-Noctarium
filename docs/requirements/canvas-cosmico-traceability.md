@@ -1,7 +1,10 @@
 # Cosmic canvas implementation traceability
 
-Updated: 2026-11-08. Contract: `canvas-cosmico.md` and
-`canvas-cosmico-formulas.md`. No production changes or push performed.
+Updated: 2026-11-10. Contract: `canvas-cosmico.md` and
+`canvas-cosmico-formulas.md`. No production changes. Phases 1 to 5 are on
+`main`; the work of 2026-11-10 was pushed on `cm-implementação-canva` for a pull
+request into `main`. The latest state and how to resume are in the checkpoint at
+the end of this page.
 
 ## Phase 1 — RF-06 autosave
 
@@ -98,7 +101,8 @@ stack overflow. These are test scenarios, not approved production volume targets
 It does not parse Markdown into top-level blocks or fetch note bodies. The
 normal-note caller must supply raw Markdown and top-level block counts; the
 flowchart caller must supply editable node/edge text and structural counts,
-excluding serialization and external links. Metric collection is separate work.
+excluding serialization and external links. Metric collection for normal notes
+arrived later, in phase 6.
 Unique descendants are memoized only within each traversal. No cross-space or
 persistent cache retains content; a new input snapshot produces fresh results.
 
@@ -177,24 +181,39 @@ Observed validation:
 - The last complete frontend run remains 146 passing tests in 14 files; no visual
   integration was made in this backend phase.
 - A subsequent version-specific regression reproduction ran 2 tests / 6 assertions
-  with **1 failure**. This test file remains local and uncommitted. Do not report
-  the current phase as fully green or complete.
+  with **1 failure**. That local test file was never committed; it was rewritten
+  from the reproduction below on 2026-11-10, when the issue was fixed.
 
-### Confirmed pending integrity issue
+### Restoration cycle integrity issue (fixed 2026-11-10)
 
-Restoring a membership snapshot can reintroduce a cycle after contexts have
+Restoring a membership snapshot could reintroduce a cycle after contexts had
 moved. Reproduction: capture V0 with note B outside context A; attach B to A and
 capture V1; restore V0; move A inside B's owned space; restore V1. The last step
-currently accepts A → B → A instead of rejecting it. The local reproduction is
+accepted A → B → A instead of rejecting it. The reproduction is
 `tests/Feature/NoteSpaceVersionTest.php`, method
 `testRf03RejectsAnOlderMembershipSnapshotThatWouldCreateACycleWithCurrentContextPositions`.
 
-Next action: validate the resulting active context/note-space graph inside the
-version-restoration transaction and reject a cycle before commit. Serialize
-snapshot/restoration with the same per-vault lock order used by graph writes.
-Then rerun this regression and affected version/context tests. No fix was applied
-before the user's stop/save request. Valid restoration of legacy context content
-passed the other reproduction test without changing the owned-space identity.
+Fix, on branch `cm-implementação-canva`: after the memberships are restored,
+`RestoreVaultVersion` asks `NoteSpaceHierarchy::containsCycle()` about the whole
+active context/note-space graph and rejects the restoration with a 422 `version`
+validation error, inside the transaction, so memberships and the recovery
+version are rolled back. `CreateVaultVersion` and `RestoreVaultVersion` now take
+the vault row lock first, the order used by graph writes. Behaviour and the way
+out for the user are described in `docs/architecture/mvp.md`.
+
+Observed on 2026-11-10: the regression failed before the fix (422 expected, 200
+received) and passes after it; the file's 2 tests pass with 12 assertions,
+including valid restoration of legacy context content without changing the
+owned-space identity. The complete package suite passed 77 PHP tests / 576
+assertions on SQLite, from 75 / 564 before the change. Not verified: the lock
+order under real concurrency or on MySQL, which a single-connection SQLite run
+cannot exercise; the frontend suite, untouched by this change, was not rerun;
+Pint is not installed in the package, so the formatter was not run.
+
+Security review: the rejection message is fixed text with no identifiers or
+server detail. The endpoint keeps its session, authorization, CSRF and version
+throttle. No new write path, cache or stored data; the graph is read live inside
+the transaction on purpose. No issue found in the changed paths.
 
 ### Integration and rollback limits
 
@@ -207,12 +226,187 @@ New creation endpoints inherit session, authorization, CSRF, and existing write
 middleware, plus 30 requests/minute per identity and 60/minute per IP for the new
 space/context-content writes. IP keys are hashed. Foreign vaults and deleted
 owners are rejected; shared descendants are allowed, while direct/descendant
-attachment cycles are rejected. The confirmed restoration gap above remains open.
+attachment cycles are rejected. The restoration gap above is closed.
 
 No production migration, service restart, dependency installation, merge, or
 deployment was performed. The running host copy was not refreshed. Earlier
 uncommitted storage/navigation work remains local; it was not folded wholesale
 into these commits. Local context memory is excluded from Git separately.
+
+## Phase 6 — RF-03 normal-note metric collection
+
+Branch: `cm-implementação-canva`, 2026-11-10. This closes the gap left by phase
+3 for normal notes: the caller no longer has to count blocks itself.
+
+| Requirement | State | Implementation | Tests |
+| --- | --- | --- | --- |
+| `B_i`, top-level Markdown blocks of a normal note | implemented as domain arithmetic | `resources/js/canvas/math/markdown-blocks.ts` (`countTopLevelMarkdownBlocks`) | `cosmic-markdown-blocks.test.ts` (16 cases) |
+| `C_i` of a normal note from its raw Markdown | implemented as domain arithmetic | `measureNormalNoteContent` in `content-weight.ts` | same file (3 cases) |
+| Metrics of a flowchart note (`V_i`, `E_i`, editable text) | blocked | Needs the flowchart format of RF-04 | — |
+| Delivering each note's measure to the canvas | implemented in phase 7 | Server-side measure sent with the context slice | see phase 7 |
+
+How to use it: pass the note's raw Markdown source to
+`measureNormalNoteContent`; the result is `C_i`, ready to be an `ownContent` in
+`calculateHierarchicalContentWeight`. Use it only for normal notes. A flowchart
+note measured this way would count its serialization as text, which the
+formulas forbid.
+
+The counter is a single line-by-line pass with no dependency, because adding a
+Markdown parser needs explicit consent. It applies the rule of section 1 of
+`canvas-cosmico-formulas.md` (a paragraph, heading, list, quote, table or code
+block counts once; descendants are not counted again; blank lines create
+nothing) and takes these details from CommonMark. They are implementation
+readings of that rule, not new product decisions, and are easy to change:
+
+- a list is one block across blank lines and nested content; changing the
+  bullet character, or `.` to `)`, starts another list;
+- a paragraph is interrupted by a bullet item or by an ordered item numbered 1,
+  never by an empty item or another number;
+- fenced code runs to a closing fence of the same character and at least the
+  same length, or to the end of the note;
+- a quote ends at a blank line; unindented text right after a quote, list or
+  paragraph continues it;
+- `---` or `===` under a paragraph makes it a heading, not a second block;
+- a thematic break is a block of its own.
+
+Known limits: raw HTML is counted as paragraphs, so an HTML comment or `<pre>`
+containing blank lines counts more than once; fenced code inside a list item
+is followed by indentation only; a table is not validated, it counts as the
+run of lines it occupies. None of these changes the text measure `T_i`.
+
+Observed results: the 19 new cases pass; the complete frontend suite passed 157
+tests in 12 files; TypeScript and ESLint passed for the package source, and the
+new files follow the host Prettier options. In this checkout the baseline before
+the change was 138 tests in 11 files, not the 146 in 14 files recorded in phase
+4: the difference matches test files that were never committed. The checks ran
+through local copies of `tooling/` pointing at the host by absolute path,
+because this checkout has no sibling `../rechi-os`. No browser journey was run,
+and nothing visible uses the measure yet.
+
+Security and performance review: pure functions with no endpoint, storage,
+rendered text or secret. A test feeds 20000 paragraphs and a 40000-character
+line of repeated list markers to confirm the pass stays linear and does not
+backtrack. Nothing is cached here; the measure depends only on the source, so a
+caller may cache it per document revision. No issue found in the changed paths.
+
+### Decision: the server computes each note's measure
+
+The canvas needs `C_i` for every note of a space, and it holds only the body of
+the note being edited. On 2026-11-10 Rechi chose to have the server store the
+measure of each document and send it with the context slice, instead of having
+the browser download every body. Phase 7 implements it.
+
+## Phase 7 — RF-03 content measure stored and delivered by the server
+
+Branch: `cm-implementação-canva`, 2026-11-10.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Same measure in PHP | `src/Domain/Knowledge/Content/NormalNoteContent.php`, `MarkdownBlockCounter.php`, `MarkdownOpenBlock.php` | `tests/Unit/NormalNoteContentTest.php` |
+| Cases shared by both languages | `tests/Fixtures/normal-note-measure.json` (40 notes) | read by the PHP test above and by `cosmic-markdown-blocks.test.ts` |
+| Measure kept on the document | migration `2026_11_10_000016`, column `cvc_documents.own_content`; written by `CreateMarkdownEntity`, `SaveDocument`, `RestoreVaultVersion` | `tests/Feature/DocumentOwnContentTest.php` |
+| Measure in the context slice | `ContextPresenter`, `OpenContextSlice`; `ownContent` in `resources/js/documents/types.ts` | `tests/Feature/ContextSliceOwnContentTest.php` |
+| Backfill of earlier documents | `cvc:measure-documents`, `MeasureStoredDocument` | `tests/Feature/MeasureDocumentsCommandTest.php` |
+
+Contract for the canvas, described in full in `docs/architecture/mvp.md`:
+`ownContent` is a number, or `null` when the document has not been measured
+yet. `null` is not zero; a caller must not size an unmeasured note as empty.
+
+Keeping the two implementations equal: both suites read the same JSON file and
+fail if a block count or a measure differs beyond 1e-12. Block counts in that
+file were written by hand; the measures were produced by the TypeScript code.
+Any change to the rules must change both languages and the file together. Two
+inputs made the first TypeScript version disagree with a faithful port and
+were fixed there first: no-break spaces counted as indentation, and a Unicode
+line separator hid a list item or a fence.
+
+Known difference: characters are split by PCRE on the server and by ICU in the
+browser. They agree on every shared case, including combined accents, emoji
+sequences, flags, keycaps and decomposed Hangul, but scripts whose clusters
+changed in recent Unicode versions may weigh slightly differently. The server
+value is the one the canvas uses, so this affects only code that measures in
+the browser. Invalid UTF-8, which only the server can receive, is scrubbed
+before measuring instead of failing the save.
+
+Observed results on 2026-11-10: the complete package suite passed 132 PHP tests
+/ 708 assertions on SQLite; the frontend suite passed 197 tests in 12 files;
+TypeScript and ESLint passed. The new migration was rolled back and reapplied
+in a test with documents present. Measuring 1.15 MB of accented text took
+about 0.6 s and 1.16 MB of CJK text about 1.3 s on the development machine;
+2 MB of plain ASCII took 0.04 s. Not verified: MySQL, a browser journey, and
+the backfill on real data. Pint is not installed, so the PHP formatter was not
+run. Nothing visible uses `ownContent` yet.
+
+Security and performance review: no new endpoint or write path; the measure is
+derived from content the same request already stores, and a number per note
+reveals less than the body the reader is already authorised to open through
+the same slice. The slice loads the owner's document with the existing eager
+load, so there is no query per context. The stored column is the cache: it is
+keyed by the document and rewritten in the same transaction as every change of
+its content. One pre-existing point was noticed and not changed: the save
+request has no explicit size limit on `content`; it is bounded by the storage
+quota and the PHP request limits, and the measure adds time proportional to
+that size to each save.
+
+Deployment order: run the migration, deploy the code, then run
+`php artisan cvc:measure-documents` once. Until it runs, older notes are sent
+with `ownContent: null`.
+
+## Phase 8 — RF-03 descendant content and the simulator scene
+
+Branch: `cm-implementação-canva`, 2026-11-10. Headless work; nothing visible
+changed.
+
+The weight of a note is `Q = 0.5 C + 0.8 H`, and `H` is the content of every
+unique descendant. The slice carries only the node in focus and its immediate
+children, so the browser cannot compute `H`; the server now sends it.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| `H` of each shown note and context | `src/Application/Contexts/DescendantContent.php`; `descendantContent` added by `OpenContextSlice` and `ContextPresenter` | `tests/Feature/ContextSliceDescendantContentTest.php` (7 cases) |
+| Coefficients in one place | `combineContentWeight` in `resources/js/canvas/math/hierarchy-weight.ts` | existing `cosmic-content.test.ts` |
+| Scene for the simulator | `resources/js/canvas/physics/cosmic-scene.ts` (`buildCosmicScene`) | `cosmic-scene.test.ts` (9 cases) |
+
+What counts as a descendant: the notes inside a note's space, the notes inside
+their spaces, the notes of nested contexts, and the document of a nested
+context that is itself a note. A note reached by several paths counts once per
+node. The node's own content, notes in the trash and unmeasured notes add
+nothing; an unmeasured descendant counts as zero until
+`cvc:measure-documents` runs.
+
+How to use the scene: give `buildCosmicScene` the notes of one space (`id`,
+`ownContent`, `descendantContent`, stored `position`, `isPinned`) and its
+relations. It returns the bodies and connections `CosmicSimulation` takes, the
+empty area of the budget and the ids of notes sized without a measure. Links to
+notes outside the space are dropped, because the engine rejects them; showing
+them is the external-connection indicator of RF-09.
+
+Decisions taken here that are implementation defaults, not approved product
+rules, and are easy to change:
+
+- A note with unknown measure is sized like an empty one, at the minimum
+  weight, and listed in `unmeasuredNoteIds` so the interface can mark it.
+- A note never positioned starts on a golden-angle spiral around the origin, in
+  id order, spaced by twice the largest radius among those notes. The physics
+  then settles it. D-12 puts new notes where the user touched, so this covers
+  only notes created before positions existed.
+- `H` is computed on every slice read, without a cache. The traversal is
+  batched (a few queries per level of depth, 200 contexts at a time) but its
+  cost grows with everything beneath the shown nodes; the root listing walks
+  the whole vault. A cache needs an invalidation signal for every write that
+  changes content, membership, position in the hierarchy or trash state, and
+  volume targets (D-15) are still open, so it was left out on purpose.
+
+Observed results: the complete package suite passed 139 PHP tests / 732
+assertions on SQLite; the frontend suite passed 206 tests in 13 files;
+TypeScript and ESLint passed. Not verified: MySQL, response time on a large
+vault, any browser journey. Pint is not installed.
+
+Security review: the sums are numbers derived from notes of the configured
+vault only; every query is scoped by vault and skips trashed records. A reader
+of a slice learns an aggregate of content beneath nodes that the same
+authorization already lets them open. No new endpoint, write path or storage.
+No issue found in the changed paths.
 
 ## Remaining requirements
 
@@ -220,7 +414,7 @@ into these commits. Local context memory is excluded from Git separately.
 | --- | --- | --- |
 | RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented; restoration cycle regression, metric collection and visual integration remain |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8); flowchart metrics and the visible part (renderer in `vault.tsx`, animation loop, hit testing, viewport, position/fixation persistence) remain |
 | RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
 | RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
 | RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
@@ -234,7 +428,75 @@ No open physical constant, formula, migration policy, or content format has been
 silently chosen. The user authorized continuation across phases; unresolved
 product decisions still require an answer.
 
-Development is stopped at the user's checkpoint request. Next action on resume:
-fix the confirmed restoration cycle regression above, then continue metric and
-renderer/interaction integration. D-05/D-06/D-12 gesture rules are approved but
+Development resumed on 2026-11-10 with the restoration cycle fix and the
+content measure and the simulator scene above (phases 6 to 8). Next action:
+render the scene in `vault.tsx` and run the simulation there, which needs a
+running Rechi OS to be checked in a browser. D-05/D-06/D-12 gesture rules are approved but
 not implemented by backend helpers alone. Later product decisions remain open.
+
+## Checkpoint — 2026-11-10
+
+Rechi asked to stop for the day, save the context, push the branch and open a
+pull request into `main`. This section is the place to resume from.
+
+### Repository state
+
+- Earlier in the day every branch was compared with the newest one,
+  `cm-canvas-cosmico-note-spaces`. All of them were already contained in it, so
+  `main` was fast-forwarded to it, made the default branch on GitHub, and the
+  four `cm-*` branches were deleted. Nothing had to be merged by hand.
+- Today's work is on `cm-implementação-canva`, created from that `main`: the
+  restoration cycle fix and phases 6 to 8 above.
+- The uncommitted files mentioned in phases 4 and 5 (three frontend test files,
+  the first version of `NoteSpaceVersionTest.php`, a storage and navigation
+  prototype) were not on the machine used today and are not in the repository.
+  The regression test was rewritten from its description. If the others still
+  exist on the original machine, they have to be brought in from there.
+
+### What works now, verified by tests only
+
+- Restoring a version that would close a subnote cycle is refused with 422.
+- The server measures every normal note on create, save and version
+  restoration, and `cvc:measure-documents` measures the earlier ones.
+- A context slice carries `ownContent` and `descendantContent` for each note and
+  context, without any body.
+- `buildCosmicScene` turns the notes and relations of a space into the bodies
+  and connections of `CosmicSimulation`.
+
+Last complete runs: 139 PHP tests / 732 assertions on SQLite; 206 frontend tests
+in 13 files; TypeScript and ESLint clean. Never verified: MySQL, a browser, real
+vault data, lock order under concurrency, response time on a large vault. Pint
+is not installed in the package, so PHP formatting was not checked by a tool.
+
+### Before deploying this branch
+
+1. Run the migrations (`2026_11_10_000016` adds `cvc_documents.own_content`).
+2. Deploy the code.
+3. Run `php artisan cvc:measure-documents` once.
+
+### Next step
+
+Render the scene in `resources/js/pages/vault.tsx`: feed the slice into
+`buildCosmicScene`, run `CosmicSimulation` in an animation loop, draw each note
+as a circle of its radius with a touch target of at least 44×44 px, and persist
+positions and pins through the existing layout endpoint. D-05, D-06 and the
+gestures of D-12 are approved and not implemented. This step needs a running
+Rechi OS to be checked in a browser; component tests alone do not show it.
+
+### Open points for Rechi
+
+- The descendant sum is not cached (phase 8). Decide on a cache once volume
+  targets exist (D-15).
+- The save request has no explicit size limit on `content` (phase 7).
+- Product decisions still blocking requirements: D-07, D-09, D-10, D-11, D-13,
+  the rest of D-12 and D-14, and D-15. See the table of remaining requirements.
+
+### Running the checks without a sibling `../rechi-os`
+
+`tooling/` expects the host at `../rechi-os`. Where the host lives elsewhere, a
+directory junction does not work, because Vite resolves it to the real path and
+then refuses to serve files outside the allowed roots. Use a local copy of
+`tooling/vitest.config.mjs` and `tooling/tsconfig.json` with the absolute path
+of the host instead, kept outside the repository. PHP tests need only
+`composer install`, or an existing `vendor` directory built from the same
+`composer.lock`.

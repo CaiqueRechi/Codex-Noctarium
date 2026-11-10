@@ -14,6 +14,8 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Canvas labels limited to 20 visible characters plus an ellipsis, preserving complete note names and composed characters.
 - Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`; the complete physical renderer is still in development.
 - Tested headless cosmic simulation under `resources/js/canvas/physics`, with fixed steps, gravity, springs, soft contact, damping, pinned-body influence, and sleep/wake behavior; visual integration is still in development.
+- Content measure of every normal note kept by the server and sent with each navigation slice as `ownContent` and `descendantContent`, with no note body; the same rules exist in PHP and TypeScript and are pinned by shared test cases.
+- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`); nothing renders it yet.
 - Stable UUID document entities.
 - Private immutable Markdown revision files with relational metadata.
 - Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.
@@ -26,7 +28,7 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Global or contextual, free or typed relations between entities.
 - Independent persisted positions for each context-specific visual instance.
 - Named perspectives with independent filters and layouts.
-- Named, restorable vault versions with automatic recovery points.
+- Named, restorable vault versions with automatic recovery points; a restoration that would close a subnote cycle is refused.
 - Authorized full-vault search across Markdown, tags, properties, contexts, and relations.
 - Recoverable entity trash that preserves UUIDs, revisions, memberships, and valid relations.
 - Private image and PDF attachments with strict validation, integrity checks, and authorized download.
@@ -78,6 +80,7 @@ npm ci
 php artisan migrate
 php artisan cvc:initialize
 php artisan cvc:reindex
+php artisan cvc:measure-documents
 ```
 
 Grant the intended Rechi OS user `write` access to the `vault` screen, then open `/vault` in Chrome. The initializer is explicit and idempotent; package installation does not create product data automatically.
@@ -87,6 +90,8 @@ Use the left explorer to enter any universe or context and create another level 
 Private Markdown files remain the canonical content store in this release. `cvc_document_revisions` can already receive immutable revision content in `LONGTEXT`, extensible JSON metadata, the SHA-256 hash, and the exact byte count; `cvc_documents.current_revision_id` can select the confirmed row. Production read/write paths do not use this table yet. The later cutover must backfill and verify every revision before changing reads, then dual-write and compare hashes before retiring file-backed content. Attachments remain in private file storage.
 
 `cvc:reindex` queues existing entities in configurable chunks. New writes update the derived index through the Laravel queue configured by Rechi OS.
+
+`cvc:measure-documents` stores the content measure of documents that do not have one, in configurable chunks (`--chunk`, 100 by default). Run it once after upgrading a vault that already has notes; new saves keep the measure current by themselves. It never overwrites an existing measure, so running it again is safe. It exits with failure, after measuring everything it can, when the stored content of a document cannot be read or fails its hash.
 
 The trash panel moves the focused entity, its document, and active relations out of the normal canvas without erasing their records. Restoration returns the entity to every previous context with the same UUID, revision, and layout. Relations removed with the entity are restored only when both endpoints still exist; manually deleted relations never return automatically, and unresolved endpoints are reported in the panel.
 

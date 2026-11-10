@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CrowVaultCanvas\Application\Versions;
 
 use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
+use CrowVaultCanvas\Domain\Knowledge\Models\Vault;
 use CrowVaultCanvas\Domain\Knowledge\Models\VaultVersion;
 use Illuminate\Support\Facades\DB;
 
@@ -23,6 +24,7 @@ final readonly class CreateVaultVersion
     ): VaultVersion {
         return DB::transaction(function () use ($perspectiveId, $name, $createdBy, $kind): VaultVersion {
             $vaultId = (string) config('crow-vault-canvas.vault.id');
+            Vault::query()->whereKey($vaultId)->lockForUpdate()->firstOrFail();
             $perspective = Perspective::query()
                 ->whereKey($perspectiveId)
                 ->where('vault_id', $vaultId)

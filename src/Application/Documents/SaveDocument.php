@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Documents;
 
+use CrowVaultCanvas\Domain\Knowledge\Content\NormalNoteContent;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
 use CrowVaultCanvas\Domain\Knowledge\Models\Vault;
@@ -16,6 +17,7 @@ final readonly class SaveDocument
     public function __construct(
         private MarkdownStorage $storage,
         private OpenDocument $openDocument,
+        private NormalNoteContent $noteContent,
     ) {}
 
     public function handle(string $entityId, string $content, int $expectedRevision): OpenedDocument
@@ -50,6 +52,7 @@ final readonly class SaveDocument
                 'storage_path' => $stored->path,
                 'revision' => $revision,
                 'content_hash' => $stored->contentHash,
+                'own_content' => $this->noteContent->measure($content),
                 'current_revision_id' => $stored->revisionId,
             ]);
             $entity->advanceSearchVersion();

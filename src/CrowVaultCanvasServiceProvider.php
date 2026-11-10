@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace CrowVaultCanvas;
 
 use CrowVaultCanvas\Console\Commands\InitializeVaultCommand;
+use CrowVaultCanvas\Console\Commands\MeasureDocumentsCommand;
 use CrowVaultCanvas\Console\Commands\ReindexVaultCommand;
 use CrowVaultCanvas\Infrastructure\Storage\AttachmentStorage;
 use CrowVaultCanvas\Infrastructure\Storage\LocalAttachmentStorage;
@@ -28,7 +29,11 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom($this->packagePath('database/migrations'));
-        $this->commands([InitializeVaultCommand::class, ReindexVaultCommand::class]);
+        $this->commands([
+            InitializeVaultCommand::class,
+            MeasureDocumentsCommand::class,
+            ReindexVaultCommand::class,
+        ]);
 
         if (! $this->app['config']->boolean('crow-vault-canvas.enabled')) {
             return;

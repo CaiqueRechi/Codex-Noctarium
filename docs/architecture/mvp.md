@@ -20,6 +20,18 @@ Private immutable Markdown files remain canonical for current create, open, save
 
 The later cutover is a separate change: backfill in bounded chunks, verify byte counts and hashes, dual-write while files remain authoritative, compare both stores, switch reads behind a reversible configuration, and only then decide whether file-backed Markdown can be retired. Attachments stay in private filesystem storage because relational blobs would not improve their current validation or delivery boundary.
 
+## Content measure of a note
+
+The cosmic canvas sizes a note by its own content, `C_i` in `docs/requirements/canvas-cosmico-formulas.md`. The server keeps that number in `cvc_documents.own_content` and the context slice sends it as `ownContent` on every document. A context that is itself a note (it has `ownerEntityId`) carries the `ownContent` of the document that owns it. No body is sent for this purpose.
+
+Next to it the slice sends `descendantContent`: the content of every unique note beneath that document or context, at any depth. It is the `H_i` of the formulas, which the browser cannot compute because a slice holds only the node in focus and its immediate children. It excludes the node's own content and notes in the trash, counts a shared note once, and treats an unmeasured descendant as zero. A document without a space has `0`. It is `null` only in responses that are not a slice, such as the context returned right after creating or renaming one. It is computed on every read, without a cache; see phase 8 of `docs/requirements/canvas-cosmico-traceability.md` for the cost and the reason.
+
+`ownContent` is `null` when the document has not been measured: it was saved before the column existed and `cvc:measure-documents` has not run yet. `null` means unknown, not empty; an empty note is `0`.
+
+The measure is rewritten in the same transaction as every change of a document's content: creation (zero), save, and version restoration. Moving a note to the trash and back does not change it. Only normal notes are measured; when flowchart notes exist they need their own measure, because counting a serialized flowchart as Markdown text is forbidden by the formulas.
+
+The rules exist twice, in `src/Domain/Knowledge/Content` and in `resources/js/canvas/math`, and `tests/Fixtures/normal-note-measure.json` is read by both test suites so they cannot drift apart. Change the two implementations and that file together.
+
 ## Entity properties
 
 Capture remains unstructured. A document may later receive an optional `entity_type` and up to 50 scalar properties without changing its UUID, Markdown, or revision. Properties are stored as JSON metadata in `cvc_entities`; Markdown remains the canonical document content in private revision files.
@@ -51,6 +63,10 @@ The active perspective ID is part of the per-user workspace state. The React cli
 Version creation and restoration require the authenticated write permission, CSRF protection, validation, and a dedicated throttle. Before restoration changes any database row, the server validates the snapshot scope and structure, confines every context and entity to the configured vault, reads every referenced Markdown file through the protected storage adapter, and verifies its content hash.
 
 A successful restoration first captures the complete current state as an automatic recovery version in the same transaction. It then restores entity metadata and soft-delete state, document revision pointers, context membership, perspective filters and layouts, and active relations. Restoring that recovery version returns to the replaced state, so restoration never makes the current state unreachable.
+
+A snapshot does not version where contexts sit: `parent_id` and note-space ownership stay as they are today. Memberships that were acyclic when captured can therefore close a subnote cycle after a context has been moved. Once the memberships are back, the restoration checks the whole active containment graph of the vault (child contexts plus the owned spaces of member notes) and, if it finds a cycle, answers 422 with a `version` validation error and rolls back every change, including the recovery version. To restore such a version, first move the context out of the note's space.
+
+Version capture and restoration take the vault row lock before any other lock, the same order used by context moves, attachments, and note-space creation. A graph write therefore cannot interleave with the cycle check, and a snapshot never records a half-applied graph change.
 
 ## Authorized search index
 

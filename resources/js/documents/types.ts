@@ -5,6 +5,8 @@ export type DocumentSummary = {
     id: string;
     title: string | null;
     revision: number;
+    ownContent?: number | null;
+    descendantContent?: number | null;
     entityType: string | null;
     properties: EntityProperties;
     tags?: string[];

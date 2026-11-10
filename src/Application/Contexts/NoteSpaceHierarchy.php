@@ -35,6 +35,59 @@ final readonly class NoteSpaceHierarchy
         }
     }
 
+    public function containsCycle(): bool
+    {
+        $containedBy = [];
+        $pendingContainers = [];
+
+        foreach ($this->activeContainments() as [$containerId, $containedId]) {
+            $containedBy[$containerId][] = $containedId;
+            $pendingContainers[$containedId] = ($pendingContainers[$containedId] ?? 0) + 1;
+            $pendingContainers[$containerId] ??= 0;
+        }
+
+        $resolvable = array_keys(array_filter($pendingContainers, fn (int $count): bool => $count === 0));
+        $resolved = 0;
+
+        while ($resolvable !== []) {
+            $contextId = array_pop($resolvable);
+            $resolved++;
+
+            foreach ($containedBy[$contextId] ?? [] as $containedId) {
+                if (--$pendingContainers[$containedId] === 0) {
+                    $resolvable[] = $containedId;
+                }
+            }
+        }
+
+        return $resolved !== count($pendingContainers);
+    }
+
+    /** @return list<array{0: string, 1: string}> */
+    private function activeContainments(): array
+    {
+        $vaultId = (string) $this->config->get('crow-vault-canvas.vault.id');
+        $nested = KnowledgeContext::query()->where('vault_id', $vaultId)
+            ->whereNotNull('parent_id')->get(['id', 'parent_id'])
+            ->map(fn (KnowledgeContext $context): array => [(string) $context->parent_id, (string) $context->getKey()]);
+        $owned = $this->database->table('cvc_context_entity')
+            ->join('cvc_note_spaces', 'cvc_note_spaces.entity_id', '=', 'cvc_context_entity.entity_id')
+            ->join('cvc_entities', 'cvc_entities.id', '=', 'cvc_context_entity.entity_id')
+            ->join('cvc_contexts as containers', 'containers.id', '=', 'cvc_context_entity.context_id')
+            ->join('cvc_contexts as spaces', 'spaces.id', '=', 'cvc_note_spaces.context_id')
+            ->where('cvc_entities.vault_id', $vaultId)
+            ->where('cvc_entities.kind', KnowledgeEntity::KIND_DOCUMENT)
+            ->whereNull('cvc_entities.deleted_at')
+            ->where('containers.vault_id', $vaultId)
+            ->whereNull('containers.deleted_at')
+            ->where('spaces.vault_id', $vaultId)
+            ->whereNull('spaces.deleted_at')
+            ->get(['cvc_context_entity.context_id as container_id', 'cvc_note_spaces.context_id as space_id'])
+            ->map(fn (object $membership): array => [(string) $membership->container_id, (string) $membership->space_id]);
+
+        return $nested->concat($owned)->values()->all();
+    }
+
     private function containsContext(string $rootId, string $targetId): bool
     {
         $vaultId = (string) $this->config->get('crow-vault-canvas.vault.id');

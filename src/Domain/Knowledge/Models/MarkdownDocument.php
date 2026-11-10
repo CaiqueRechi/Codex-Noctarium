@@ -25,6 +25,7 @@ final class MarkdownDocument extends Model
         'storage_path',
         'revision',
         'content_hash',
+        'own_content',
         'current_revision_id',
     ];
 
@@ -32,6 +33,7 @@ final class MarkdownDocument extends Model
     {
         return [
             'revision' => 'integer',
+            'own_content' => 'float',
         ];
     }
 

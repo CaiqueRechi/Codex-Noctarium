@@ -11,6 +11,19 @@ export type HierarchicalContentWeight = {
     weight: number;
 };
 
+const ownContentCoefficient = 0.5;
+const descendantContentCoefficient = 0.8;
+
+export function combineContentWeight(
+    ownContent: number,
+    descendantContent: number,
+): number {
+    return (
+        ownContentCoefficient * ownContent +
+        descendantContentCoefficient * descendantContent
+    );
+}
+
 export function calculateHierarchicalContentWeight(
     rootId: string,
     notes: ReadonlyMap<string, ContentHierarchyNode>,
@@ -65,7 +78,7 @@ export function calculateHierarchicalContentWeight(
         }
     }
 
-    const weight = 0.5 * root.ownContent + 0.8 * descendantContent;
+    const weight = combineContentWeight(root.ownContent, descendantContent);
     requireNonNegativeFinite(descendantContent, 'Descendant content');
     requireNonNegativeFinite(weight, 'Hierarchical content weight');
 
