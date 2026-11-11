@@ -94,6 +94,18 @@ vi.mock('@xyflow/react', () => ({
                 >
                     enquadramento programático
                 </button>
+                <button
+                    type="button"
+                    onClick={(event) =>
+                        onMoveEnd?.(event.nativeEvent, {
+                            x: 30,
+                            y: 40,
+                            zoom: 1.5,
+                        })
+                    }
+                >
+                    soltar a câmera
+                </button>
                 {children}
             </div>
         );
@@ -497,6 +509,53 @@ describe('RF-02 vault canvas', () => {
         );
 
         expect(fetchMock).not.toHaveBeenCalled();
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
+
+    it('saves the viewport once when the camera stops where it already was', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+
+        renderWithTools(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        const stopCamera = screen.getByRole('button', {
+            name: 'soltar a câmera',
+        });
+        fireEvent.click(stopCamera);
+        fireEvent.click(stopCamera);
+        fireEvent.click(stopCamera);
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/vault/workspace',
+            expect.objectContaining({ method: 'PATCH' }),
+        );
         document.cookie =
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         vi.unstubAllGlobals();

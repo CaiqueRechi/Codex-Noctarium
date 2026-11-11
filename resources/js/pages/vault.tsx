@@ -365,6 +365,7 @@ export default function VaultPage({
     > | null>(null);
     const canvas = useRef<HTMLElement | null>(null);
     const framesNextScene = useRef(false);
+    const savedViewport = useRef<Viewport>({ ...workspace.viewport });
     const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
     const navigationPending = useRef(false);
@@ -546,6 +547,19 @@ export default function VaultPage({
                 return;
             }
 
+            // A click on the canvas ends a "move" that moved nothing. Saving
+            // those queued a request per click behind the real ones.
+            const saved = savedViewport.current;
+
+            if (
+                saved.x === nextViewport.x &&
+                saved.y === nextViewport.y &&
+                saved.zoom === nextViewport.zoom
+            ) {
+                return;
+            }
+
+            savedViewport.current = { ...nextViewport };
             void persistWorkspace(nextViewport, focusEntityId);
         },
         [focusEntityId, persistWorkspace],
@@ -747,6 +761,7 @@ export default function VaultPage({
         }
 
         viewport.current = framed;
+        savedViewport.current = framed;
         element.style.setProperty('--cvc-zoom', String(framed.zoom));
         void flow.setViewport(framed, { duration: 250 });
         void persistWorkspace(framed, null);
