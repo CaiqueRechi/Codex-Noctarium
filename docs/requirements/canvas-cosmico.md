@@ -6,7 +6,7 @@
 | Solicitante e aprovador | Rechi |
 | Status | Levantamento encerrado a pedido do usuário |
 | Cobertura | Parcial; não declarar 100%. Decisões ainda abertas estão na seção 15; as fechadas em 2026-11-11, na seção 15.3 |
-| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados em 2026-11-08. Em 2026-11-10: regressão de ciclo na restauração de versões corrigida; medida de conteúdo das notas calculada e enviada pelo servidor; cena do simulador montada a partir dela. Tudo validado apenas por testes locais; a parte visível do RF-03 e os demais itens seguem pendentes conforme a [rastreabilidade](canvas-cosmico-traceability.md) |
+| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados em 2026-11-08. Em 2026-11-10: regressão de ciclo na restauração de versões corrigida; medida de conteúdo das notas calculada e enviada pelo servidor; cena do simulador montada a partir dela. Em 2026-11-11: o espaço aberto de um contexto passou a ser desenhado e movido pela física, com soltura livre e fixação por Ctrl. Tudo validado apenas por testes locais, sem navegador; a listagem raiz como espaço, os gestos de toque e os demais itens seguem pendentes conforme a [rastreabilidade](canvas-cosmico-traceability.md) |
 | Referência matemática | [Fórmulas e regras detalhadas](canvas-cosmico-formulas.md) |
 
 ## 1. Resumo

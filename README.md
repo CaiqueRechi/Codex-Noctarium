@@ -13,9 +13,9 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Semantic zoom rendered with React Flow.
 - Canvas labels limited to 20 visible characters plus an ellipsis, preserving complete note names and composed characters.
 - Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`; the complete physical renderer is still in development.
-- Tested headless cosmic simulation under `resources/js/canvas/physics`, with fixed steps, gravity, springs, soft contact, damping, pinned-body influence, and sleep/wake behavior; visual integration is still in development.
+- Tested headless cosmic simulation under `resources/js/canvas/physics`, with fixed steps, gravity, springs, soft contact, damping, pinned-body influence, and sleep/wake behavior.
 - Content measure of every normal note kept by the server and sent with each navigation slice as `ownContent` and `descendantContent`, with no note body; the same rules exist in PHP and TypeScript and are pinned by shared test cases.
-- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`); nothing renders it yet.
+- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`). Inside an open context the canvas draws that space with it: notes and nested contexts are circles moved by the simulation, a note dropped freely keeps moving, and one dropped while Ctrl is held is pinned. The root listing still uses cards, and none of this has been checked in a browser yet.
 - Stable UUID document entities.
 - Private immutable Markdown revision files with relational metadata.
 - Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.

@@ -408,13 +408,85 @@ of a slice learns an aggregate of content beneath nodes that the same
 authorization already lets them open. No new endpoint, write path or storage.
 No issue found in the changed paths.
 
+## Phase 9 — RF-03 open space drawn and moved by the physics
+
+Branch: `cm-canvas-cosmico-cena-visivel`, 2026-11-11. First visible use of the
+simulator.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Simulation advanced on animation frames | `resources/js/canvas/physics/use-cosmic-simulation.ts` (`useCosmicSimulation`) | `cosmic-simulation-hook.test.tsx` (8 cases) |
+| One space of a slice as scene input | `resources/js/canvas/physics/space-scene.ts` (`describeSpaceScene`) | `cosmic-space-scene.test.ts` (4 cases) |
+| Note drawn as a circle | `resources/js/canvas/cosmic-note-node.tsx`, `.cvc-cosmic-note` in `resources/css/cvc.css` | `cosmic-note-node.test.tsx` (4 cases) |
+| Open space on the page, free and pinned drops | `resources/js/pages/vault.tsx`; pin flag in `relations/api.ts` and `perspectives/api.ts` | `vault-cosmic-space.test.tsx` (10 cases) |
+
+What the canvas shows now: at the root listing, the same cards as before. Inside
+an open context, only that space: its notes and its nested contexts as circles
+whose area comes from the budget of `buildCosmicScene`, moved by
+`CosmicSimulation`. The card of the open context and the notes of nested
+contexts are not drawn there; a nested context is entered to see its notes.
+Relations between two notes of the space are straight edges. A note whose
+measure is unknown is drawn with a dashed outline and says so on hover.
+
+Dragging and pinning (RN-07): while a note is dragged it stays under the
+pointer and the others react to it. Dropped freely it is saved with
+`pinned: false` and keeps moving with the others; dropped while Ctrl is held it
+is saved with `pinned: true` and stays. Before this phase every drop pinned.
+The position saved for a note in a space is the centre of its circle, in canvas
+units; D-06 converts to logical units only inside the physics.
+
+How to use the hook: give it a scene that keeps its identity between renders
+(memoize it) and read `bodies`. A new scene object restarts the simulation, so
+an unmemoized scene loops forever; the first version of one test did exactly
+that and ran out of memory. When a scene is rebuilt, a body whose stored
+position and pin did not change continues from its live position and velocity,
+otherwise any unrelated page update would throw the space back to its start.
+
+Implementation defaults taken here, not product decisions, easy to change:
+
+- The title keeps 0.9 rem on screen at any zoom, and the touch target keeps at
+  least 44 × 44 px (D-05), through a `--cvc-zoom` custom property the page
+  writes on every viewport move. No React render happens for a pan or a zoom.
+- Only the dragged note is saved. Notes that the physics moved are not written
+  back, so a reopened space settles again from the stored positions. It ends in
+  the same place because the simulation is deterministic, but it replays the
+  movement. Saving every settled note needs a batch layout endpoint.
+- A nested context has no stored position: it starts on the spiral every time
+  and a drag is not saved. Storing it needs a schema change.
+- With a perspective active, the drop is saved on the perspective, with the
+  same pin rule.
+
+Not done in this phase: the root listing as a cosmic space, the zoom thresholds
+of D-12, the touch gestures (long press, "Fixar / Liberar"), opening a note by
+a single click, and the flowchart metrics.
+
+Observed results on 2026-11-11: the frontend suite passed 232 tests in 17
+files, from 206 in 13; TypeScript passed; the PHP suite, untouched, was run
+before the change and passed 139 tests / 732 assertions. ESLint reports five
+errors in files this phase did not touch (`operational-status-panel.tsx`,
+`perspectives-panel.tsx`, `relations-panel.tsx`, `search-panel.tsx`); they are
+present on `main` with the host configuration used today, and none is in the
+new or changed files. Prettier was applied to the touched files with the host
+options minus its Tailwind plugin, which is not installed for this package.
+Not verified: any browser. Dragging relies on React Flow reporting the node
+position during `onNodeDrag`, and the circle sizes, title size and edge
+anchors have only been exercised with the library mocked. Frame cost was not
+measured: the page re-renders on every frame while a space is moving, and the
+simulation compares every pair of notes of the space twice per frame.
+
+Security review: no endpoint, storage or dependency was added. The pin flag
+was already validated as a boolean by the layout requests; the browser now
+sends `false` as well as `true`. Titles reach the page as React text and a
+`title` attribute, both escaped. The zoom written to the style is a number
+from the viewport. No issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | ready | D-05, D-06 and D-12 decided (zoom enters at 60% and leaves at 30%); not implemented. Zoom animation timings still open; existing contextual capture draft is preserved |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8); flowchart metrics and the visible part (renderer in `vault.tsx`, animation loop, hit testing, viewport, position/fixation persistence) remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free and pinned drops saved (phase 9, not seen in a browser); flowchart metrics, the root listing as a space, saving the positions the physics settles, and a stored position for nested contexts remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
 | RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |
