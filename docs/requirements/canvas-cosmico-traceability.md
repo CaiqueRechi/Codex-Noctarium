@@ -412,16 +412,16 @@ No issue found in the changed paths.
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
-| RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8); flowchart metrics and the visible part (renderer in `vault.tsx`, animation loop, hit testing, viewport, position/fixation persistence) remain |
-| RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
-| RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
-| RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
-| RF-08 | blocked | Shared subspace model approved under D-01/D-14; movement of a particular participation and D-13 policies remain |
-| RF-09 | blocked | D-10 directions/overlap/physics and transition parameters remain open |
-| RF-10 | blocked | D-09 counter events and prefix normalization remain open |
-| RF-11 | blocked | Fixture identity/tombstone handling, final persistence, and flowchart format must support examples without replacing edits |
+| RF-01 | ready | D-05, D-06 and D-12 decided (zoom enters at 60% and leaves at 30%); not implemented. Zoom animation timings still open; existing contextual capture draft is preserved |
+| RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8); flowchart metrics and the visible part (renderer in `vault.tsx`, animation loop, hit testing, viewport, position/fixation persistence) remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
+| RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
+| RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
+| RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |
+| RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept. Two inferences in section 15.3 await confirmation; migration of existing data still open |
+| RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
+| RF-10 | ready | D-09 decided: counter events, case- and accent-insensitive prefix, only `/link` and `/l` (`$l` was dropped); not implemented |
+| RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
 
 Follow-up questions are asked only when their decisions block the next phase.
 No open physical constant, formula, migration policy, or content format has been
@@ -490,6 +490,41 @@ Rechi OS to be checked in a browser; component tests alone do not show it.
 - The save request has no explicit size limit on `content` (phase 7).
 - Product decisions still blocking requirements: D-07, D-09, D-10, D-11, D-13,
   the rest of D-12 and D-14, and D-15. See the table of remaining requirements.
+
+### Decisions closed on 2026-11-11
+
+Rechi answered the open decisions point by point; they are recorded in section
+15.3 of `canvas-cosmico.md`. This was a documentation session: no code changed
+and no test was run. It supersedes the list under "Open points for Rechi"
+above, which is kept as the record of that day.
+
+- Closed: D-07, D-09, D-10, D-11, the zoom thresholds and editor connections of
+  D-12, the deletion, trash and history rules of D-13, the encryption scope of
+  D-14, and the volume, size limit and delivery order of D-15.
+- The save request now has a decided limit, 5 MB per note. It is not enforced
+  yet.
+- Delivery order after the visible part of RF-03: RF-01 and RF-02; RF-07,
+  RF-10 and RF-09; RF-08 with deletion and trash; RF-04 and RF-05; encryption;
+  RF-11.
+- `$l` is no longer a command. RF-10 accepts only `/link` and `/l`.
+
+Encryption is end to end for the content only, and it invalidates part of
+phases 6 to 8: the server can no longer read a body, so the measure has to be
+computed in the browser and sent as a number, `cvc:measure-documents` and the
+measurement on version restoration stop working, and existing plain content
+needs a conversion run by the browser. Because a lost recovery code is
+requested from the administrator, the server has to keep a recoverable copy of
+the key, so the administrator can read the content. Encryption is fifth in the
+delivery order, so phases 6 to 8 stay as they are until then.
+
+Still open: zoom animation timings and cancellation during a move (D-12),
+migration of the current layout and of existing data (D-13), key design and
+the final Rechi OS integration (D-14), environments, operation and costs
+(D-15). Three statements in section 15.3 are marked as inferences and must be
+confirmed before they are built: shared subnotes survive in their other
+spaces, versions are removed with the note on permanent deletion, and the
+descendant sum stays uncached until a measurement at 5,000 notes says
+otherwise.
 
 ### Running the checks without a sibling `../rechi-os`
 
