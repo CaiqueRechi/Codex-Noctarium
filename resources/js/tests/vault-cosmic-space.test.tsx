@@ -1,0 +1,349 @@
+import {
+    act,
+    fireEvent,
+    render,
+    screen,
+    waitFor,
+} from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@inertiajs/react', () => ({
+    Head: () => null,
+    router: { reload: vi.fn() },
+}));
+
+type MockNode = {
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    data: {
+        label: string;
+        diameter?: number;
+        isPinned?: boolean;
+        entityId?: string;
+        contextId?: string;
+    };
+};
+type DragHandler = (
+    event: { ctrlKey: boolean },
+    node: MockNode,
+    nodes: MockNode[],
+) => void;
+
+vi.mock('@xyflow/react', () => ({
+    Background: () => null,
+    BackgroundVariant: { Dots: 'dots' },
+    Controls: () => null,
+    Handle: () => null,
+    Position: { Left: 'left', Right: 'right', Top: 'top', Bottom: 'bottom' },
+    ReactFlow: ({
+        children,
+        nodes,
+        onMove,
+        onNodeDrag,
+        onNodeDragStop,
+    }: {
+        children: ReactNode;
+        nodes: MockNode[];
+        onMove: (
+            event: null,
+            viewport: { x: number; y: number; zoom: number },
+        ) => void;
+        onNodeDrag: DragHandler;
+        onNodeDragStop: DragHandler;
+    }) => {
+        const dragTo = (node: MockNode, ctrlKey: boolean) => {
+            const moved = { ...node, position: { x: 1024, y: -512 } };
+            onNodeDrag({ ctrlKey }, moved, [moved]);
+            onNodeDragStop({ ctrlKey }, moved, [moved]);
+        };
+
+        return (
+            <div>
+                {nodes.map((node) => (
+                    <span
+                        key={node.id}
+                        data-testid={node.id}
+                        data-type={node.type}
+                        data-x={node.position.x}
+                        data-y={node.position.y}
+                        data-diameter={node.data.diameter}
+                        data-pinned={String(node.data.isPinned)}
+                    >
+                        {node.data.label}
+                        <button
+                            type="button"
+                            onClick={() => dragTo(node, false)}
+                        >
+                            soltar {node.data.label}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => dragTo(node, true)}
+                        >
+                            fixar {node.data.label}
+                        </button>
+                    </span>
+                ))}
+                <button
+                    type="button"
+                    onClick={() => onMove(null, { x: 0, y: 0, zoom: 0.5 })}
+                >
+                    afastar
+                </button>
+                {children}
+            </div>
+        );
+    },
+}));
+
+import VaultPage from '../pages/vault';
+import type { VaultPageProps } from '../pages/vault';
+
+let pendingFrames: Array<(time: number) => void> = [];
+let clock = 0;
+
+function runFrames(count: number): void {
+    act(() => {
+        for (let index = 0; index < count; index++) {
+            const frames = pendingFrames;
+            pendingFrames = [];
+            clock += 1000 / 60;
+            frames.forEach((frame) => frame(clock));
+        }
+    });
+}
+
+function note(id: string, title: string, overrides: object = {}) {
+    return {
+        id,
+        title,
+        revision: 1,
+        entityType: null,
+        properties: {},
+        ownContent: 0,
+        descendantContent: 0,
+        position: null,
+        isPinned: false,
+        ...overrides,
+    };
+}
+
+function renderSpace(
+    documents: ReturnType<typeof note>[],
+    vault: Partial<VaultPageProps['vault']> = {},
+) {
+    return render(
+        <VaultPage
+            vault={{
+                id: 'vault-1',
+                name: 'CVC',
+                breadcrumbs: [{ id: 'space', name: 'Planeta' }],
+                universes: [
+                    {
+                        id: 'space',
+                        name: 'Planeta',
+                        kind: 'context',
+                        documents,
+                        contexts: [
+                            {
+                                id: 'nested',
+                                name: 'Continente',
+                                kind: 'context',
+                                parentId: 'space',
+                                ownContent: 0,
+                                descendantContent: 0,
+                                documents: [note('deep', 'Nota do continente')],
+                            },
+                        ],
+                    },
+                ],
+                ...vault,
+            }}
+            endpoints={{
+                documents: '/vault/documents',
+                entities: '/vault/entities',
+                contexts: '/vault/contexts',
+                workspace: '/vault/workspace',
+            }}
+            workspace={{
+                viewport: { x: 0, y: 0, zoom: 1 },
+                focusEntityId: null,
+                focusContextId: 'space',
+            }}
+        />,
+    );
+}
+
+describe('RF-03 space drawn and moved by the physics', () => {
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+        pendingFrames = [];
+        clock = 0;
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ updated: true }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.stubGlobal(
+            'requestAnimationFrame',
+            (frame: (time: number) => void) => pendingFrames.push(frame),
+        );
+        vi.stubGlobal('cancelAnimationFrame', () => {
+            pendingFrames = [];
+        });
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('draws the notes and nested spaces of the open space as circles', () => {
+        renderSpace([note('a', 'Alfa'), note('b', 'Beta')]);
+
+        expect(screen.getByTestId('entity:space:a')).toHaveAttribute(
+            'data-type',
+            'cosmic',
+        );
+        expect(screen.getByTestId('entity:space:b')).toBeInTheDocument();
+        expect(screen.getByTestId('context:nested')).toHaveAttribute(
+            'data-type',
+            'cosmic',
+        );
+    });
+
+    it('leaves the notes of a nested space and the card of the open space out', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        expect(
+            screen.queryByTestId('entity:nested:deep'),
+        ).not.toBeInTheDocument();
+        expect(screen.queryByTestId('context:space')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('universe:space')).not.toBeInTheDocument();
+    });
+
+    it('gives the note with more content the larger circle', () => {
+        renderSpace([
+            note('small', 'Pequena', { ownContent: 2 }),
+            note('large', 'Grande', { ownContent: 400 }),
+        ]);
+
+        const diameterOf = (id: string) =>
+            Number(screen.getByTestId(id).getAttribute('data-diameter'));
+
+        expect(diameterOf('entity:space:large')).toBeGreaterThan(
+            diameterOf('entity:space:small'),
+        );
+    });
+
+    it('opens a stored position where it was saved, in canvas units', () => {
+        renderSpace([
+            note('a', 'Alfa', {
+                position: { x: 2048, y: -1024 },
+                isPinned: true,
+            }),
+        ]);
+
+        const node = screen.getByTestId('entity:space:a');
+
+        expect(node).toHaveAttribute('data-x', '2048');
+        expect(node).toHaveAttribute('data-y', '-1024');
+        expect(node).toHaveAttribute('data-pinned', 'true');
+    });
+
+    it('moves free notes as frames pass', () => {
+        renderSpace([
+            note('a', 'Alfa', { position: { x: -2048, y: 0 } }),
+            note('b', 'Beta', { position: { x: 2048, y: 0 } }),
+        ]);
+
+        runFrames(30);
+
+        expect(
+            Number(screen.getByTestId('entity:space:a').getAttribute('data-x')),
+        ).toBeGreaterThan(-2048);
+    });
+
+    it('saves a note dropped freely without pinning it', async () => {
+        renderSpace([note('a', 'Alfa'), note('b', 'Beta')]);
+
+        fireEvent.click(screen.getByRole('button', { name: 'soltar Alfa' }));
+
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/vault/contexts/space/entities/a/layout',
+                expect.objectContaining({
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        position: { x: 1024, y: -512 },
+                        pinned: false,
+                    }),
+                }),
+            ),
+        );
+        expect(screen.getByTestId('entity:space:a')).toHaveAttribute(
+            'data-pinned',
+            'false',
+        );
+    });
+
+    it('pins a note dropped while Ctrl is held and keeps it where it was dropped', async () => {
+        renderSpace([note('a', 'Alfa'), note('b', 'Beta')]);
+
+        fireEvent.click(screen.getByRole('button', { name: 'fixar Alfa' }));
+
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/vault/contexts/space/entities/a/layout',
+                expect.objectContaining({
+                    body: JSON.stringify({
+                        position: { x: 1024, y: -512 },
+                        pinned: true,
+                    }),
+                }),
+            ),
+        );
+
+        runFrames(30);
+
+        const node = screen.getByTestId('entity:space:a');
+
+        expect(node).toHaveAttribute('data-pinned', 'true');
+        expect(node).toHaveAttribute('data-x', '1024');
+        expect(node).toHaveAttribute('data-y', '-512');
+    });
+
+    it('moves a nested space without saving a layout for it', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'soltar Continente' }),
+        );
+
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('tells the styles the current zoom so targets keep their size on screen', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        const canvas = screen.getByRole('main', { name: 'Canvas do vault' });
+
+        expect(canvas.style.getPropertyValue('--cvc-zoom')).toBe('1');
+
+        fireEvent.click(screen.getByRole('button', { name: 'afastar' }));
+
+        expect(canvas.style.getPropertyValue('--cvc-zoom')).toBe('0.5');
+    });
+
+    it('keeps the cards of the root listing, where no space is open', () => {
+        renderSpace([note('a', 'Alfa')], { breadcrumbs: [] });
+
+        expect(screen.getByTestId('universe:space')).toHaveAttribute(
+            'data-type',
+            'knowledge',
+        );
+    });
+});
