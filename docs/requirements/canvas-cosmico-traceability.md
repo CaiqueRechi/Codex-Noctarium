@@ -525,7 +525,7 @@ commit of its own:
   document, and the missing own content was read as a missing measure; it is a
   known zero.
 
-Observed on 2026-11-11: the frontend suite passed 239 tests in 17 files;
+Observed on 2026-11-11, before the second look below: the frontend suite passed 239 tests in 17 files;
 TypeScript passed; ESLint reports the same five errors as phase 9, all in
 panel files this work did not touch. The PHP suite was not rerun, since no PHP
 changed after its 139 passing tests.
@@ -538,12 +538,36 @@ framed after entering, the path in the header, the tools panel opening.
 Migrations `2026_11_08_000015` and `2026_11_10_000016` ran forward on MySQL
 there for the first time; their rollback was not run on MySQL.
 
-Not seen in a browser: two or more notes moving, dragging, a free drop and a
-Ctrl drop. Creating a note fails in that environment with a 500: directories
-under `/var/lib/cvc/vaults/.../entities` are owned by root since 2026-11-06 and
-the application runs as `sail`, so the storage quota scan cannot read them.
-That is a state of the local volume, not of this change, and it was left as
-found. The only space available there has a single note.
+### Second look at the page, same day
+
+Rechi allowed the ownership of the local vault storage to be corrected (138 of
+147 entries under `/var/lib/cvc` belonged to root; all now belong to `sail`),
+which made creating a note work there and gave a space with two bodies. That
+look found four more defects, each fixed in its own commit:
+
+- After a drop every circle jumped by half its diameter. The canvas library
+  centres a node with the size it measured, and nodes rebuilt on every frame
+  lose that measurement. Each node now states its size.
+- A new note was born on the spiral for unplaced notes, usually off screen. It
+  is now created at the middle of the view and saved there unpinned.
+- With a perspective active, saving the layout of a note that sits directly in
+  a universe answered 404: `UpdatePerspectiveLayout` accepted only contexts of
+  kind `context`. It now accepts any available context of the vault that holds
+  the note, as `UpdateEntityLayout` already did.
+- The page error took the row of the canvas and pushed the canvas off screen.
+  It has a row of its own.
+
+Observed after these: the PHP suite passed 141 tests / 740 assertions on
+SQLite; the frontend suite passed 243 tests in 17 files; TypeScript passed;
+ESLint unchanged.
+
+Still not seen in a browser: notes moving under the physics, a drag following
+the pointer, a free drop and a Ctrl drop. The browser pane used for the check
+was hidden, and a hidden page gets no animation frames, so the simulation did
+not advance and the positions read during those attempts prove nothing either
+way. The jump after a drop and the 404 were read from the page and the
+network, which do not depend on frames. These four behaviours need a look with
+the page visible.
 
 Still not done: saving the positions the physics settles, a stored position
 for nested contexts and universes, the 60 % / 30 % zoom navigation of D-12,
