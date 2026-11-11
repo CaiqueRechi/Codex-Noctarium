@@ -10,12 +10,12 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 
 - One fixed physical vault prepared for multiple vaults later.
 - Arbitrarily deep universe/context hierarchies inside the vault, loaded one navigation slice at a time.
-- Semantic zoom rendered with React Flow.
+- A screen that is only the canvas: the vault root and every context drawn as a cosmic space with React Flow, the current path in the header, and every other tool in one floating panel.
 - Canvas labels limited to 20 visible characters plus an ellipsis, preserving complete note names and composed characters.
 - Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`; the complete physical renderer is still in development.
 - Tested headless cosmic simulation under `resources/js/canvas/physics`, with fixed steps, gravity, springs, soft contact, damping, pinned-body influence, and sleep/wake behavior.
 - Content measure of every normal note kept by the server and sent with each navigation slice as `ownContent` and `descendantContent`, with no note body; the same rules exist in PHP and TypeScript and are pinned by shared test cases.
-- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`). Inside an open context the canvas draws that space with it: notes and nested contexts are circles moved by the simulation, a note dropped freely keeps moving, and one dropped while Ctrl is held is pinned. The root listing still uses cards, and none of this has been checked in a browser yet.
+- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`). Inside an open context the canvas draws that space with it: notes and nested contexts are circles moved by the simulation, a note dropped freely keeps moving, and one dropped while Ctrl is held is pinned. A space is framed whole when entered. A single-note space was checked in a browser; several notes moving and dragging were not.
 - Stable UUID document entities.
 - Private immutable Markdown revision files with relational metadata.
 - Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.

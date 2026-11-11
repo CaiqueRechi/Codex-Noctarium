@@ -480,13 +480,88 @@ sends `false` as well as `true`. Titles reach the page as React text and a
 `title` attribute, both escaped. The zoom written to the style is a number
 from the viewport. No issue found in the changed paths.
 
+## Phase 10 — only the canvas on screen
+
+Branch: `cm-canvas-cosmico-cena-visivel`, 2026-11-11. Rechi saw phase 9 in the
+browser and asked for the rest of the rejected screen to go. The decisions are
+in section 15.4 of `canvas-cosmico.md`. This phase supersedes what phase 9 says
+about the root listing keeping its cards.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Vault root drawn as the outermost space | `activeSpace` in `resources/js/pages/vault.tsx`; universes are bodies of that space | `vault-cosmic-space.test.tsx`, `vault-page.test.tsx` |
+| Explorer column and panel column removed from the layout | one floating panel, `.cvc-tools`, opened by a header button; `VaultPath` in `explorer/vault-explorer.tsx` puts the path in the header | `vault-cosmic-space.test.tsx` (3 cases) |
+| Card node and semantic zoom levels removed | `knowledge-node.tsx`, `semantic-zoom.ts` and their styles deleted | title cases moved to `canvas-title.test.tsx` against the circle |
+| Space framed when entered | `frameCircles` in `resources/js/canvas/math/geometry.ts` | `cosmic-framing.test.ts` (4 cases), one page case |
+| No background, wide zoom | dotted background removed; zoom bounds 0.01 to 100 | `vault-cosmic-space.test.tsx` (2 cases) |
+| Viewport saved only when it changed | `handleMoveEnd` in `vault.tsx` | one page case |
+
+What the screen is now: a header with the brand, the current path, "Nova
+nota" and a button for the tools; under it, the canvas and nothing else. At the
+vault root the canvas shows the universes as circles; inside a context, its
+notes and nested contexts. Double-clicking a circle of a context enters it and
+the path in the header goes back. "Nova nota" is disabled at the root, because
+a note has to belong to a context and the root would not show it.
+
+The tools panel holds everything the two columns held: explorer and context
+creation, operational status, search, trash, perspectives and versions,
+properties, attachments and relations. It floats over the right edge of the
+canvas, starts closed, and closes with its button or with Escape. Its panels
+stay mounted while it is closed, so the operational status keeps polling.
+
+Framing: entering a space sets the viewport so every circle is visible with a
+margin of a tenth of the smaller side of the canvas, never above 200 % zoom,
+and saves it as the workspace viewport. The first load keeps the stored
+viewport. The canvas library needs finite zoom bounds; 1 % and 10000 % are
+far outside what the space budget can produce, so they are not a limit a user
+meets.
+
+Two defects found by looking at the page, not by the tests, each fixed in a
+commit of its own:
+
+- Escape did not close the tools, because the key was listened for on the panel
+  and the focus stays on the header button.
+- A universe was drawn as unmeasured. A context that is not a note has no
+  document, and the missing own content was read as a missing measure; it is a
+  known zero.
+
+Observed on 2026-11-11: the frontend suite passed 239 tests in 17 files;
+TypeScript passed; ESLint reports the same five errors as phase 9, all in
+panel files this work did not touch. The PHP suite was not rerun, since no PHP
+changed after its 139 passing tests.
+
+Seen in a browser, on the local Docker environment of Rechi OS with a test
+user: the root and an entered space drawn as circles with no background, the
+title keeping its size from 1.3 % to 1300 % zoom, the touch target staying at
+44 px when the circle is smaller, entering a space by double click, the space
+framed after entering, the path in the header, the tools panel opening.
+Migrations `2026_11_08_000015` and `2026_11_10_000016` ran forward on MySQL
+there for the first time; their rollback was not run on MySQL.
+
+Not seen in a browser: two or more notes moving, dragging, a free drop and a
+Ctrl drop. Creating a note fails in that environment with a 500: directories
+under `/var/lib/cvc/vaults/.../entities` are owned by root since 2026-11-06 and
+the application runs as `sail`, so the storage quota scan cannot read them.
+That is a state of the local volume, not of this change, and it was left as
+found. The only space available there has a single note.
+
+Still not done: saving the positions the physics settles, a stored position
+for nested contexts and universes, the 60 % / 30 % zoom navigation of D-12,
+touch gestures, opening a note by a single click, and the compass search of
+RF-07. The explorer inside the tools still lists two levels and asks the
+canvas to locate notes that may not be in the open space.
+
+Security review: no endpoint, storage or dependency was added, and nothing
+that was reachable stopped requiring authorization. The panels moved; their
+requests are the same. No issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | ready | D-05, D-06 and D-12 decided (zoom enters at 60% and leaves at 30%); not implemented. Zoom animation timings still open; existing contextual capture draft is preserved |
+| RF-01 | partial | The vault root and every context are drawn as cosmic spaces and a space is framed when entered (phase 10). Creation at the touched point, the sibling dot, zoom navigation at 60% / 30% and touch gestures remain; zoom animation timings still open |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free and pinned drops saved (phase 9, not seen in a browser); flowchart metrics, the root listing as a space, saving the positions the physics settles, and a stored position for nested contexts remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free and pinned drops saved (phase 9, not seen in a browser); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
 | RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |

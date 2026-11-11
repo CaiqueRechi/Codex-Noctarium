@@ -6,7 +6,7 @@
 | Solicitante e aprovador | Rechi |
 | Status | Levantamento encerrado a pedido do usuário |
 | Cobertura | Parcial; não declarar 100%. Decisões ainda abertas estão na seção 15; as fechadas em 2026-11-11, na seção 15.3 |
-| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados em 2026-11-08. Em 2026-11-10: regressão de ciclo na restauração de versões corrigida; medida de conteúdo das notas calculada e enviada pelo servidor; cena do simulador montada a partir dela. Em 2026-11-11: o espaço aberto de um contexto passou a ser desenhado e movido pela física, com soltura livre e fixação por Ctrl. Tudo validado apenas por testes locais, sem navegador; a listagem raiz como espaço, os gestos de toque e os demais itens seguem pendentes conforme a [rastreabilidade](canvas-cosmico-traceability.md) |
+| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados em 2026-11-08. Em 2026-11-10: regressão de ciclo na restauração de versões corrigida; medida de conteúdo das notas calculada e enviada pelo servidor; cena do simulador montada a partir dela. Em 2026-11-11: o espaço aberto de um contexto passou a ser desenhado e movido pela física, com soltura livre e fixação por Ctrl. Na mesma data a tela passou a ter só o canvas: raiz do vault como espaço, caminho no cabeçalho e ferramentas num painel flutuante (seção 15.4). Validado por testes locais e por uma conferência no navegador com uma única nota; arrasto, várias notas, gestos de toque e os demais itens seguem pendentes conforme a [rastreabilidade](canvas-cosmico-traceability.md) |
 | Referência matemática | [Fórmulas e regras detalhadas](canvas-cosmico-formulas.md) |
 
 ## 1. Resumo
@@ -364,6 +364,17 @@ Consequências sobre o que já está implementado:
   4. RF-04 e RF-05 fluxograma.
   5. Criptografia.
   6. RF-11 seeder.
+
+### 15.4 Decisões de interface aprovadas em 2026-11-11
+
+Rechi viu a primeira etapa no navegador e decidiu:
+
+- Sai da tela tudo o que não é o canvas: os cartões, o explorador da esquerda e a coluna da direita. A raiz do vault também é um espaço cósmico, com os universos como círculos.
+- As funções das duas colunas (explorador e criação de contexto, estado operacional, busca, lixeira, perspectivas e versões, propriedades, anexos e relações) continuam no produto, num painel lateral flutuante aberto por um ícone. Nenhuma foi removida do backend.
+- O canvas não tem fundo pontilhado.
+- O zoom do canvas não tem limite perceptível. A biblioteca exige limites finitos; ficaram em 1% e 10000%, fora do alcance de qualquer espaço do orçamento.
+
+Decisão de implementação, não de produto: ao entrar num espaço a câmera o enquadra inteiro, sem passar de 200% de zoom. Isso não substitui a navegação por zoom da D-12, que continua por fazer.
 
 ## 16. Glossário
 
