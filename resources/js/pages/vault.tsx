@@ -254,11 +254,20 @@ function buildSpaceNodes(
             return [];
         }
 
+        const diameter = 2 * body.radius * canvasUnitsPerLogicalUnit;
+
         return [
             {
                 id: body.id,
                 type: 'cosmic',
+                // The position is the centre of the circle. The size is given
+                // here because the canvas library centres a node with the
+                // size it knows, and a node rebuilt on every frame loses the
+                // size the library measured: after a drag every circle
+                // jumped by half its diameter.
                 origin: [0.5, 0.5],
+                width: diameter,
+                height: diameter,
                 position: toCanvasPoint(body.position),
                 draggable: true,
                 selected:
@@ -266,7 +275,7 @@ function buildSpaceNodes(
                     description.entityId === focusEntityId,
                 data: {
                     ...description,
-                    diameter: 2 * body.radius * canvasUnitsPerLogicalUnit,
+                    diameter,
                     isPinned: body.isPinned,
                     isUnmeasured: unmeasuredNodeIds.has(body.id),
                 },

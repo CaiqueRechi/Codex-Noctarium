@@ -802,9 +802,14 @@
 
 /* --cvc-zoom is written by the page on every viewport move, so the touch
    target and the title keep their size on screen at any zoom (D-05). */
+/* The node box is exactly the circle. The note is centred on it and may be
+   larger than it, which is what keeps a tiny circle touchable. */
 .cvc-cosmic-note {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
     display: grid;
+    transform: translate(-50%, -50%);
     min-width: calc(44px / var(--cvc-zoom, 1));
     min-height: calc(44px / var(--cvc-zoom, 1));
     place-items: center;
