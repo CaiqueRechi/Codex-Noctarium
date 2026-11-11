@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Perspectives;
 
+use CrowVaultCanvas\Application\Contexts\RequireAvailableContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
 use CrowVaultCanvas\Domain\Knowledge\Models\PerspectiveLayout;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 final class UpdatePerspectiveLayout
 {
+    public function __construct(private readonly RequireAvailableContext $requireAvailableContext) {}
+
     public function handle(
         string $perspectiveId,
         string $contextId,
@@ -37,8 +40,8 @@ final class UpdatePerspectiveLayout
             $context = KnowledgeContext::query()
                 ->whereKey($contextId)
                 ->where('vault_id', $vaultId)
-                ->where('kind', KnowledgeContext::KIND_CONTEXT)
                 ->firstOrFail();
+            $this->requireAvailableContext->handle($context);
 
             if (! $context->entities()->whereKey($entityId)->exists()) {
                 throw (new ModelNotFoundException)->setModel('context entity');
