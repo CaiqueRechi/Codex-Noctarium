@@ -384,7 +384,10 @@ describe('RF-03 space drawn and moved by the physics', () => {
             screen.getByRole('button', { name: 'Fechar ferramentas' }),
         ).toHaveAttribute('aria-expanded', 'true');
 
-        fireEvent.keyDown(tools, { key: 'Escape' });
+        fireEvent.keyDown(
+            screen.getByRole('button', { name: 'Fechar ferramentas' }),
+            { key: 'Escape' },
+        );
 
         expect(
             screen.queryByRole('complementary', {

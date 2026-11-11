@@ -429,6 +429,24 @@ export default function VaultPage({
     const hasPendingDraft = session.hasPendingChanges();
 
     useEffect(() => {
+        if (!isToolsOpen) {
+            return;
+        }
+
+        // The button that opens the panel keeps the focus, so the key has to
+        // be heard on the document, not on the panel.
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsToolsOpen(false);
+            }
+        };
+
+        document.addEventListener('keydown', closeOnEscape);
+
+        return () => document.removeEventListener('keydown', closeOnEscape);
+    }, [isToolsOpen]);
+
+    useEffect(() => {
         if (!hasPendingDraft && saveState !== 'saving') {
             return;
         }
@@ -1356,11 +1374,6 @@ export default function VaultPage({
                     className="cvc-tools"
                     aria-label="Ferramentas do vault"
                     hidden={!isToolsOpen}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Escape') {
-                            setIsToolsOpen(false);
-                        }
-                    }}
                 >
                     <VaultExplorer
                         universes={visibleUniverses}
