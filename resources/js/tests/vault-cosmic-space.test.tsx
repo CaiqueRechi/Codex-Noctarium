@@ -424,6 +424,14 @@ describe('RF-03 space drawn and moved by the physics', () => {
             clientY: 200,
         });
 
+        expect(screen.getByText('Criando nota…')).toHaveAttribute(
+            'role',
+            'status',
+        );
+        expect(
+            screen.getByRole('main', { name: 'Canvas do vault' }),
+        ).toHaveAttribute('aria-busy', 'true');
+
         await waitFor(() =>
             expect(fetchMock).toHaveBeenCalledWith(
                 '/vault/contexts/space/entities/fresh/layout',
@@ -442,6 +450,10 @@ describe('RF-03 space drawn and moved by the physics', () => {
                 method: 'POST',
                 body: JSON.stringify({ context_id: 'space' }),
             }),
+        );
+
+        await waitFor(() =>
+            expect(screen.queryByText('Criando nota…')).not.toBeInTheDocument(),
         );
 
         const node = screen.getByTestId('entity:space:fresh');

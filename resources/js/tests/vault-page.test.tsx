@@ -10,6 +10,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const setViewportMock = vi.fn();
+let cameraZoom = 1;
 const fitViewMock = vi.fn().mockResolvedValue(true);
 const getViewportMock = vi.fn(() => ({ x: -40, y: 25, zoom: 1.4 }));
 const { routerReloadMock } = vi.hoisted(() => ({
@@ -106,6 +107,19 @@ vi.mock('@xyflow/react', () => ({
                     }
                 >
                     soltar a câmera
+                </button>
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        cameraZoom += 0.1;
+                        onMoveEnd?.(event.nativeEvent, {
+                            x: 0,
+                            y: 0,
+                            zoom: cameraZoom,
+                        });
+                    }}
+                >
+                    aproximar a câmera
                 </button>
                 {children}
             </div>
@@ -557,6 +571,57 @@ describe('RF-02 vault canvas', () => {
             '/vault/workspace',
             expect.objectContaining({ method: 'PATCH' }),
         );
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
+
+    it('saves only the viewport the camera rests on after a burst of moves', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+        cameraZoom = 1;
+
+        renderWithTools(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        const zoomIn = screen.getByRole('button', {
+            name: 'aproximar a câmera',
+        });
+        fireEvent.click(zoomIn);
+        fireEvent.click(zoomIn);
+        fireEvent.click(zoomIn);
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+        expect(
+            JSON.parse(fetchMock.mock.calls[0][1].body as string).viewport.zoom,
+        ).toBeCloseTo(1.3, 10);
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(fetchMock).toHaveBeenCalledTimes(1);
         document.cookie =
             'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         vi.unstubAllGlobals();

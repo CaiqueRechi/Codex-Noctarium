@@ -139,6 +139,7 @@ const toolsPanelId = 'cvc-tools';
 // the budget can produce, so the user never meets them as a limit.
 const zoomLimits = { minZoom: 0.01, maxZoom: 100 };
 // Framing a space is automatic, so it stays within a readable range.
+const viewportSaveDelay = 400;
 const framingLimits = { minZoom: zoomLimits.minZoom, maxZoom: 2 };
 
 function normalizeContexts(
@@ -377,6 +378,7 @@ export default function VaultPage({
     const canvas = useRef<HTMLElement | null>(null);
     const framesNextScene = useRef(false);
     const savedViewport = useRef<Viewport>({ ...workspace.viewport });
+    const pendingViewportSave = useRef<number | null>(null);
     const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
     const navigationPending = useRef(false);
@@ -571,9 +573,28 @@ export default function VaultPage({
             }
 
             savedViewport.current = { ...nextViewport };
-            void persistWorkspace(nextViewport, focusEntityId);
+
+            // Every wheel notch ends a move. Only the viewport the camera
+            // rests on is worth a request.
+            if (pendingViewportSave.current !== null) {
+                window.clearTimeout(pendingViewportSave.current);
+            }
+
+            pendingViewportSave.current = window.setTimeout(() => {
+                pendingViewportSave.current = null;
+                void persistWorkspace(nextViewport, focusEntityId);
+            }, viewportSaveDelay);
         },
         [focusEntityId, persistWorkspace],
+    );
+
+    useEffect(
+        () => () => {
+            if (pendingViewportSave.current !== null) {
+                window.clearTimeout(pendingViewportSave.current);
+            }
+        },
+        [],
     );
 
     const showDocument = useCallback(
@@ -1393,6 +1414,11 @@ export default function VaultPage({
                         >
                             Voltar ao Rechi OS
                         </button>
+                    )}
+                    {isCreating && (
+                        <span className="cvc-status" role="status">
+                            Criando nota…
+                        </span>
                     )}
                     <button
                         type="button"

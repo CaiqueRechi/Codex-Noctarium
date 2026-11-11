@@ -120,6 +120,11 @@
     display: none;
 }
 
+.cvc-status {
+    color: var(--cvc-text-muted);
+    font-size: 0.85rem;
+}
+
 .cvc-tools-toggle {
     min-width: 2.75rem;
     min-height: 2.75rem;
