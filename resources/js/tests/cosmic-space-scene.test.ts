@@ -115,6 +115,15 @@ describe('RF-03 scene input taken from one space of a slice', () => {
         ]);
     });
 
+    it('counts a nested context that is not a note as having no own content', () => {
+        const { notes } = describeSpaceScene(
+            space({ contexts: [space({ id: 'plain', descendantContent: 7 })] }),
+            [],
+        );
+
+        expect(notes[0]).toMatchObject({ ownContent: 0, descendantContent: 7 });
+    });
+
     it('links only notes that are both in the space', () => {
         const { links } = describeSpaceScene(
             space({ documents: [note('a'), note('b')] }),

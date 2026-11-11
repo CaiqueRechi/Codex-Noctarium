@@ -25,7 +25,9 @@ export function describeSpaceScene(
             })),
             ...space.contexts.map((context) => ({
                 id: contextNodeId(context.id),
-                ownContent: context.ownContent ?? null,
+                // A context that is not a note has no content of its own;
+                // that is a known zero, not a missing measure.
+                ownContent: context.ownContent ?? 0,
                 descendantContent: context.descendantContent ?? null,
                 position: null,
                 isPinned: false,
