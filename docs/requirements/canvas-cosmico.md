@@ -372,6 +372,7 @@ Rechi viu a primeira etapa no navegador e decidiu:
 - Sai da tela tudo o que não é o canvas: os cartões, o explorador da esquerda e a coluna da direita. A raiz do vault também é um espaço cósmico, com os universos como círculos.
 - As funções das duas colunas (explorador e criação de contexto, estado operacional, busca, lixeira, perspectivas e versões, propriedades, anexos e relações) continuam no produto, num painel lateral flutuante aberto por um ícone. Nenhuma foi removida do backend.
 - O canvas não tem fundo pontilhado.
+- Não há botão de criar nota. A nota é criada com duplo clique num ponto vazio do espaço, como já dizia a RN-02, e nasce nesse ponto. Na raiz do vault o duplo clique não cria nada, porque a raiz só contém universos.
 - O zoom do canvas não tem limite perceptível. A biblioteca exige limites finitos; ficaram em 1% e 10000%, fora do alcance de qualquer espaço do orçamento.
 
 Decisão de implementação, não de produto: ao entrar num espaço a câmera o enquadra inteiro, sem passar de 200% de zoom. Isso não substitui a navegação por zoom da D-12, que continua por fazer.

@@ -569,6 +569,37 @@ way. The jump after a drop and the 404 were read from the page and the
 network, which do not depend on frames. These four behaviours need a look with
 the page visible.
 
+### Creation by double click, same day
+
+Rechi pointed out that the header still had a "Nova nota" button, against his
+request to remove the old interface and against RN-02. This replaces what the
+text above says about that button and about a note born at the middle of the
+view.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Note created by double-clicking an empty point of the space | `handleCanvasDoubleClick` in `vault.tsx`; `screenToCanvasPoint` in `geometry.ts` | `vault-cosmic-space.test.tsx` (4 cases), `cosmic-framing.test.ts` (2 cases) |
+| Header button removed | header holds the brand, the path, "Voltar ao Rechi OS" and the tools button | same page tests |
+| Viewport saved once the camera rests | 400 ms after the last move, in `handleMoveEnd` | one page case |
+
+The note is created at the clicked point, saved there unpinned, and opened. A
+double click on a circle still enters a context or opens a note, and the
+canvas library no longer zooms on double click. At the vault root a double
+click creates nothing, because the root holds universes and a note needs a
+context; a universe is created from the tools panel. While the request runs
+the canvas is marked busy and the header says "Criando nota…".
+
+Why the button looked broken to him: in the local environment the server
+answers one request at a time and each takes 5 to 25 seconds. Every wheel
+notch ended a camera move and saved the viewport, so five saves were queued
+ahead of his creation request, which was answered about a minute later with no
+sign on screen. The log shows it succeeded. The viewport is now saved only
+400 ms after the camera stops, and creation shows a status.
+
+Observed: the frontend suite passed 246 tests in 17 files; TypeScript passed;
+ESLint unchanged. Not seen in a browser: the double click itself, the status
+text and the single viewport save.
+
 Still not done: saving the positions the physics settles, a stored position
 for nested contexts and universes, the 60 % / 30 % zoom navigation of D-12,
 touch gestures, opening a note by a single click, and the compass search of
