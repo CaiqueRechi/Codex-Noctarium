@@ -88,6 +88,7 @@ vi.mock('@xyflow/react', () => ({
                 >
                     aproximar
                 </button>
+                <div className="react-flow__pane" data-testid="pane" />
                 <button
                     type="button"
                     onClick={() => onMoveEnd?.(null, { x: 0, y: 0, zoom: 1 })}
@@ -170,8 +171,8 @@ describe('RF-02 vault canvas', () => {
         ).not.toBeInTheDocument();
 
         expect(
-            screen.getByRole('button', { name: 'Nova nota' }),
-        ).toBeDisabled();
+            screen.queryByRole('button', { name: 'Nova nota' }),
+        ).not.toBeInTheDocument();
         expect(
             screen.queryByRole('textbox', { name: 'Conteúdo Markdown' }),
         ).not.toBeInTheDocument();
@@ -621,7 +622,7 @@ describe('RF-02 vault canvas', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+        fireEvent.doubleClick(screen.getByTestId('pane'));
         const editor = await screen.findByRole('textbox', {
             name: 'Conteúdo Markdown',
         });

@@ -9,7 +9,7 @@ import type {
     Viewport,
 } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
 
 import '@xyflow/react/dist/style.css';
 import '../../css/presets.css';
@@ -27,10 +27,11 @@ import {
     canvasUnitsPerLogicalUnit,
     frameCircles,
     radiusForArea,
+    screenToCanvasPoint,
     toCanvasPoint,
     toLogicalPoint,
-    viewportCenter,
 } from '../canvas/math/geometry';
+import type { CanvasPoint } from '../canvas/math/geometry';
 import { contextNodeId, entityNodeId } from '../canvas/node-identifiers';
 import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
 import type { SimulationBody } from '../canvas/physics/simulation-body';
@@ -634,81 +635,95 @@ export default function VaultPage({
         [activeContextId, endpoints.contexts],
     );
 
-    const handleCreate = useCallback(async () => {
-        if (!documentContextId || isCreating) {
-            return;
-        }
-
-        setIsCreating(true);
-        setError(null);
-
-        try {
-            if (!(await session.flush())) {
+    const handleCreate = useCallback(
+        async (position: CanvasPoint) => {
+            if (!documentContextId || isCreating) {
                 return;
             }
 
-            const document = await createDocument(
-                endpoints.documents,
-                documentContextId,
-            );
-            // The button has no point of its own, so the note is born where
-            // the user is looking instead of somewhere off screen.
-            const element = canvas.current;
-            const position = element
-                ? viewportCenter(viewport.current, {
-                      width: element.clientWidth,
-                      height: element.clientHeight,
-                  })
-                : null;
-            setUniverses((current) =>
-                updateContext(current, documentContextId, (context) => ({
-                    ...context,
-                    documents: [
-                        ...context.documents,
-                        position
-                            ? { ...document, position, isPinned: false }
-                            : document,
-                    ],
-                })),
-            );
+            setIsCreating(true);
+            setError(null);
 
-            if (position && endpoints.contexts) {
-                void saveEntityLayout(
-                    endpoints.contexts,
+            try {
+                if (!(await session.flush())) {
+                    return;
+                }
+
+                const document = await createDocument(
+                    endpoints.documents,
                     documentContextId,
-                    document.id,
-                    position,
-                    false,
-                ).catch((exception: unknown) =>
-                    setWorkspaceError(
-                        exception instanceof Error
-                            ? exception.message
-                            : 'Não foi possível salvar o layout.',
-                    ),
                 );
+                setUniverses((current) =>
+                    updateContext(current, documentContextId, (context) => ({
+                        ...context,
+                        documents: [
+                            ...context.documents,
+                            { ...document, position, isPinned: false },
+                        ],
+                    })),
+                );
+
+                if (endpoints.contexts) {
+                    void saveEntityLayout(
+                        endpoints.contexts,
+                        documentContextId,
+                        document.id,
+                        position,
+                        false,
+                    ).catch((exception: unknown) =>
+                        setWorkspaceError(
+                            exception instanceof Error
+                                ? exception.message
+                                : 'Não foi possível salvar o layout.',
+                        ),
+                    );
+                }
+
+                setFocusEntityId(document.id);
+                showDocument(document);
+                void persistWorkspace(viewport.current, document.id);
+            } catch (exception) {
+                setError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível criar a nota.',
+                );
+            } finally {
+                setIsCreating(false);
+            }
+        },
+        [
+            endpoints.contexts,
+            endpoints.documents,
+            documentContextId,
+            isCreating,
+            persistWorkspace,
+            session,
+            showDocument,
+        ],
+    );
+
+    // RN-02: a double click on an empty point of the space creates a note
+    // there. A double click on a circle belongs to that circle.
+    const handleCanvasDoubleClick = useCallback(
+        (event: ReactMouseEvent<HTMLElement>) => {
+            if (
+                !(event.target instanceof Element) ||
+                !event.target.classList.contains('react-flow__pane')
+            ) {
+                return;
             }
 
-            setFocusEntityId(document.id);
-            showDocument(document);
-            void persistWorkspace(viewport.current, document.id);
-        } catch (exception) {
-            setError(
-                exception instanceof Error
-                    ? exception.message
-                    : 'Não foi possível criar a nota.',
+            const bounds = event.currentTarget.getBoundingClientRect();
+            void handleCreate(
+                screenToCanvasPoint(viewport.current, {
+                    x: event.clientX - bounds.left,
+                    y: event.clientY - bounds.top,
+                }),
             );
-        } finally {
-            setIsCreating(false);
-        }
-    }, [
-        endpoints.contexts,
-        endpoints.documents,
-        documentContextId,
-        isCreating,
-        persistWorkspace,
-        session,
-        showDocument,
-    ]);
+        },
+        [handleCreate],
+    );
 
     const handleNodeDoubleClick = useCallback<
         NodeMouseHandler<CosmicNoteCanvasNode>
@@ -1381,19 +1396,6 @@ export default function VaultPage({
                     )}
                     <button
                         type="button"
-                        className="cvc-button cvc-button--primary"
-                        disabled={activeContextId === null || isCreating}
-                        title={
-                            activeContextId === null
-                                ? 'Entre em um universo para criar uma nota'
-                                : undefined
-                        }
-                        onClick={() => void handleCreate()}
-                    >
-                        {isCreating ? 'Criando…' : 'Nova nota'}
-                    </button>
-                    <button
-                        type="button"
                         className="cvc-button cvc-tools-toggle"
                         aria-label={
                             isToolsOpen
@@ -1420,6 +1422,8 @@ export default function VaultPage({
                     ref={canvas}
                     className="cvc-canvas"
                     aria-label="Canvas do vault"
+                    aria-busy={isCreating}
+                    onDoubleClick={handleCanvasDoubleClick}
                     style={
                         {
                             '--cvc-zoom': workspace.viewport.zoom,
@@ -1443,6 +1447,7 @@ export default function VaultPage({
                         nodesDraggable
                         nodesFocusable
                         selectionOnDrag
+                        zoomOnDoubleClick={false}
                     >
                         <Controls
                             position="bottom-right"

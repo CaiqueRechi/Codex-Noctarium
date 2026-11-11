@@ -90,6 +90,10 @@
     min-height: 0;
 }
 
+.cvc-canvas[aria-busy='true'] {
+    cursor: progress;
+}
+
 .cvc-workspace {
     position: relative;
     grid-row: 3;

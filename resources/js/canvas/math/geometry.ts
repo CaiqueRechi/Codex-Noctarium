@@ -31,18 +31,18 @@ export function toCanvasPoint(point: CanvasPoint): CanvasPoint {
     return { x, y };
 }
 
-// Canvas point shown at the middle of the screen, or null while the screen
-// has no size.
-export function viewportCenter(
+// Canvas point under a point of the screen, the latter measured from the
+// top-left corner of the canvas element.
+export function screenToCanvasPoint(
     viewport: CanvasViewport,
-    size: ViewportSize,
-): CanvasPoint | null {
-    if (size.width <= 0 || size.height <= 0 || !(viewport.zoom > 0)) {
-        return null;
+    point: CanvasPoint,
+): CanvasPoint {
+    if (!(viewport.zoom > 0)) {
+        throw new RangeError('Viewport zoom must be positive.');
     }
 
-    const x = (size.width / 2 - viewport.x) / viewport.zoom;
-    const y = (size.height / 2 - viewport.y) / viewport.zoom;
+    const x = (point.x - viewport.x) / viewport.zoom;
+    const y = (point.y - viewport.y) / viewport.zoom;
     requireFinite(x, 'Canvas x');
     requireFinite(y, 'Canvas y');
 

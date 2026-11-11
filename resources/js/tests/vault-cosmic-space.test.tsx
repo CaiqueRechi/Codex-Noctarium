@@ -98,6 +98,7 @@ vi.mock('@xyflow/react', () => ({
                         </button>
                     </span>
                 ))}
+                <div className="react-flow__pane" data-testid="pane" />
                 <button
                     type="button"
                     onClick={() => onMove(null, { x: 0, y: 0, zoom: 0.5 })}
@@ -396,13 +397,7 @@ describe('RF-03 space drawn and moved by the physics', () => {
         expect(screen.queryByTestId('context:nested')).not.toBeInTheDocument();
     });
 
-    it('puts a new note at the middle of the view and saves it there unpinned', async () => {
-        const width = vi
-            .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
-            .mockReturnValue(1000);
-        const height = vi
-            .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
-            .mockReturnValue(500);
+    function answerCreation() {
         fetchMock.mockImplementation((url: string) =>
             Promise.resolve({
                 ok: true,
@@ -417,9 +412,17 @@ describe('RF-03 space drawn and moved by the physics', () => {
                         : { updated: true },
             }),
         );
-        renderSpace([note('a', 'Alfa', { position: { x: 4096, y: 0 } })]);
+    }
 
-        fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+    it('creates a note where an empty point of the space is double-clicked', async () => {
+        answerCreation();
+        renderSpace([note('a', 'Alfa', { position: { x: 4096, y: 0 } })]);
+        fireEvent.click(screen.getByRole('button', { name: 'afastar' }));
+
+        fireEvent.doubleClick(screen.getByTestId('pane'), {
+            clientX: 300,
+            clientY: 200,
+        });
 
         await waitFor(() =>
             expect(fetchMock).toHaveBeenCalledWith(
@@ -427,33 +430,59 @@ describe('RF-03 space drawn and moved by the physics', () => {
                 expect.objectContaining({
                     method: 'PATCH',
                     body: JSON.stringify({
-                        position: { x: 500, y: 250 },
+                        position: { x: 600, y: 400 },
                         pinned: false,
                     }),
                 }),
             ),
         );
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/vault/documents',
+            expect.objectContaining({
+                method: 'POST',
+                body: JSON.stringify({ context_id: 'space' }),
+            }),
+        );
 
         const node = screen.getByTestId('entity:space:fresh');
 
-        expect(node).toHaveAttribute('data-x', '500');
-        expect(node).toHaveAttribute('data-y', '250');
-
-        width.mockRestore();
-        height.mockRestore();
+        expect(node).toHaveAttribute('data-x', '600');
+        expect(node).toHaveAttribute('data-y', '400');
+        expect(
+            await screen.findByRole('textbox', { name: 'Conteúdo Markdown' }),
+        ).toBeInTheDocument();
     });
 
-    it('offers a new note only inside a space, where the note can live', () => {
-        const { unmount } = renderSpace([], { breadcrumbs: [] });
+    it('does not create a note when a circle is double-clicked', () => {
+        answerCreation();
+        renderSpace([note('a', 'Alfa')]);
+
+        fireEvent.doubleClick(screen.getByTestId('entity:space:a'));
+
+        expect(fetchMock).not.toHaveBeenCalledWith(
+            '/vault/documents',
+            expect.objectContaining({ method: 'POST' }),
+        );
+    });
+
+    it('creates nothing at the vault root, which holds only universes', () => {
+        answerCreation();
+        renderSpace([], { breadcrumbs: [] });
+
+        fireEvent.doubleClick(screen.getByTestId('pane'), {
+            clientX: 300,
+            clientY: 200,
+        });
+
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('has no button for creating a note', () => {
+        renderSpace([note('a', 'Alfa')]);
 
         expect(
-            screen.getByRole('button', { name: 'Nova nota' }),
-        ).toBeDisabled();
-
-        unmount();
-        renderSpace([]);
-
-        expect(screen.getByRole('button', { name: 'Nova nota' })).toBeEnabled();
+            screen.queryByRole('button', { name: 'Nova nota' }),
+        ).not.toBeInTheDocument();
     });
 
     it('keeps the tools out of the way until they are asked for', () => {
