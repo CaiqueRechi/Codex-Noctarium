@@ -22,8 +22,6 @@ vi.mock('@inertiajs/react', () => ({
 }));
 
 vi.mock('@xyflow/react', () => ({
-    Background: () => null,
-    BackgroundVariant: { Dots: 'dots' },
     Controls: () => null,
     Handle: () => null,
     Position: { Left: 'left', Right: 'right' },

@@ -1,10 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import {
-    Background,
-    BackgroundVariant,
-    Controls,
-    ReactFlow,
-} from '@xyflow/react';
+import { Controls, ReactFlow } from '@xyflow/react';
 import type {
     Edge,
     NodeMouseHandler,
@@ -138,7 +133,11 @@ const nodeTypes: NodeTypes = {
 };
 
 const toolsPanelId = 'cvc-tools';
-const zoomLimits = { minZoom: 0.25, maxZoom: 2 };
+// The canvas library needs finite bounds. These are far beyond any space
+// the budget can produce, so the user never meets them as a limit.
+const zoomLimits = { minZoom: 0.01, maxZoom: 100 };
+// Framing a space is automatic, so it stays within a readable range.
+const framingLimits = { minZoom: zoomLimits.minZoom, maxZoom: 2 };
 
 function normalizeContexts(
     contexts: ContextPayload[],
@@ -740,7 +739,7 @@ export default function VaultPage({
                 radius: radiusForArea(body.area) * canvasUnitsPerLogicalUnit,
             })),
             { width: element.clientWidth, height: element.clientHeight },
-            { ...zoomLimits, margin: 0.1 },
+            { ...framingLimits, margin: 0.1 },
         );
 
         if (!framed) {
@@ -1388,12 +1387,6 @@ export default function VaultPage({
                         nodesFocusable
                         selectionOnDrag
                     >
-                        <Background
-                            color="var(--cvc-canvas-grid)"
-                            variant={BackgroundVariant.Dots}
-                            gap={24}
-                            size={1.5}
-                        />
                         <Controls
                             position="bottom-right"
                             showInteractive={false}

@@ -32,20 +32,22 @@ type DragHandler = (
 ) => void;
 
 vi.mock('@xyflow/react', () => ({
-    Background: () => null,
-    BackgroundVariant: { Dots: 'dots' },
     Controls: () => null,
     Handle: () => null,
     Position: { Left: 'left', Right: 'right', Top: 'top', Bottom: 'bottom' },
     ReactFlow: ({
         children,
         nodes,
+        minZoom,
+        maxZoom,
         onMove,
         onNodeDrag,
         onNodeDragStop,
     }: {
         children: ReactNode;
         nodes: MockNode[];
+        minZoom: number;
+        maxZoom: number;
         onMove: (
             event: null,
             viewport: { x: number; y: number; zoom: number },
@@ -60,7 +62,11 @@ vi.mock('@xyflow/react', () => ({
         };
 
         return (
-            <div>
+            <div
+                data-testid="canvas-library"
+                data-min-zoom={minZoom}
+                data-max-zoom={maxZoom}
+            >
                 {nodes.map((node) => (
                     <span
                         key={node.id}
@@ -336,6 +342,29 @@ describe('RF-03 space drawn and moved by the physics', () => {
         fireEvent.click(screen.getByRole('button', { name: 'afastar' }));
 
         expect(canvas.style.getPropertyValue('--cvc-zoom')).toBe('0.5');
+    });
+
+    it('lets the canvas zoom far beyond what any space needs', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        const library = screen.getByTestId('canvas-library');
+
+        expect(
+            Number(library.getAttribute('data-min-zoom')),
+        ).toBeLessThanOrEqual(0.01);
+        expect(
+            Number(library.getAttribute('data-max-zoom')),
+        ).toBeGreaterThanOrEqual(100);
+    });
+
+    it('draws nothing behind the notes', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        expect(
+            screen
+                .getByTestId('canvas-library')
+                .querySelectorAll('svg, pattern'),
+        ).toHaveLength(0);
     });
 
     it('draws the vault itself as the space that holds the universes', () => {

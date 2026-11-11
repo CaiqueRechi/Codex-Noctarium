@@ -13,8 +13,6 @@ vi.mock('@inertiajs/react', () => ({
     router: { visit, reload },
 }));
 vi.mock('@xyflow/react', () => ({
-    Background: () => null,
-    BackgroundVariant: { Dots: 'dots' },
     Controls: () => null,
     Handle: () => null,
     Position: { Left: 'left', Right: 'right' },
