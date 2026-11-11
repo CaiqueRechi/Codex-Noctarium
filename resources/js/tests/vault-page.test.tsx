@@ -250,6 +250,99 @@ describe('RF-02 vault canvas', () => {
         vi.unstubAllGlobals();
     });
 
+    it('frames the whole space after entering it', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const width = vi
+            .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+            .mockReturnValue(1000);
+        const height = vi
+            .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+            .mockReturnValue(500);
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                slice: {
+                    contexts: [
+                        {
+                            id: 'universe-1',
+                            parentId: null,
+                            kind: 'universe',
+                            name: 'Meu Universo',
+                            hasChildren: false,
+                            documents: [
+                                {
+                                    id: 'entity-1',
+                                    title: 'Nota',
+                                    revision: 1,
+                                    entityType: null,
+                                    properties: {},
+                                    ownContent: 0,
+                                    descendantContent: 0,
+                                    position: { x: 2048, y: 1024 },
+                                    isPinned: true,
+                                },
+                            ],
+                            contexts: [],
+                        },
+                    ],
+                    breadcrumbs: [{ id: 'universe-1', name: 'Meu Universo' }],
+                },
+            }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        renderWithTools(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    contexts: '/vault/contexts',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        expect(setViewportMock).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+        await waitFor(() => expect(setViewportMock).toHaveBeenCalledTimes(1));
+
+        const [framed] = setViewportMock.mock.calls[0];
+        // One empty note takes a third of the budget: X = 1, w = 1 and
+        // the reserved empty area is 2 / (2 + 1).
+        const diameter = 2 * Math.sqrt(1 / 3 / Math.PI) * 1024;
+
+        expect(framed.zoom).toBeCloseTo(400 / diameter, 10);
+        expect(framed.x).toBeCloseTo(500 - 2048 * framed.zoom, 8);
+        expect(framed.y).toBeCloseTo(250 - 1024 * framed.zoom, 8);
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenLastCalledWith(
+                '/vault/workspace',
+                expect.objectContaining({ method: 'PATCH' }),
+            ),
+        );
+
+        width.mockRestore();
+        height.mockRestore();
+        vi.unstubAllGlobals();
+    });
+
     it('creates a child under the active context and refreshes its slice', async () => {
         document.cookie = 'XSRF-TOKEN=test-token; path=/';
         const fetchMock = vi

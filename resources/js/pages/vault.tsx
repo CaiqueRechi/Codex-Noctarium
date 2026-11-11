@@ -30,6 +30,8 @@ import type {
 } from '../canvas/cosmic-note-node';
 import {
     canvasUnitsPerLogicalUnit,
+    frameCircles,
+    radiusForArea,
     toCanvasPoint,
     toLogicalPoint,
 } from '../canvas/math/geometry';
@@ -136,6 +138,7 @@ const nodeTypes: NodeTypes = {
 };
 
 const toolsPanelId = 'cvc-tools';
+const zoomLimits = { minZoom: 0.25, maxZoom: 2 };
 
 function normalizeContexts(
     contexts: ContextPayload[],
@@ -362,6 +365,7 @@ export default function VaultPage({
         Edge
     > | null>(null);
     const canvas = useRef<HTMLElement | null>(null);
+    const framesNextScene = useRef(false);
     const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
     const navigationPending = useRef(false);
@@ -568,6 +572,7 @@ export default function VaultPage({
             }
 
             const slice = await openContextSlice(endpoints.contexts, contextId);
+            framesNextScene.current = true;
             setUniverses(slice.contexts);
             setBreadcrumbs(slice.breadcrumbs);
             setFocusEntityId(null);
@@ -579,12 +584,10 @@ export default function VaultPage({
                 activePerspectiveId,
                 contextId,
             );
-            window.requestAnimationFrame(() => void flow?.fitView());
         },
         [
             activePerspectiveId,
             endpoints.contexts,
-            flow,
             persistWorkspace,
             session,
             setActiveDocument,
@@ -720,6 +723,35 @@ export default function VaultPage({
         },
         [persistWorkspace],
     );
+
+    // A space that was just entered is framed whole. The stored viewport
+    // is kept on the first load, so the camera returns where it was left.
+    useEffect(() => {
+        const element = canvas.current;
+
+        if (!framesNextScene.current || !flow || !element) {
+            return;
+        }
+
+        framesNextScene.current = false;
+        const framed = frameCircles(
+            scene.bodies.map((body) => ({
+                center: toCanvasPoint(body.position),
+                radius: radiusForArea(body.area) * canvasUnitsPerLogicalUnit,
+            })),
+            { width: element.clientWidth, height: element.clientHeight },
+            { ...zoomLimits, margin: 0.1 },
+        );
+
+        if (!framed) {
+            return;
+        }
+
+        viewport.current = framed;
+        element.style.setProperty('--cvc-zoom', String(framed.zoom));
+        void flow.setViewport(framed, { duration: 250 });
+        void persistWorkspace(framed, null);
+    }, [flow, persistWorkspace, scene]);
 
     const { holdBody, dropBody } = simulation;
     const handleNodeDrag = useCallback<OnNodeDrag<CosmicNoteCanvasNode>>(
@@ -1343,8 +1375,8 @@ export default function VaultPage({
                         edges={edges}
                         nodeTypes={nodeTypes}
                         defaultViewport={workspace.viewport}
-                        minZoom={0.25}
-                        maxZoom={2}
+                        minZoom={zoomLimits.minZoom}
+                        maxZoom={zoomLimits.maxZoom}
                         onInit={setFlow}
                         onMove={handleMove}
                         onMoveEnd={handleMoveEnd}
