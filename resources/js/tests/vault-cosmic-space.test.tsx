@@ -348,4 +348,62 @@ describe('RF-03 space drawn and moved by the physics', () => {
         expect(screen.queryByTestId('entity:space:a')).not.toBeInTheDocument();
         expect(screen.queryByTestId('context:nested')).not.toBeInTheDocument();
     });
+
+    it('offers a new note only inside a space, where the note can live', () => {
+        const { unmount } = renderSpace([], { breadcrumbs: [] });
+
+        expect(
+            screen.getByRole('button', { name: 'Nova nota' }),
+        ).toBeDisabled();
+
+        unmount();
+        renderSpace([]);
+
+        expect(screen.getByRole('button', { name: 'Nova nota' })).toBeEnabled();
+    });
+
+    it('keeps the tools out of the way until they are asked for', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        expect(
+            screen.queryByRole('complementary', {
+                name: 'Ferramentas do vault',
+            }),
+        ).not.toBeInTheDocument();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Abrir ferramentas' }),
+        );
+
+        const tools = screen.getByRole('complementary', {
+            name: 'Ferramentas do vault',
+        });
+
+        expect(tools).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Fechar ferramentas' }),
+        ).toHaveAttribute('aria-expanded', 'true');
+
+        fireEvent.keyDown(tools, { key: 'Escape' });
+
+        expect(
+            screen.queryByRole('complementary', {
+                name: 'Ferramentas do vault',
+            }),
+        ).not.toBeInTheDocument();
+    });
+
+    it('shows the current path in the header and no explorer column', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        const path = screen.getByRole('navigation', { name: 'Caminho atual' });
+
+        expect(path).toHaveTextContent('Vault');
+        expect(path).toHaveTextContent('Planeta');
+        expect(
+            screen.queryByRole('complementary', {
+                name: 'Explorador do vault',
+            }),
+        ).not.toBeInTheDocument();
+    });
 });
