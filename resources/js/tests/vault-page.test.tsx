@@ -336,7 +336,11 @@ describe('RF-02 vault canvas', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
 
         await waitFor(() =>
-            expect(screen.getByText('Subassunto')).toBeInTheDocument(),
+            expect(
+                within(
+                    screen.getByRole('main', { name: 'Canvas do vault' }),
+                ).getByText('Subassunto'),
+            ).toBeInTheDocument(),
         );
         expect(fetchMock).toHaveBeenNthCalledWith(
             1,

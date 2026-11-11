@@ -14,6 +14,7 @@ import type {
     Viewport,
 } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 
 import '@xyflow/react/dist/style.css';
 import '../../css/presets.css';
@@ -22,13 +23,27 @@ import cvcMark from '../../images/brand/cvc-mark-reduced.png';
 
 import { AttachmentsPanel } from '../attachments/attachments-panel';
 import type { AttachmentSummary } from '../attachments/types';
+import { CosmicNoteNode } from '../canvas/cosmic-note-node';
+import type {
+    CosmicNoteCanvasNode,
+    CosmicNoteData,
+} from '../canvas/cosmic-note-node';
 import { KnowledgeNode } from '../canvas/knowledge-node';
 import type { KnowledgeCanvasNode } from '../canvas/knowledge-node';
+import {
+    canvasUnitsPerLogicalUnit,
+    toCanvasPoint,
+    toLogicalPoint,
+} from '../canvas/math/geometry';
 import {
     contextNodeId,
     entityNodeId,
     universeNodeId,
 } from '../canvas/node-identifiers';
+import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
+import type { SimulationBody } from '../canvas/physics/simulation-body';
+import { describeSpaceScene } from '../canvas/physics/space-scene';
+import { useCosmicSimulation } from '../canvas/physics/use-cosmic-simulation';
 import {
     initialSemanticLevel,
     resolveSemanticLevel,
@@ -50,6 +65,7 @@ import {
 } from '../explorer/vault-explorer';
 import type {
     ContextBreadcrumb,
+    ContextSummary,
     ExplorerTarget,
     UniverseSummary,
 } from '../explorer/vault-explorer';
@@ -85,6 +101,8 @@ type ContextPayload = {
     name: string;
     parentId?: string | null;
     kind?: 'universe' | 'context';
+    ownContent?: number | null;
+    descendantContent?: number | null;
     hasChildren?: boolean;
     documents?: DocumentSummary[];
     contexts?: ContextPayload[];
@@ -123,8 +141,11 @@ export type VaultPageProps = {
     };
 };
 
+type CanvasNode = KnowledgeCanvasNode | CosmicNoteCanvasNode;
+
 const nodeTypes: NodeTypes = {
     knowledge: KnowledgeNode,
+    cosmic: CosmicNoteNode,
 };
 
 const semanticLevelLabels: Record<SemanticLevel, string> = {
@@ -145,6 +166,8 @@ function normalizeContexts(
             parentId: context.parentId ?? null,
             kind: context.kind ?? defaultKind,
             name: context.name,
+            ownContent: context.ownContent,
+            descendantContent: context.descendantContent,
             hasChildren: context.hasChildren ?? children.length > 0,
             documents: context.documents ?? [],
             contexts: children,
@@ -298,6 +321,60 @@ function buildNodes(
     });
 }
 
+function buildSpaceNodes(
+    space: ContextSummary,
+    bodies: readonly SimulationBody[],
+    unmeasuredNodeIds: ReadonlySet<string>,
+    focusEntityId: string | null,
+): CosmicNoteCanvasNode[] {
+    type Description = Pick<
+        CosmicNoteData,
+        'kind' | 'label' | 'entityId' | 'contextId'
+    >;
+    const descriptions = new Map<string, Description>([
+        ...space.documents.map((document): [string, Description] => [
+            entityNodeId(space.id, document.id),
+            {
+                kind: 'document',
+                label: document.title ?? 'Sem título',
+                entityId: document.id,
+                contextId: space.id,
+            },
+        ]),
+        ...space.contexts.map((context): [string, Description] => [
+            contextNodeId(context.id),
+            { kind: 'context', label: context.name, contextId: context.id },
+        ]),
+    ]);
+
+    return bodies.flatMap((body) => {
+        const description = descriptions.get(body.id);
+
+        if (!description) {
+            return [];
+        }
+
+        return [
+            {
+                id: body.id,
+                type: 'cosmic',
+                origin: [0.5, 0.5],
+                position: toCanvasPoint(body.position),
+                draggable: true,
+                selected:
+                    description.entityId !== undefined &&
+                    description.entityId === focusEntityId,
+                data: {
+                    ...description,
+                    diameter: 2 * body.radius * canvasUnitsPerLogicalUnit,
+                    isPinned: body.isPinned,
+                    isUnmeasured: unmeasuredNodeIds.has(body.id),
+                },
+            },
+        ];
+    });
+}
+
 function buildEdges(universes: UniverseSummary[]): Edge[] {
     return universes.flatMap((universe) => [
         ...universe.documents.map((document) => ({
@@ -407,9 +484,10 @@ export default function VaultPage({
     const [focusEntityId, setFocusEntityId] = useState(workspace.focusEntityId);
     const [isCreating, setIsCreating] = useState(false);
     const [flow, setFlow] = useState<ReactFlowInstance<
-        KnowledgeCanvasNode,
+        CanvasNode,
         Edge
     > | null>(null);
+    const canvas = useRef<HTMLElement | null>(null);
     const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
     const navigationPending = useRef(false);
@@ -425,16 +503,56 @@ export default function VaultPage({
         () => applyPerspective(universes, activePerspective),
         [activePerspective, universes],
     );
-    const nodes = useMemo(
-        () => buildNodes(visibleUniverses, semanticLevel, focusEntityId),
-        [focusEntityId, semanticLevel, visibleUniverses],
+    const activeSpace = useMemo(
+        () =>
+            activeContextId === null
+                ? null
+                : (flattenContexts(visibleUniverses).find(
+                      (context) => context.id === activeContextId,
+                  ) ?? null),
+        [activeContextId, visibleUniverses],
+    );
+    const scene = useMemo(() => {
+        if (!activeSpace) {
+            return null;
+        }
+
+        const { notes, links } = describeSpaceScene(activeSpace, relations);
+
+        return buildCosmicScene(notes, links);
+    }, [activeSpace, relations]);
+    const simulation = useCosmicSimulation(scene);
+    const nodes = useMemo<CanvasNode[]>(
+        () =>
+            activeSpace && scene
+                ? buildSpaceNodes(
+                      activeSpace,
+                      simulation.bodies,
+                      new Set(scene.unmeasuredNoteIds),
+                      focusEntityId,
+                  )
+                : buildNodes(visibleUniverses, semanticLevel, focusEntityId),
+        [
+            activeSpace,
+            focusEntityId,
+            scene,
+            semanticLevel,
+            simulation.bodies,
+            visibleUniverses,
+        ],
     );
     const edges = useMemo(
-        () => [
-            ...buildEdges(visibleUniverses),
-            ...buildRelationEdges(visibleUniverses, relations),
-        ],
-        [relations, visibleUniverses],
+        () =>
+            activeSpace
+                ? buildRelationEdges(
+                      [{ ...activeSpace, contexts: [] }],
+                      relations,
+                  ).map((edge) => ({ ...edge, type: 'straight' }))
+                : [
+                      ...buildEdges(visibleUniverses),
+                      ...buildRelationEdges(visibleUniverses, relations),
+                  ],
+        [activeSpace, relations, visibleUniverses],
     );
     const focusedDocument = useMemo(
         () =>
@@ -502,6 +620,10 @@ export default function VaultPage({
     const handleMove = useCallback(
         (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
             viewport.current = nextViewport;
+            canvas.current?.style.setProperty(
+                '--cvc-zoom',
+                String(nextViewport.zoom),
+            );
             setSemanticLevel((previousLevel) =>
                 resolveSemanticLevel(nextViewport.zoom, previousLevel),
             );
@@ -651,9 +773,7 @@ export default function VaultPage({
         showDocument,
     ]);
 
-    const handleNodeDoubleClick = useCallback<
-        NodeMouseHandler<KnowledgeCanvasNode>
-    >(
+    const handleNodeDoubleClick = useCallback<NodeMouseHandler<CanvasNode>>(
         async (_event, node) => {
             if (node.data.kind !== 'document') {
                 if (!node.data.contextId) {
@@ -708,7 +828,7 @@ export default function VaultPage({
         ],
     );
 
-    const handleNodeClick = useCallback<NodeMouseHandler<KnowledgeCanvasNode>>(
+    const handleNodeClick = useCallback<NodeMouseHandler<CanvasNode>>(
         (_event, node) => {
             if (node.data.kind !== 'document' || !node.data.entityId) {
                 return;
@@ -720,8 +840,28 @@ export default function VaultPage({
         [persistWorkspace],
     );
 
-    const handleNodeDragStop = useCallback<OnNodeDrag<KnowledgeCanvasNode>>(
+    const { holdBody, dropBody } = simulation;
+    const handleNodeDrag = useCallback<OnNodeDrag<CanvasNode>>(
         (_event, node) => {
+            if (node.type === 'cosmic') {
+                holdBody(node.id, toLogicalPoint(node.position));
+            }
+        },
+        [holdBody],
+    );
+
+    const handleNodeDragStop = useCallback<OnNodeDrag<CanvasNode>>(
+        (event, node) => {
+            // RN-07: a note dropped freely settles with the others; holding
+            // Ctrl while dropping pins it. Cards outside a space keep the
+            // earlier behaviour, where every drop pinned.
+            const isPinned =
+                node.type !== 'cosmic' || ('ctrlKey' in event && event.ctrlKey);
+
+            if (node.type === 'cosmic') {
+                dropBody(node.id, isPinned);
+            }
+
             if (!node.data.entityId || !node.data.contextId) {
                 return;
             }
@@ -737,7 +877,7 @@ export default function VaultPage({
                             contextId: node.data.contextId as string,
                             entityId: node.data.entityId as string,
                             position: node.position,
-                            isPinned: true,
+                            isPinned,
                         };
                         const layoutExists = perspective.layouts.some(
                             (layout) =>
@@ -765,6 +905,7 @@ export default function VaultPage({
                     node.data.contextId,
                     node.data.entityId,
                     node.position,
+                    isPinned,
                 ).catch((exception: unknown) =>
                     setWorkspaceError(
                         exception instanceof Error
@@ -791,7 +932,7 @@ export default function VaultPage({
                                 ? {
                                       ...document,
                                       position: node.position,
-                                      isPinned: true,
+                                      isPinned,
                                   }
                                 : document,
                         ),
@@ -803,6 +944,7 @@ export default function VaultPage({
                 node.data.contextId,
                 node.data.entityId,
                 node.position,
+                isPinned,
             ).catch((exception: unknown) =>
                 setWorkspaceError(
                     exception instanceof Error
@@ -811,7 +953,12 @@ export default function VaultPage({
                 ),
             );
         },
-        [activePerspectiveId, endpoints.contexts, endpoints.perspectives],
+        [
+            activePerspectiveId,
+            dropBody,
+            endpoints.contexts,
+            endpoints.perspectives,
+        ],
     );
 
     const handleLocate = useCallback(
@@ -955,7 +1102,12 @@ export default function VaultPage({
 
     const handleSearchSelect = useCallback(
         async (entityId: string, resultContextId: string) => {
-            const context = flattenContexts(universes).find((candidate) =>
+            // Inside a space only its own notes are on the canvas, so a
+            // result held by a nested context still has to be opened.
+            const shownContexts = activeSpace
+                ? [{ ...activeSpace, contexts: [] }]
+                : universes;
+            const context = flattenContexts(shownContexts).find((candidate) =>
                 candidate.documents.some(
                     (document) => document.id === entityId,
                 ),
@@ -1007,6 +1159,7 @@ export default function VaultPage({
         },
         [
             activePerspectiveId,
+            activeSpace,
             handleLocate,
             handleOpenContext,
             handlePerspectiveSelect,
@@ -1290,7 +1443,16 @@ export default function VaultPage({
                     onCreateContext={handleCreateContext}
                 />
 
-                <main className="cvc-canvas" aria-label="Canvas do vault">
+                <main
+                    ref={canvas}
+                    className="cvc-canvas"
+                    aria-label="Canvas do vault"
+                    style={
+                        {
+                            '--cvc-zoom': workspace.viewport.zoom,
+                        } as CSSProperties
+                    }
+                >
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -1302,6 +1464,7 @@ export default function VaultPage({
                         onMove={handleMove}
                         onMoveEnd={handleMoveEnd}
                         onNodeClick={handleNodeClick}
+                        onNodeDrag={handleNodeDrag}
                         onNodeDragStop={handleNodeDragStop}
                         onNodeDoubleClick={handleNodeDoubleClick}
                         nodesDraggable

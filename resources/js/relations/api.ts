@@ -73,12 +73,13 @@ export async function saveEntityLayout(
     contextId: string,
     entityId: string,
     position: { x: number; y: number },
+    isPinned = true,
 ) {
     await mutation(
         `${contextsEndpoint}/${encodeURIComponent(contextId)}/entities/${encodeURIComponent(entityId)}/layout`,
         {
             method: 'PATCH',
-            body: JSON.stringify({ position, pinned: true }),
+            body: JSON.stringify({ position, pinned: isPinned }),
         },
     );
 }
