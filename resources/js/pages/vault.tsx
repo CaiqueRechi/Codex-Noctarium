@@ -29,6 +29,7 @@ import {
     radiusForArea,
     toCanvasPoint,
     toLogicalPoint,
+    viewportCenter,
 } from '../canvas/math/geometry';
 import { contextNodeId, entityNodeId } from '../canvas/node-identifiers';
 import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
@@ -650,12 +651,43 @@ export default function VaultPage({
                 endpoints.documents,
                 documentContextId,
             );
+            // The button has no point of its own, so the note is born where
+            // the user is looking instead of somewhere off screen.
+            const element = canvas.current;
+            const position = element
+                ? viewportCenter(viewport.current, {
+                      width: element.clientWidth,
+                      height: element.clientHeight,
+                  })
+                : null;
             setUniverses((current) =>
                 updateContext(current, documentContextId, (context) => ({
                     ...context,
-                    documents: [...context.documents, document],
+                    documents: [
+                        ...context.documents,
+                        position
+                            ? { ...document, position, isPinned: false }
+                            : document,
+                    ],
                 })),
             );
+
+            if (position && endpoints.contexts) {
+                void saveEntityLayout(
+                    endpoints.contexts,
+                    documentContextId,
+                    document.id,
+                    position,
+                    false,
+                ).catch((exception: unknown) =>
+                    setWorkspaceError(
+                        exception instanceof Error
+                            ? exception.message
+                            : 'Não foi possível salvar o layout.',
+                    ),
+                );
+            }
+
             setFocusEntityId(document.id);
             showDocument(document);
             void persistWorkspace(viewport.current, document.id);
@@ -669,6 +701,7 @@ export default function VaultPage({
             setIsCreating(false);
         }
     }, [
+        endpoints.contexts,
         endpoints.documents,
         documentContextId,
         isCreating,

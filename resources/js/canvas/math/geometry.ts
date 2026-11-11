@@ -31,6 +31,24 @@ export function toCanvasPoint(point: CanvasPoint): CanvasPoint {
     return { x, y };
 }
 
+// Canvas point shown at the middle of the screen, or null while the screen
+// has no size.
+export function viewportCenter(
+    viewport: CanvasViewport,
+    size: ViewportSize,
+): CanvasPoint | null {
+    if (size.width <= 0 || size.height <= 0 || !(viewport.zoom > 0)) {
+        return null;
+    }
+
+    const x = (size.width / 2 - viewport.x) / viewport.zoom;
+    const y = (size.height / 2 - viewport.y) / viewport.zoom;
+    requireFinite(x, 'Canvas x');
+    requireFinite(y, 'Canvas y');
+
+    return { x, y };
+}
+
 export type CanvasCircle = { center: CanvasPoint; radius: number };
 export type ViewportFit = { minZoom: number; maxZoom: number; margin: number };
 

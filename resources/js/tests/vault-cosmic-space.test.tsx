@@ -396,6 +396,53 @@ describe('RF-03 space drawn and moved by the physics', () => {
         expect(screen.queryByTestId('context:nested')).not.toBeInTheDocument();
     });
 
+    it('puts a new note at the middle of the view and saves it there unpinned', async () => {
+        const width = vi
+            .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+            .mockReturnValue(1000);
+        const height = vi
+            .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+            .mockReturnValue(500);
+        fetchMock.mockImplementation((url: string) =>
+            Promise.resolve({
+                ok: true,
+                json: async () =>
+                    url === '/vault/documents'
+                        ? {
+                              document: {
+                                  ...note('fresh', 'Recente'),
+                                  content: '',
+                              },
+                          }
+                        : { updated: true },
+            }),
+        );
+        renderSpace([note('a', 'Alfa', { position: { x: 4096, y: 0 } })]);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/vault/contexts/space/entities/fresh/layout',
+                expect.objectContaining({
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                        position: { x: 500, y: 250 },
+                        pinned: false,
+                    }),
+                }),
+            ),
+        );
+
+        const node = screen.getByTestId('entity:space:fresh');
+
+        expect(node).toHaveAttribute('data-x', '500');
+        expect(node).toHaveAttribute('data-y', '250');
+
+        width.mockRestore();
+        height.mockRestore();
+    });
+
     it('offers a new note only inside a space, where the note can live', () => {
         const { unmount } = renderSpace([], { breadcrumbs: [] });
 

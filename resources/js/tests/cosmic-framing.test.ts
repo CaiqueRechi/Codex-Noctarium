@@ -1,9 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
-import { frameCircles } from '../canvas/math/geometry';
+import { frameCircles, viewportCenter } from '../canvas/math/geometry';
 
 const screen = { width: 1000, height: 500 };
 const fit = { minZoom: 0.25, maxZoom: 2, margin: 0.1 };
+
+describe('RF-01 canvas point at the middle of the screen', () => {
+    it('undoes the pan and the zoom of the viewport', () => {
+        expect(viewportCenter({ x: 100, y: -50, zoom: 2 }, screen)).toEqual({
+            x: 200,
+            y: 150,
+        });
+        expect(viewportCenter({ x: 500, y: 250, zoom: 0.5 }, screen)).toEqual({
+            x: 0,
+            y: 0,
+        });
+    });
+
+    it('has no answer while the screen has no size', () => {
+        expect(
+            viewportCenter({ x: 0, y: 0, zoom: 1 }, { width: 0, height: 0 }),
+        ).toBeNull();
+    });
+});
 
 describe('RF-01 viewport that frames a whole space', () => {
     it('centres one circle and leaves the margin on the tighter side', () => {
