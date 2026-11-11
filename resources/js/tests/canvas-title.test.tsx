@@ -3,10 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@xyflow/react', () => ({
     Handle: () => null,
-    Position: { Left: 'left', Right: 'right' },
+    Position: { Top: 'top', Bottom: 'bottom' },
 }));
 
-import { KnowledgeNode } from '../canvas/knowledge-node';
+import { CosmicNoteNode } from '../canvas/cosmic-note-node';
+import type { CosmicNoteData } from '../canvas/cosmic-note-node';
 import { truncateCanvasTitle } from '../canvas/truncate-canvas-title';
 
 describe('RF-02 / RN-08 canvas title presentation', () => {
@@ -35,65 +36,60 @@ describe('RF-02 / RN-08 canvas title presentation', () => {
         },
     );
 
-    it.each(['universe', 'context', 'document'] as const)(
+    function renderNote(data: CosmicNoteData) {
+        return render(
+            <CosmicNoteNode
+                id="node"
+                type="cosmic"
+                data={data}
+                selected={false}
+                dragging={false}
+                draggable
+                selectable
+                deletable
+                isConnectable={false}
+                zIndex={0}
+                positionAbsoluteX={0}
+                positionAbsoluteY={0}
+            />,
+        );
+    }
+
+    it.each(['context', 'document'] as const)(
         'truncates a %s label without changing its complete title',
         (kind) => {
             const title = 'abcdefghijklmnopqrstTítulo completo';
-            const data = {
+            const data: CosmicNoteData = {
                 kind,
                 label: title,
-                semanticLevel: 'document' as const,
+                diameter: 200,
+                isPinned: false,
+                isUnmeasured: false,
             };
-            render(
-                <KnowledgeNode
-                    id="node"
-                    type="knowledge"
-                    data={data}
-                    selected={false}
-                    dragging={false}
-                    draggable
-                    selectable
-                    deletable
-                    isConnectable
-                    zIndex={0}
-                    positionAbsoluteX={0}
-                    positionAbsoluteY={0}
-                />,
-            );
-            expect(screen.getByText('abcdefghijklmnopqrst…')).toHaveAttribute(
-                'title',
-                title,
-            );
+            renderNote(data);
+
+            expect(
+                screen.getByText('abcdefghijklmnopqrst…'),
+            ).toBeInTheDocument();
+            expect(screen.getByRole('article')).toHaveAttribute('title', title);
             expect(data.label).toBe(title);
         },
     );
 
     it('escapes markup in both the visible label and complete title attribute', () => {
         const title = '<img src=x onerror=alert(1)>';
-        render(
-            <KnowledgeNode
-                id="node"
-                type="knowledge"
-                data={{
-                    kind: 'document',
-                    label: title,
-                    semanticLevel: 'document',
-                }}
-                selected={false}
-                dragging={false}
-                draggable
-                selectable
-                deletable
-                isConnectable
-                zIndex={0}
-                positionAbsoluteX={0}
-                positionAbsoluteY={0}
-            />,
-        );
-        expect(screen.getByText(truncateCanvasTitle(title))).toHaveAttribute(
-            'title',
-            title,
-        );
+        renderNote({
+            kind: 'document',
+            label: title,
+            diameter: 200,
+            isPinned: false,
+            isUnmeasured: false,
+        });
+
+        expect(
+            screen.getByText(truncateCanvasTitle(title)),
+        ).toBeInTheDocument();
+        expect(screen.getByRole('article')).toHaveAttribute('title', title);
         expect(document.querySelector('img')).toBeNull();
     });
 });
