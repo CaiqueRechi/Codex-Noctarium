@@ -6,7 +6,7 @@ import {
     within,
 } from '@testing-library/react';
 import { useEffect } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const setViewportMock = vi.fn();
@@ -104,6 +104,14 @@ vi.mock('@xyflow/react', () => ({
 
 import VaultPage from '../pages/vault';
 
+// The panels live in a floating tools panel that starts closed.
+function renderWithTools(page: ReactElement) {
+    const view = render(page);
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir ferramentas' }));
+
+    return view;
+}
+
 describe('RF-02 vault canvas', () => {
     beforeEach(() => {
         setViewportMock.mockReset();
@@ -112,8 +120,8 @@ describe('RF-02 vault canvas', () => {
         routerReloadMock.mockReset();
     });
 
-    it('reveals context detail through zoom without entering edit mode', () => {
-        render(
+    it('shows the universes of the vault as its outermost space', () => {
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -151,11 +159,9 @@ describe('RF-02 vault canvas', () => {
             within(canvas).queryByText('Primeiro Contexto'),
         ).not.toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: 'aproximar' }));
-
         expect(
-            within(canvas).getByText('Primeiro Contexto'),
-        ).toBeInTheDocument();
+            screen.getByRole('button', { name: 'Nova nota' }),
+        ).toBeDisabled();
         expect(
             screen.queryByRole('textbox', { name: 'Conteúdo Markdown' }),
         ).not.toBeInTheDocument();
@@ -199,7 +205,7 @@ describe('RF-02 vault canvas', () => {
             .mockResolvedValueOnce({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -299,7 +305,7 @@ describe('RF-02 vault canvas', () => {
             });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -362,7 +368,7 @@ describe('RF-02 vault canvas', () => {
         const fetchMock = vi.fn().mockResolvedValue({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -430,11 +436,15 @@ describe('RF-02 vault canvas', () => {
             });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
                     name: 'CVC',
+                    breadcrumbs: [
+                        { id: 'universe-1', name: 'Meu Universo' },
+                        { id: 'context-1', name: 'Primeiro Contexto' },
+                    ],
                     universes: [
                         {
                             id: 'universe-1',
@@ -508,11 +518,15 @@ describe('RF-02 vault canvas', () => {
         vi.stubGlobal('fetch', fetchMock);
         const persistedViewport = { x: -180.75, y: 41.5, zoom: 1.6 };
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
                     name: 'CVC',
+                    breadcrumbs: [
+                        { id: 'universe-1', name: 'Meu Universo' },
+                        { id: 'context-1', name: 'Primeiro Contexto' },
+                    ],
                     universes: [
                         {
                             id: 'universe-1',
@@ -573,7 +587,7 @@ describe('RF-02 vault canvas', () => {
         const fetchMock = vi.fn().mockResolvedValue({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -668,7 +682,7 @@ describe('RF-02 vault canvas', () => {
         });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -774,7 +788,7 @@ describe('RF-02 vault canvas', () => {
             properties: {},
         });
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -878,7 +892,7 @@ describe('RF-02 vault canvas', () => {
         });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -980,7 +994,7 @@ describe('RF-02 vault canvas', () => {
             });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -1083,7 +1097,7 @@ describe('RF-02 vault canvas', () => {
             .mockResolvedValue({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -1195,7 +1209,7 @@ describe('RF-02 vault canvas', () => {
         vi.stubGlobal('fetch', fetchMock);
         vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -1293,7 +1307,7 @@ describe('RF-02 vault canvas', () => {
         });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',

@@ -1,10 +1,6 @@
 import { useState } from 'react';
 
-import {
-    contextNodeId,
-    entityNodeId,
-    universeNodeId,
-} from '../canvas/node-identifiers';
+import { contextNodeId, entityNodeId } from '../canvas/node-identifiers';
 import type { DocumentSummary } from '../documents/types';
 
 export type ContextSummary = {
@@ -34,7 +30,7 @@ export type ExplorerTarget = {
 
 type VaultExplorerProps = {
     universes: UniverseSummary[];
-    breadcrumbs: ContextBreadcrumb[];
+    isAtVaultRoot: boolean;
     onLocate: (target: ExplorerTarget) => void;
     onOpenContext: (contextId: string | null) => Promise<void>;
     onCreateContext: (name: string) => Promise<void>;
@@ -79,9 +75,33 @@ export function mapDocuments(
     }));
 }
 
+type VaultPathProps = {
+    breadcrumbs: ContextBreadcrumb[];
+    onOpenContext: (contextId: string | null) => void;
+};
+
+export function VaultPath({ breadcrumbs, onOpenContext }: VaultPathProps) {
+    return (
+        <nav className="cvc-breadcrumbs" aria-label="Caminho atual">
+            <button type="button" onClick={() => onOpenContext(null)}>
+                Vault
+            </button>
+            {breadcrumbs.map((breadcrumb) => (
+                <button
+                    type="button"
+                    key={breadcrumb.id}
+                    onClick={() => onOpenContext(breadcrumb.id)}
+                >
+                    {breadcrumb.name}
+                </button>
+            ))}
+        </nav>
+    );
+}
+
 export function VaultExplorer({
     universes,
-    breadcrumbs,
+    isAtVaultRoot,
     onLocate,
     onOpenContext,
     onCreateContext,
@@ -89,7 +109,6 @@ export function VaultExplorer({
     const [name, setName] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const activeContextId = breadcrumbs.at(-1)?.id ?? null;
 
     const createContext = async () => {
         const normalizedName = name.trim();
@@ -122,27 +141,10 @@ export function VaultExplorer({
                 <h2>Explorador</h2>
             </header>
 
-            <nav className="cvc-breadcrumbs" aria-label="Caminho atual">
-                <button type="button" onClick={() => void onOpenContext(null)}>
-                    Vault
-                </button>
-                {breadcrumbs.map((breadcrumb) => (
-                    <button
-                        type="button"
-                        key={breadcrumb.id}
-                        onClick={() => void onOpenContext(breadcrumb.id)}
-                    >
-                        {breadcrumb.name}
-                    </button>
-                ))}
-            </nav>
-
             <div className="cvc-explorer__create">
                 <label>
                     <span>
-                        {activeContextId === null
-                            ? 'Novo universo'
-                            : 'Novo subassunto'}
+                        {isAtVaultRoot ? 'Novo universo' : 'Novo subassunto'}
                     </span>
                     <input
                         value={name}
@@ -216,9 +218,7 @@ function ContextItem({
                     data-kind={isUniverse ? 'universe' : 'context'}
                     onClick={() =>
                         onLocate({
-                            nodeId: isUniverse
-                                ? universeNodeId(context.id)
-                                : contextNodeId(context.id),
+                            nodeId: contextNodeId(context.id),
                             entityId: null,
                             kind: isUniverse ? 'universe' : 'context',
                         })

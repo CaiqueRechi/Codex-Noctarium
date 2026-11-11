@@ -338,12 +338,14 @@ describe('RF-03 space drawn and moved by the physics', () => {
         expect(canvas.style.getPropertyValue('--cvc-zoom')).toBe('0.5');
     });
 
-    it('keeps the cards of the root listing, where no space is open', () => {
+    it('draws the vault itself as the space that holds the universes', () => {
         renderSpace([note('a', 'Alfa')], { breadcrumbs: [] });
 
-        expect(screen.getByTestId('universe:space')).toHaveAttribute(
+        expect(screen.getByTestId('context:space')).toHaveAttribute(
             'data-type',
-            'knowledge',
+            'cosmic',
         );
+        expect(screen.queryByTestId('entity:space:a')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('context:nested')).not.toBeInTheDocument();
     });
 });

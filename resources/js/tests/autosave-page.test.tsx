@@ -114,6 +114,7 @@ async function openEditor(saveResponse: () => Promise<Response>) {
             <VaultPage {...props} />
         </StrictMode>,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir ferramentas' }));
     fireEvent.click(screen.getByRole('button', { name: 'Abrir documento' }));
     await tick();
 

@@ -75,8 +75,7 @@
     opacity: 0.55;
 }
 
-.cvc-eyebrow,
-.cvc-knowledge-node__kind {
+.cvc-eyebrow {
     color: var(--cvc-text-muted);
     font-size: 0.72rem;
     font-weight: 700;
@@ -84,33 +83,45 @@
     text-transform: uppercase;
 }
 
-.cvc-zoom-state {
-    border: 1px solid var(--cvc-border);
-    border-radius: 999px;
-    background: var(--cvc-surface-raised);
-    padding: 0.55rem 0.9rem;
-    color: var(--cvc-text);
-    font-size: 0.8rem;
-}
-
 .cvc-canvas {
     min-height: 0;
 }
 
 .cvc-workspace {
+    position: relative;
     display: grid;
     min-height: 0;
-    grid-template-columns:
-        minmax(14rem, 18rem) minmax(0, 1fr)
-        minmax(16rem, 20rem);
+}
+
+/* The tools float over the canvas instead of taking a column from it. */
+.cvc-tools {
+    position: absolute;
+    z-index: 8;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    width: min(24rem, 100%);
+    border-left: 1px solid var(--cvc-border);
+    background: var(--cvc-surface);
+    padding: 1rem;
+    box-shadow: -1rem 0 2.5rem var(--cvc-shadow);
+}
+
+.cvc-tools[hidden] {
+    display: none;
+}
+
+.cvc-tools-toggle {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    font-size: 1.1rem;
+    line-height: 1;
 }
 
 .cvc-explorer {
-    z-index: 5;
-    overflow: auto;
-    border-right: 1px solid var(--cvc-border);
-    background: var(--cvc-surface);
-    padding: 1rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--cvc-border);
 }
 
 .cvc-explorer__header {
@@ -125,8 +136,9 @@
 .cvc-breadcrumbs {
     display: flex;
     overflow-x: auto;
+    min-width: 0;
+    flex: 1 1 auto;
     gap: 0.3rem;
-    margin-bottom: 0.8rem;
 }
 
 .cvc-breadcrumbs button,
@@ -234,14 +246,6 @@
     outline: 3px solid var(--cvc-focus);
     outline-offset: 1px;
     background: var(--cvc-surface-raised);
-}
-
-.cvc-properties {
-    z-index: 5;
-    overflow: auto;
-    border-left: 1px solid var(--cvc-border);
-    background: var(--cvc-surface);
-    padding: 1rem;
 }
 
 .cvc-properties__header {
@@ -710,25 +714,6 @@
     color: var(--cvc-text);
 }
 
-.cvc-knowledge-node {
-    display: grid;
-    min-width: 15rem;
-    gap: 0.35rem;
-    border: 1px solid var(--cvc-border);
-    border-radius: 1rem;
-    background: var(--cvc-surface-raised);
-    padding: 1rem 1.1rem;
-    box-shadow: 0 1rem 2.5rem var(--cvc-shadow);
-}
-
-.cvc-knowledge-node[data-kind='universe'] {
-    border-color: var(--cvc-accent);
-}
-
-.cvc-knowledge-node[data-kind='document'] {
-    border-color: var(--cvc-focus);
-}
-
 .cvc-editor {
     position: fixed;
     z-index: 20;
@@ -797,20 +782,6 @@
     line-height: 1.7;
 }
 
-@media (max-width: 64rem) {
-    .cvc-workspace {
-        grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
-        grid-template-rows: minmax(20rem, 1fr) auto;
-    }
-
-    .cvc-properties {
-        max-height: 18rem;
-        grid-column: 1 / -1;
-        border-top: 1px solid var(--cvc-border);
-        border-left: 0;
-    }
-}
-
 @media (max-width: 48rem) {
     .cvc-header,
     .cvc-editor__header {
@@ -823,38 +794,10 @@
         flex-wrap: wrap;
     }
 
-    .cvc-workspace {
-        grid-template-columns: 1fr;
-        grid-template-rows:
-            minmax(9rem, 25vh) minmax(20rem, 1fr)
-            minmax(10rem, auto);
+    .cvc-tools {
+        width: 100%;
+        border-left: 0;
     }
-
-    .cvc-explorer {
-        border-right: 0;
-        border-bottom: 1px solid var(--cvc-border);
-    }
-
-    .cvc-properties {
-        max-height: 35vh;
-        grid-column: 1;
-    }
-}
-
-.cvc-knowledge-node[data-selected='true'] {
-    outline: 3px solid var(--cvc-focus);
-    outline-offset: 3px;
-}
-
-.cvc-knowledge-node strong {
-    color: var(--cvc-text);
-    font-size: 1rem;
-}
-
-.cvc-knowledge-node small {
-    max-width: 15rem;
-    color: var(--cvc-text-muted);
-    line-height: 1.45;
 }
 
 /* --cvc-zoom is written by the page on every viewport move, so the touch
