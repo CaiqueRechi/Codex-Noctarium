@@ -857,6 +857,68 @@
     line-height: 1.45;
 }
 
+/* --cvc-zoom is written by the page on every viewport move, so the touch
+   target and the title keep their size on screen at any zoom (D-05). */
+.cvc-cosmic-note {
+    position: relative;
+    display: grid;
+    min-width: calc(44px / var(--cvc-zoom, 1));
+    min-height: calc(44px / var(--cvc-zoom, 1));
+    place-items: center;
+    border-radius: 50%;
+    cursor: grab;
+}
+
+.cvc-cosmic-note__body {
+    display: block;
+    grid-area: 1 / 1;
+    border: calc(2px / var(--cvc-zoom, 1)) solid var(--cvc-focus);
+    border-radius: 50%;
+    background: var(--cvc-surface-raised);
+    box-shadow: 0 0 calc(24px / var(--cvc-zoom, 1)) var(--cvc-shadow);
+}
+
+.cvc-cosmic-note[data-kind='context'] .cvc-cosmic-note__body {
+    border-color: var(--cvc-accent);
+}
+
+.cvc-cosmic-note[data-pinned='true'] .cvc-cosmic-note__body {
+    border-style: double;
+    border-width: calc(6px / var(--cvc-zoom, 1));
+}
+
+.cvc-cosmic-note[data-unmeasured='true'] .cvc-cosmic-note__body {
+    border-style: dashed;
+}
+
+.cvc-cosmic-note[data-selected='true'] .cvc-cosmic-note__body {
+    outline: calc(3px / var(--cvc-zoom, 1)) solid var(--cvc-focus);
+    outline-offset: calc(3px / var(--cvc-zoom, 1));
+}
+
+.cvc-cosmic-note__title {
+    z-index: 1;
+    grid-area: 1 / 1;
+    color: var(--cvc-text);
+    font-size: calc(0.9rem / var(--cvc-zoom, 1));
+    pointer-events: none;
+    text-shadow: 0 0 calc(4px / var(--cvc-zoom, 1)) var(--cvc-background);
+    white-space: nowrap;
+}
+
+.cvc-shell .cvc-cosmic-note__anchor {
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    min-width: 0;
+    height: 1px;
+    min-height: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
 .cvc-shell .react-flow__edge-path {
     stroke: var(--cvc-accent);
     stroke-width: 2;
