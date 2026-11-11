@@ -1,7 +1,10 @@
 .cvc-shell {
     display: grid;
-    min-height: 100vh;
-    grid-template-rows: auto 1fr;
+    height: 100vh;
+    /* Header, optional page error, canvas. The error has a row of its own:
+       sharing the rows pushed the canvas out of the screen whenever a
+       message appeared. */
+    grid-template-rows: auto auto minmax(0, 1fr);
     background: var(--cvc-background);
     color: var(--cvc-text);
 }
@@ -89,6 +92,7 @@
 
 .cvc-workspace {
     position: relative;
+    grid-row: 3;
     display: grid;
     min-height: 0;
 }
