@@ -418,7 +418,7 @@ No issue found in the changed paths.
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
 | RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |
-| RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept. Two inferences in section 15.3 await confirmation; migration of existing data still open |
+| RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept; migration of existing data still open |
 | RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
 | RF-10 | ready | D-09 decided: counter events, case- and accent-insensitive prefix, only `/link` and `/l` (`$l` was dropped); not implemented |
 | RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
@@ -520,8 +520,8 @@ delivery order, so phases 6 to 8 stay as they are until then.
 Still open: zoom animation timings and cancellation during a move (D-12),
 migration of the current layout and of existing data (D-13), key design and
 the final Rechi OS integration (D-14), environments, operation and costs
-(D-15). Three statements in section 15.3 are marked as inferences and must be
-confirmed before they are built: shared subnotes survive in their other
+(D-15). Three statements in section 15.3 were proposed by the writer and
+confirmed by Rechi the same day: shared subnotes survive in their other
 spaces, versions are removed with the note on permanent deletion, and the
 descendant sum stays uncached until a measurement at 5,000 notes says
 otherwise.

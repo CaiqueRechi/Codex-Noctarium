@@ -258,9 +258,9 @@ Em 2026-11-11 Rechi fechou D-07, D-09, D-10 e D-11 e a maior parte de D-12 a D-1
 | # | Decisão | Área | Impacto |
 | --- | --- | --- | --- |
 | D-12 (parte restante) | Tempos de animação do zoom e cancelamento durante a movimentação | Interação | Completar transições |
-| D-13 (parte restante) | Migração do layout atual e conversão dos dados existentes; duas inferências da seção 15.3 a confirmar | Dados | Não aplicar as inferências sem confirmação |
+| D-13 (parte restante) | Migração do layout atual e conversão dos dados existentes | Dados | Necessária antes de mudar o esquema dos dados atuais |
 | D-14 (parte restante) | Integração final com o Rechi OS; desenho de chaves: derivação, troca de senha e guarda da cópia do administrador | Integração | Bloqueia a implementação da criptografia e qualquer hospedagem remota |
-| D-15 (parte restante) | Ambientes, operação e custos; confirmação de que a soma de descendentes segue sem cache | Entrega | Planejamento de implantação ainda necessário |
+| D-15 (parte restante) | Ambientes, operação e custos | Entrega | Planejamento de implantação ainda necessário |
 
 As demais áreas do checklist não redefinidas nesta entrevista conservam referências anteriores como contexto a verificar; não contam automaticamente como novas confirmações. Não declarar 100% de cobertura nem testes de produto concluídos.
 
@@ -296,7 +296,7 @@ Estas aprovações definem contratos; não são evidência de que a simulação,
 
 ### 15.3 Decisões aprovadas em 2026-11-11
 
-Rechi respondeu a cada ponto nesta data. Itens marcados com **(inferência)** não foram ditos por ele: são a leitura de quem registrou e precisam de confirmação antes de serem implementados. Nada desta seção está implementado.
+Rechi respondeu a cada ponto nesta data. Três itens foram propostos por quem registrou e confirmados por ele na mesma data: o destino das subnotas compartilhadas, o das versões na exclusão definitiva e a ausência de cache na soma de descendentes. Nada desta seção está implementado.
 
 **D-07 — Bloco textual do fluxograma (RF-04, RF-05)**
 
@@ -336,8 +336,8 @@ Rechi respondeu a cada ponto nesta data. Itens marcados com **(inferência)** n�
 - Retirar uma nota que aparece em mais de um espaço sempre pergunta: “só daqui” ou “de todos os lugares”.
 - Lixeira: exclusão definitiva automática após 7 dias.
 - Histórico: todas as versões são mantidas.
-- **(inferência)** Subnotas que também aparecem em outro espaço continuam vivas lá quando o conjunto vai para a lixeira.
-- **(inferência)** As versões de uma nota são apagadas junto com ela na exclusão definitiva.
+- Subnotas que também aparecem em outro espaço continuam vivas lá quando o conjunto vai para a lixeira.
+- As versões de uma nota são apagadas junto com ela na exclusão definitiva.
 
 **D-14 — Criptografia**
 
@@ -356,7 +356,7 @@ Consequências sobre o que já está implementado:
 
 - Volume-alvo: até 5.000 notas por vault.
 - Limite do conteúdo no salvamento: 5 MB por nota; acima disso o servidor recusa. Com todas as versões mantidas, o banco não tem teto de crescimento.
-- **(inferência)** A soma de descendentes segue sem cache; ele só entra se a medição nesse volume mostrar lentidão.
+- A soma de descendentes segue sem cache; ele só entra se a medição nesse volume mostrar lentidão.
 - Ordem de entrega depois da parte visível do RF-03:
   1. RF-01 criação e zoom, RF-02 editor.
   2. RF-07 pesquisa, RF-10 `/link`, RF-09 conexões externas.
