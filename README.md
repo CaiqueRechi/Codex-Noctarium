@@ -1,10 +1,10 @@
-# Crow Vault Canvas
+# Codex Noctarium
 
 <p align="center">
-  <img src="resources/Crow_Vault_Canvas_final.png" alt="Crow Vault Canvas cosmic crow logo" width="720">
+  <img src="resources/images/brand/codex-noctarium-logo.png" alt="Codex Noctarium logo: a raven on a mountain under the phases of the moon and a star compass" width="480">
 </p>
 
-Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowledge canvas to Rechi OS. The current vertical slice supports an authenticated path from universe to context to Markdown document, synchronous durable saving, and restoration of the user's canvas viewport.
+Codex Noctarium is a Laravel and React package that adds a private knowledge canvas to Rechi OS. The current vertical slice supports an authenticated path from universe to context to Markdown document, synchronous durable saving, and restoration of the user's canvas viewport.
 
 ## Current scope
 
@@ -33,7 +33,7 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Recoverable entity trash that preserves UUIDs, revisions, memberships, and valid relations.
 - Private image and PDF attachments with strict validation, integrity checks, and authorized download.
 - In-app save and queue status with visible pending, running, completed, failed, and stalled work.
-- Versioned official cosmic-crow artwork, reduced UI mark, favicon, and monochrome presentation preset.
+- Versioned official Codex Noctarium artwork, reduced UI mark, favicon, and monochrome presentation preset.
 - Read/write authorization inherited from Rechi OS.
 - Soft-deleted vault, context, entity, document, and relation records.
 
@@ -41,7 +41,7 @@ Vault import/export, remote hosting, and encryption at rest are not implemented 
 
 ## Host integration
 
-CVC remains the source of truth for product code. Rechi OS installs it through a local Composer `path` repository and compiles its React source through host-owned Vite, TypeScript, ESLint, Vitest, and React Flow configuration.
+Codex Noctarium remains the source of truth for product code. Rechi OS installs it through a local Composer `path` repository and compiles its React source through host-owned Vite, TypeScript, ESLint, Vitest, and React Flow configuration.
 
 The expected sibling layout is:
 
@@ -51,7 +51,7 @@ work/
 └── rechi-os/
 ```
 
-Rechi OS owns authentication, verified-user enforcement, screen permissions, database configuration, queue configuration, and the production build. CVC owns `/vault`, the knowledge domain, package migrations, private Markdown and attachment storage, and the canvas UI.
+Rechi OS owns authentication, verified-user enforcement, screen permissions, database configuration, queue configuration, and the production build. Codex Noctarium owns `/vault`, the knowledge domain, package migrations, private Markdown and attachment storage, and the canvas UI.
 
 ## Local setup
 
@@ -59,7 +59,7 @@ In Rechi OS, configure the package and private storage:
 
 ```dotenv
 CVC_ENABLED=true
-CVC_VAULT_NAME="Crow Vault Canvas"
+CVC_VAULT_NAME="Codex Noctarium"
 # Optional; defaults to storage/app/private/cvc
 CVC_STORAGE_ROOT=
 # Optional fail-closed private-storage capacity controls
@@ -95,7 +95,7 @@ Private Markdown files remain the canonical content store in this release. `cvc_
 
 The trash panel moves the focused entity, its document, and active relations out of the normal canvas without erasing their records. Restoration returns the entity to every previous context with the same UUID, revision, and layout. Relations removed with the entity are restored only when both endpoints still exist; manually deleted relations never return automatically, and unresolved endpoints are reported in the panel.
 
-The attachment panel accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. CVC verifies the extension, detected MIME type, file signature, supported image structure or PDF envelope, and SHA-256 before storing the file outside the public web root. Downloads remain behind the vault read permission and are forced as non-cacheable attachments; duplicate bytes for the same entity are rejected.
+The attachment panel accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. Codex Noctarium verifies the extension, detected MIME type, file signature, supported image structure or PDF envelope, and SHA-256 before storing the file outside the public web root. Downloads remain behind the vault read permission and are forced as non-cacheable attachments; duplicate bytes for the same entity are rejected.
 
 The operational panel keeps save state and recent queue work inside the vault interface. It refreshes once after a successful document save and polls only while at least one task is pending or running; a slow request is never overlapped by another poll. Search-index tasks move from waiting to running and only report completion after the worker returns successfully. Terminal or dispatch failures use safe messages without exception details. Pending or running work without a recent confirmation is marked as requiring attention; no e-mail, push, or external notification is sent.
 
@@ -175,10 +175,18 @@ Closing or reloading can lose unconfirmed edits. Returning the draft to its old
 text after a failed request does not clear the warning because persistence may
 still be uncertain.
 
+## Name
+
+The product was called Crow Vault Canvas (CVC) until 2026-11-12, when Caique renamed it **Codex Noctarium** and replaced its logo. The rename covers what a person reads: this README, the documentation, the browser tab title, the default vault name and the brand artwork.
+
+Technical identifiers keep the old name, because renaming them changes contracts with the host, the database and existing installations: the repository `crow-vault-canvas`, the Composer package `caiquerechi/crow-vault-canvas`, the PHP namespace `CrowVaultCanvas`, the configuration key `crow-vault-canvas`, the `cvc_*` tables, the `CVC_*` environment variables, the `cvc:*` commands, the `cvc.*` route names and the `cvc-*` CSS classes. Renaming any of them is a separate, explicit decision.
+
+A vault initialized before the rename keeps the name stored in its row; the new default only applies to new vaults or to `CVC_VAULT_NAME`.
+
 ## Brand assets
 
-- `resources/images/brand/cvc-logo-official.png` preserves the definitive artwork supplied by Caique without modification.
-- `resources/images/brand/cvc-mark-reduced.png` is the transparent square derivative used in the vault header and favicon.
+- `resources/images/brand/codex-noctarium-logo.png` preserves the definitive artwork supplied by Caique without modification.
+- `resources/images/brand/codex-noctarium-mark.png` is the same artwork scaled to 256 px, used as the favicon.
 - `.cvc-brand-mark--monochrome` applies a one-color presentation to the same reduced mark without maintaining a divergent redraw.
 
 ## Security boundary
@@ -187,4 +195,4 @@ All vault routes require the Rechi OS web, authentication, verified-user, and sc
 
 Storage paths are generated from validated UUIDs, confined to the configured private root, and checked with SHA-256 when reopened. Markdown revisions are immutable, and a failed write never advances the database revision or reports a successful save. Attachment filenames never determine storage paths; files are created exclusively with restrictive permissions and are not served by the public filesystem.
 
-All private writes pass through one per-vault filesystem lock. Before opening the destination, CVC reserves the exact missing path entries and checks the configured document ceiling, cumulative vault bytes, cumulative entry count, and minimum host free-space reserve. Invalid or unsafe capacity configuration fails closed. Retention and physical purge remain a separate product decision required before final MVP acceptance.
+All private writes pass through one per-vault filesystem lock. Before opening the destination, Codex Noctarium reserves the exact missing path entries and checks the configured document ceiling, cumulative vault bytes, cumulative entry count, and minimum host free-space reserve. Invalid or unsafe capacity configuration fails closed. Retention and physical purge remain a separate product decision required before final MVP acceptance.

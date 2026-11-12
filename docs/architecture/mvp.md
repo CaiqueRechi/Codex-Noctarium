@@ -1,4 +1,4 @@
-# CVC MVP architecture
+# Codex Noctarium MVP architecture
 
 This document records the implemented MVP architecture after the accepted vertical slice. Product requirements remain authoritative for behavior that is not implemented yet.
 
@@ -90,9 +90,9 @@ The trash endpoints inherit the host's authenticated and verified-user middlewar
 
 The upload endpoint requires authenticated write access, CSRF protection, and a dedicated throttle. It accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. `AttachmentInspector` requires agreement between the normalized extension, `finfo` MIME type, magic signature, and supported image structure or PDF envelope. SVG, unknown formats, mismatches, and oversized payloads are rejected before private storage is opened.
 
-`LocalAttachmentStorage` ignores the client filename when choosing a path. It writes to a UUID-derived path below the configured CVC private root with exclusive creation, verifies the exact copied byte count, flushes the file, and applies restrictive permissions. Reads revalidate path ownership and root confinement and verify the stored SHA-256 before returning a stream.
+`LocalAttachmentStorage` ignores the client filename when choosing a path. It writes to a UUID-derived path below the configured Codex Noctarium private root with exclusive creation, verifies the exact copied byte count, flushes the file, and applies restrictive permissions. Reads revalidate path ownership and root confinement and verify the stored SHA-256 before returning a stream.
 
-Download resolution scopes both the attachment and its active parent entity to the configured vault. A trashed parent therefore makes its attachment unreachable without destroying the attachment record or bytes. The response uses `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, a sandboxed content security policy, and private no-store caching; CVC never embeds or executes uploaded files.
+Download resolution scopes both the attachment and its active parent entity to the configured vault. A trashed parent therefore makes its attachment unreachable without destroying the attachment record or bytes. The response uses `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, a sandboxed content security policy, and private no-store caching; Codex Noctarium never embeds or executes uploaded files.
 
 ## Operational state and queue failures
 
@@ -104,9 +104,9 @@ The authorized `GET /vault/operations` endpoint inherits the host read middlewar
 
 ## Brand identity
 
-The repository preserves the user-supplied definitive artwork at `resources/images/brand/cvc-logo-official.png`. The header and PNG favicon consume a transparent reduced mark at `resources/images/brand/cvc-mark-reduced.png`; it adapts the composition for a square small-size surface without replacing the original source. A CSS monochrome preset transforms that same mark at render time, avoiding a second independently redrawn identity asset.
+The product was renamed from Crow Vault Canvas to Codex Noctarium on 2026-11-12, and its logo replaced; the README's "Name" section lists what kept the old name and why. The repository preserves the user-supplied definitive artwork at `resources/images/brand/codex-noctarium-logo.png`. The header and PNG favicon consume `resources/images/brand/codex-noctarium-mark.png`, the same artwork scaled to 256 px; its transparent rounded corners come from the original. A CSS monochrome preset transforms that same mark at render time, avoiding a second independently redrawn identity asset.
 
-Vite imports the reduced mark through the package source and emits a hashed production asset in the Rechi OS build. The decorative header image has empty alternative text and `aria-hidden`; the visible CVC name remains the accessible identity.
+Vite imports the reduced mark through the package source and emits a hashed production asset in the Rechi OS build. The decorative header image has empty alternative text and `aria-hidden`; the visible Codex Noctarium name remains the accessible identity.
 
 ## Private-storage capacity guard
 

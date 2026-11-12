@@ -1,15 +1,16 @@
-# Crow Vault Canvas — CVC
+# Codex Noctarium
 
 | | |
 | --- | --- |
 | Data | 2026-10-30 |
+| Nome | Crow Vault Canvas (CVC) até 2026-11-12; renomeado para Codex Noctarium por Caique nessa data, com nova logo. Este documento usa o nome novo; identificadores técnicos mantêm o antigo (ver README, seção "Name") |
 | Solicitante | Caique Mehret Rechi — responsável técnico, decisor e responsável pelo aceite |
 | Cobertura do levantamento | 100% — 6 decisões adiadas com responsável e marco definidos |
 | Status | Levantamento concluído |
 
 ## 1. Resumo
 
-O Crow Vault Canvas (CVC) será um ambiente pessoal de conhecimento que reúne, em um único canvas, as funções de vault Markdown, grafo, diagrama e editor de documentos. O produto será entregue inicialmente como um pacote Laravel/React instalado no Rechi OS e executado localmente em Docker, com um vault físico e múltiplos universos ou contextos navegáveis por zoom semântico. A primeira entrega será uma vertical slice que percorre universo, contexto e documento editável, salva o conteúdo e retorna ao mesmo enquadramento. O MVP completo acrescentará busca, propriedades, relações, perspectivas, versões históricas, anexos seguros e soft delete.
+O Codex Noctarium será um ambiente pessoal de conhecimento que reúne, em um único canvas, as funções de vault Markdown, grafo, diagrama e editor de documentos. O produto será entregue inicialmente como um pacote Laravel/React instalado no Rechi OS e executado localmente em Docker, com um vault físico e múltiplos universos ou contextos navegáveis por zoom semântico. A primeira entrega será uma vertical slice que percorre universo, contexto e documento editável, salva o conteúdo e retorna ao mesmo enquadramento. O MVP completo acrescentará busca, propriedades, relações, perspectivas, versões históricas, anexos seguros e soft delete.
 
 ### 1.1 Objetivos
 
@@ -24,7 +25,7 @@ O Crow Vault Canvas (CVC) será um ambiente pessoal de conhecimento que reúne, 
 
 ### 1.2 Situação atual
 
-O usuário já utilizou Obsidian para armazenar conhecimento, mas abandonou a ferramenta por desejar visualização melhor, mais opções de organização e unificação entre notas, diagramas e relações. Não há vault ou outro conjunto de dados a importar no momento. O Rechi OS já fornece a aplicação Laravel principal, autenticação, autorização, filas, Docker e infraestrutura que hospedarão o pacote CVC. O repositório `crow-vault-canvas` está vazio e será a fonte de verdade do produto.
+O usuário já utilizou Obsidian para armazenar conhecimento, mas abandonou a ferramenta por desejar visualização melhor, mais opções de organização e unificação entre notas, diagramas e relações. Não há vault ou outro conjunto de dados a importar no momento. O Rechi OS já fornece a aplicação Laravel principal, autenticação, autorização, filas, Docker e infraestrutura que hospedarão o pacote Codex Noctarium. O repositório `crow-vault-canvas` está vazio e será a fonte de verdade do produto.
 
 ## 2. Partes interessadas e usuários
 
@@ -37,7 +38,7 @@ Caique aprova o escopo, decide questões técnicas e assina o aceite. O uso inic
 
 ## 3. Modelo de negócio
 
-O CVC é uma ferramenta pessoal, para um único usuário, sem cobrança, planos, assinatura ou centro de custo. O investimento autorizado é o tempo de Caique e os tokens disponíveis em sua assinatura do Codex. Bibliotecas, infraestrutura ou serviços pagos não podem ser adotados sem nova decisão explícita. Se o produto futuramente se tornar multiusuário ou comercial, haverá um levantamento e planejamento próprios, sem antecipar essa complexidade no MVP.
+O Codex Noctarium é uma ferramenta pessoal, para um único usuário, sem cobrança, planos, assinatura ou centro de custo. O investimento autorizado é o tempo de Caique e os tokens disponíveis em sua assinatura do Codex. Bibliotecas, infraestrutura ou serviços pagos não podem ser adotados sem nova decisão explícita. Se o produto futuramente se tornar multiusuário ou comercial, haverá um levantamento e planejamento próprios, sem antecipar essa complexidade no MVP.
 
 A escala de negócio é um usuário agora e no horizonte considerado. A escala técnica de notas, relações e elementos será definida por benchmark reproduzível na PoC, sob decisão de Caique, antes da aprovação do MVP.
 
@@ -132,7 +133,7 @@ A escala de negócio é um usuário agora e no horizonte considerado. A escala t
 ### RN-13 — Conflito externo conservador
 
 - **Regra:** edição externa não é um fluxo esperado; se detectada, nenhuma versão sobrescreve a outra silenciosamente.
-- **Exemplo:** um arquivo alterado fora do CVC enquanto aberto gera duas versões preservadas e pede escolha.
+- **Exemplo:** um arquivo alterado fora do Codex Noctarium enquanto aberto gera duas versões preservadas e pede escolha.
 - **Exceção:** alterações idênticas podem ser reconhecidas sem intervenção.
 - **Responsável pela regra:** Caique.
 
@@ -159,7 +160,7 @@ A escala de negócio é um usuário agora e no horizonte considerado. A escala t
 
 ### RN-17 — Autenticação e autorização
 
-- **Regra:** o CVC reutiliza sessão e autorização do Rechi OS e fica disponível inicialmente apenas à conta de Caique.
+- **Regra:** o Codex Noctarium reutiliza sessão e autorização do Rechi OS e fica disponível inicialmente apenas à conta de Caique.
 - **Exemplo:** a rota `/vault` exige usuário autenticado e autorizado.
 - **Exceção:** identidade fixa ou bypass só existe em testes automatizados no ambiente `testing`.
 - **Responsável pela regra:** Caique.
@@ -173,7 +174,7 @@ A escala de negócio é um usuário agora e no horizonte considerado. A escala t
 
 ### RN-19 — Isolamento do pacote
 
-- **Regra:** falha ou desativação do CVC não pode impedir o funcionamento das demais áreas do Rechi OS.
+- **Regra:** falha ou desativação do Codex Noctarium não pode impedir o funcionamento das demais áreas do Rechi OS.
 - **Exemplo:** feature flag desativada remove `/vault` sem afetar portfólio, dashboard ou Salem.
 - **Exceção:** indisponibilidade de infraestrutura compartilhada pode afetar ambos e deve ser tratada como risco da aplicação hospedeira.
 - **Responsável pela regra:** Caique.
@@ -187,7 +188,7 @@ A escala de negócio é um usuário agora e no horizonte considerado. A escala t
 
 ### RN-21 — Identidade visual
 
-- **Regra:** o nome exibido inicialmente é CVC e a logo atual do corvo cósmico é a marca oficial provisória.
+- **Regra:** o nome exibido é Codex Noctarium e a logo do corvo sob as fases da lua é a marca oficial. Ambos substituíram, em 2026-11-12, o nome Crow Vault Canvas (CVC) e a logo do corvo cósmico.
 - **Exemplo:** cabeçalho e favicon usam versões adequadas da mesma identidade.
 - **Exceção:** versões reduzida, monocromática e favicon podem adaptar a composição sem redesenhá-la.
 - **Responsável pela regra:** Caique.
@@ -195,7 +196,7 @@ A escala de negócio é um usuário agora e no horizonte considerado. A escala t
 ### RN-22 — Sem importação ou exportação de vault
 
 - **Regra:** o MVP não importa nem exporta vaults.
-- **Exemplo:** não existe ação para importar um vault Obsidian ou baixar todo o CVC como pacote.
+- **Exemplo:** não existe ação para importar um vault Obsidian ou baixar todo o Codex Noctarium como pacote.
 - **Exceção:** anexar imagem ou PDF a uma entidade não é importação de vault.
 - **Responsável pela regra:** Caique.
 
@@ -350,11 +351,11 @@ Não existem cálculos financeiros, impostos, aprovações por terceiros ou regr
 ### RF-14 — Integrar ao Rechi OS
 
 - **Persona:** Caique.
-- **Descrição:** instalar o pacote CVC no Rechi OS e expor `/vault` sob autenticação existente.
+- **Descrição:** instalar o pacote Codex Noctarium no Rechi OS e expor `/vault` sob autenticação existente.
 - **Regras:** RN-17, RN-19.
 - **Critérios de aceite:**
   - O código-fonte do produto permanece em `crow-vault-canvas`.
-  - Desativar a feature flag remove o CVC e preserva o Rechi OS.
+  - Desativar a feature flag remove o Codex Noctarium e preserva o Rechi OS.
 - **Prioridade:** Vertical slice.
 
 ## 6. Requisitos não funcionais
@@ -380,7 +381,7 @@ Não existem cálculos financeiros, impostos, aprovações por terceiros ou regr
 | RNF-17 | Isolamento | Falha do pacote | demais áreas do Rechi OS continuam operando |
 | RNF-18 | Custo | Dependências e serviços | custo monetário adicional igual a zero sem nova aprovação |
 
-Não existe meta fiscal, monetária ou multiempresa. Proteção contra bots não é necessária em escrita pública porque o CVC não possui endpoint público de criação; rate limiting e autorização continuam obrigatórios onde o host os exigir.
+Não existe meta fiscal, monetária ou multiempresa. Proteção contra bots não é necessária em escrita pública porque o Codex Noctarium não possui endpoint público de criação; rate limiting e autorização continuam obrigatórios onde o host os exigir.
 
 ## 7. Modelo de domínio e dados
 
@@ -388,19 +389,19 @@ Não existe meta fiscal, monetária ou multiempresa. Proteção contra bots não
 
 | Entidade | Atributos principais | Origem | Volume (dia / 5 anos) |
 | --- | --- | --- | --- |
-| Vault | ID, nome, configuração, estado | CVC; um fixo no MVP | 1 / 1 |
-| Universo/Contexto | ID, pai opcional, nome, ordem, participação de entidades | CVC | A definir pela PoC |
-| Entidade | ID estável, título, tipo opcional, propriedades, tags, referência de conteúdo | CVC | A definir pela PoC |
-| Documento | referência de entidade, caminho privado atual, revisão e ponteiro opcional para revisão no banco | CVC | A definir pela PoC |
-| Revisão de documento | ID, entidade, revisão, formato, `LONGTEXT`, metadados JSON, hash e tamanho | CVC; preparada, ainda não canônica | A definir pela PoC |
-| Relação | ID, origem, destino, tipo, direção, escopo, propriedades | Markdown/sidecar CVC | A definir pela PoC |
-| Instância visual | entidade, perspectiva, contexto, representação | CVC | A definir pela PoC |
-| Perspectiva | ID, nome, finalidade, filtros, contextos, versão corrente | CVC | A definir pela PoC |
-| Layout | posições, dimensões, grupos, zonas, itens fixados | CVC | A definir pela PoC |
-| Versão | nome, data, perspectiva, layout, revisões de entidades e relações | CVC | A definir pela PoC |
+| Vault | ID, nome, configuração, estado | Codex Noctarium; um fixo no MVP | 1 / 1 |
+| Universo/Contexto | ID, pai opcional, nome, ordem, participação de entidades | Codex Noctarium | A definir pela PoC |
+| Entidade | ID estável, título, tipo opcional, propriedades, tags, referência de conteúdo | Codex Noctarium | A definir pela PoC |
+| Documento | referência de entidade, caminho privado atual, revisão e ponteiro opcional para revisão no banco | Codex Noctarium | A definir pela PoC |
+| Revisão de documento | ID, entidade, revisão, formato, `LONGTEXT`, metadados JSON, hash e tamanho | Codex Noctarium; preparada, ainda não canônica | A definir pela PoC |
+| Relação | ID, origem, destino, tipo, direção, escopo, propriedades | Markdown/sidecar Codex Noctarium | A definir pela PoC |
+| Instância visual | entidade, perspectiva, contexto, representação | Codex Noctarium | A definir pela PoC |
+| Perspectiva | ID, nome, finalidade, filtros, contextos, versão corrente | Codex Noctarium | A definir pela PoC |
+| Layout | posições, dimensões, grupos, zonas, itens fixados | Codex Noctarium | A definir pela PoC |
+| Versão | nome, data, perspectiva, layout, revisões de entidades e relações | Codex Noctarium | A definir pela PoC |
 | Anexo | ID, entidade, nome, MIME, assinatura, tamanho, caminho privado | upload autorizado | A definir pela PoC; ≤ 5 MB cada |
 | Trabalho derivado | tipo, estado, progresso, erro | fila Laravel | A definir pela PoC |
-| Estado de workspace | perspectiva, câmera, foco e painéis | CVC | 1 por usuário/vault |
+| Estado de workspace | perspectiva, câmera, foco e painéis | Codex Noctarium | 1 por usuário/vault |
 
 O volume máximo será adiado até a PoC, decidido por Caique por benchmark reproduzível e registrado antes do aceite do MVP.
 
@@ -436,9 +437,9 @@ Não há dados a migrar. Importação e exportação de vaults não fazem parte 
 flowchart LR
     Usuario[Caique no Chrome] --> Host[Rechi OS Laravel + Inertia]
     Host --> Auth[Autenticação e autorização existentes]
-    Host --> Pacote[Pacote CVC]
+    Host --> Pacote[Pacote Codex Noctarium]
     Pacote --> UI[React + React Flow]
-    Pacote --> Dominio[Serviços de domínio CVC]
+    Pacote --> Dominio[Serviços de domínio Codex Noctarium]
     Dominio --> Vault[(Markdown canônico e anexos privados)]
     Dominio --> Meta[(MySQL: metadados, índice e revisões preparadas)]
     Dominio --> Fila[Filas Laravel]
@@ -446,7 +447,7 @@ flowchart LR
     Dominio --> Cache[(Redis quando reutilizável)]
 ```
 
-O CVC é um módulo/pacote do monólito Rechi OS, mas seu código-fonte e documentação pertencem ao repositório `crow-vault-canvas`. O Rechi OS mantém a configuração principal do Laravel, Docker, autenticação, autorização, banco, cache e filas. O pacote registra sua área `/vault`, componentes, serviços e recursos sem acoplar o restante da aplicação ao seu funcionamento.
+O Codex Noctarium é um módulo/pacote do monólito Rechi OS, mas seu código-fonte e documentação pertencem ao repositório `crow-vault-canvas`. O Rechi OS mantém a configuração principal do Laravel, Docker, autenticação, autorização, banco, cache e filas. O pacote registra sua área `/vault`, componentes, serviços e recursos sem acoplar o restante da aplicação ao seu funcionamento.
 
 No navegador ficam interação, câmera, seleção, estado visual e renderização. No servidor ficam autorização, validação, salvamento canônico, regras, acesso a arquivos, histórico e trabalhos pesados. React Flow é apenas adaptador visual: o domínio não usa seu modelo como fonte de verdade.
 
@@ -473,10 +474,10 @@ tldraw foi descartado para o MVP por exigir licença de produção e criar risco
 
 | Sistema | Direção | Gatilho | Contrato | Se falhar |
 | --- | --- | --- | --- | --- |
-| Rechi OS | host → CVC | acesso a `/vault` | pacote Laravel/React, sessão, autorização, feature flag | CVC indisponível; restante do Rechi OS continua |
-| Filesystem privado | CVC ↔ arquivos | criar, salvar, versionar, anexar | Markdown permanece canônico; caminhos validados e confinados à raiz do vault | alteração fica pendente; erro visível; nenhum sucesso falso |
-| MySQL | CVC ↔ banco | metadados, histórico, busca e revisões preparadas | migrations reversíveis; conteúdo no banco ainda não participa do fluxo canônico | transação falha e operação não é confirmada |
-| Redis/fila | CVC → workers | indexar, gerar preview/snapshot, compactar | jobs idempotentes em chunks | erro registrado e visível; salvamento canônico permanece válido |
+| Rechi OS | host → Codex Noctarium | acesso a `/vault` | pacote Laravel/React, sessão, autorização, feature flag | Codex Noctarium indisponível; restante do Rechi OS continua |
+| Filesystem privado | Codex Noctarium ↔ arquivos | criar, salvar, versionar, anexar | Markdown permanece canônico; caminhos validados e confinados à raiz do vault | alteração fica pendente; erro visível; nenhum sucesso falso |
+| MySQL | Codex Noctarium ↔ banco | metadados, histórico, busca e revisões preparadas | migrations reversíveis; conteúdo no banco ainda não participa do fluxo canônico | transação falha e operação não é confirmada |
+| Redis/fila | Codex Noctarium → workers | indexar, gerar preview/snapshot, compactar | jobs idempotentes em chunks | erro registrado e visível; salvamento canônico permanece válido |
 
 Não existem APIs externas, e-mail, push, cobrança ou integrações governamentais no MVP. As credenciais pertencem ao Rechi OS e nunca são expostas ao frontend.
 
@@ -487,10 +488,10 @@ Não se aplica multiempresa: um usuário e um vault físico no MVP. A arquitetur
 Ambientes:
 
 - `testing`: identidade fixa/bypass restrito a testes automatizados.
-- desenvolvimento local: Rechi OS em Docker com pacote CVC local.
+- desenvolvimento local: Rechi OS em Docker com pacote Codex Noctarium local.
 - produção remota: fora do MVP.
 
-Não haverá implantação na Hostinger antes de revisão específica de segurança, persistência e integração. CI no repositório CVC fica para depois do MVP. Uma versão local é revertida removendo/desativando o pacote por feature flag e restaurando código/migrations conforme procedimento do host.
+Não haverá implantação na Hostinger antes de revisão específica de segurança, persistência e integração. CI no repositório Codex Noctarium fica para depois do MVP. Uma versão local é revertida removendo/desativando o pacote por feature flag e restaurando código/migrations conforme procedimento do host.
 
 ## 9. Fluxos principais
 
@@ -500,27 +501,27 @@ Não haverá implantação na Hostinger antes de revisão específica de seguran
 sequenceDiagram
     actor Caique
     participant Rechi as Rechi OS
-    participant CVC
+    participant Codex Noctarium
     participant Vault
     participant Fila
 
     Caique->>Rechi: autentica e abre /vault
-    Rechi->>CVC: autoriza a conta
-    CVC-->>Caique: mostra universo
-    Caique->>CVC: aproxima contexto e documento
-    CVC->>Vault: carrega Markdown
-    Vault-->>CVC: conteúdo
-    Caique->>CVC: edita
-    CVC->>Vault: salva sincronamente
+    Rechi->>Codex Noctarium: autoriza a conta
+    Codex Noctarium-->>Caique: mostra universo
+    Caique->>Codex Noctarium: aproxima contexto e documento
+    Codex Noctarium->>Vault: carrega Markdown
+    Vault-->>Codex Noctarium: conteúdo
+    Caique->>Codex Noctarium: edita
+    Codex Noctarium->>Vault: salva sincronamente
     alt salvamento confirmado
-        Vault-->>CVC: sucesso
-        CVC->>Fila: enfileira indexação/versionamento derivado
-        CVC-->>Caique: salvo
-        Caique->>CVC: voltar
-        CVC-->>Caique: restaura enquadramento
+        Vault-->>Codex Noctarium: sucesso
+        Codex Noctarium->>Fila: enfileira indexação/versionamento derivado
+        Codex Noctarium-->>Caique: salvo
+        Caique->>Codex Noctarium: voltar
+        Codex Noctarium-->>Caique: restaura enquadramento
     else falha
-        Vault-->>CVC: erro
-        CVC-->>Caique: mantém pendente e oferece nova tentativa
+        Vault-->>Codex Noctarium: erro
+        Codex Noctarium-->>Caique: mantém pendente e oferece nova tentativa
     end
 ```
 
@@ -529,17 +530,17 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Caique
-    participant CVC
+    participant Codex Noctarium
     participant Indice
     participant Vault
 
-    Caique->>CVC: abre vault autorizado
-    Caique->>CVC: busca por texto/filtro
-    CVC->>Indice: consulta campos indexados
-    Indice-->>CVC: IDs autorizados
-    CVC->>Vault: carrega trechos necessários
-    CVC-->>Caique: resultados e contextos
-    Note over CVC,Indice: vault fechado nunca expõe resultados
+    Caique->>Codex Noctarium: abre vault autorizado
+    Caique->>Codex Noctarium: busca por texto/filtro
+    Codex Noctarium->>Indice: consulta campos indexados
+    Indice-->>Codex Noctarium: IDs autorizados
+    Codex Noctarium->>Vault: carrega trechos necessários
+    Codex Noctarium-->>Caique: resultados e contextos
+    Note over Codex Noctarium,Indice: vault fechado nunca expõe resultados
 ```
 
 ### 9.3 Soft delete e restauração
@@ -547,17 +548,17 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor Caique
-    participant CVC
+    participant Codex Noctarium
     participant Dados
 
-    Caique->>CVC: exclui entidade
-    CVC->>Dados: marca entidade e relações como excluídas
-    Dados-->>CVC: confirmação
-    CVC-->>Caique: entidade na lixeira
-    Caique->>CVC: restaura entidade
-    CVC->>Dados: reativa relações com destinos válidos
-    Dados-->>CVC: relações válidas e quebradas
-    CVC-->>Caique: restaura e mostra alertas
+    Caique->>Codex Noctarium: exclui entidade
+    Codex Noctarium->>Dados: marca entidade e relações como excluídas
+    Dados-->>Codex Noctarium: confirmação
+    Codex Noctarium-->>Caique: entidade na lixeira
+    Caique->>Codex Noctarium: restaura entidade
+    Codex Noctarium->>Dados: reativa relações com destinos válidos
+    Dados-->>Codex Noctarium: relações válidas e quebradas
+    Codex Noctarium-->>Caique: restaura e mostra alertas
 ```
 
 ## 10. Gargalos, riscos e mitigações
@@ -612,7 +613,7 @@ Operação inicial:
 - Stack principal e configuração Laravel permanecem no Rechi OS.
 - Tecnologia nova exige consulta prévia com opções e trade-offs.
 - Não implantar remotamente durante o MVP.
-- Logo oficial provisória disponível em `C:/Users/caique.mehret/Downloads/Corvo Cósmico em Espiral Galáctica.png`; o desenvolvimento deve copiá-la para o local versionado apropriado e derivar favicon/versões reduzida e monocromática.
+- Logo oficial versionada em `resources/images/brand/codex-noctarium-logo.png` (fornecida por Caique em 2026-11-12, substituindo a do corvo cósmico); favicon e versões reduzida e monocromática derivam dela.
 - Paleta livre, mas todos os valores devem ser tokens/variáveis em presets substituíveis.
 
 ## 14. Aceite
@@ -639,8 +640,8 @@ MVP aceita quando:
 7. Imagens/PDF válidos de até 5 MB funcionam; arquivos inválidos são rejeitados.
 8. Metas de 3 s, 300 ms e 60 FPS passam no volume definido pela PoC.
 9. Reabrir demonstra zero perda de dados.
-10. O CVC pode ser desativado sem derrubar o Rechi OS.
-11. Caique utiliza o CVC como vault principal por 30 dias sem voltar ao Obsidian para funções cobertas.
+10. O Codex Noctarium pode ser desativado sem derrubar o Rechi OS.
+11. Caique utiliza o Codex Noctarium como vault principal por 30 dias sem voltar ao Obsidian para funções cobertas.
 
 Dados de teste iniciais serão fictícios e incluirão um universo, dois contextos compartilhando uma entidade, relações globais/contextuais, duas perspectivas e pelo menos uma versão histórica.
 
@@ -652,7 +653,7 @@ Dados de teste iniciais serão fictícios e incluirão um universo, dois context
 | DA-02 | Thresholds e histerese do zoom semântico | UX/desempenho | Caique | Durante a PoC | pode causar oscilação ou densidade inadequada |
 | DA-03 | Política de retenção e expurgo do soft delete | Dados | Caique | Após PoC, antes do aceite do MVP | impede finalizar ciclo de vida e armazenamento |
 | DA-04 | Estratégia de criptografia, chaves e recuperação | Segurança | Caique | Depois do MVP e antes de implementação remota | impede hospedagem remota segura |
-| DA-05 | Pipeline de CI do repositório CVC | Engenharia | Caique | Depois do MVP | verificações dependem de execução local |
+| DA-05 | Pipeline de CI do repositório Codex Noctarium | Engenharia | Caique | Depois do MVP | verificações dependem de execução local |
 | DA-06 | Implantação na Hostinger e rollback | Operação | Caique | Após revisão de segurança e persistência | produção remota permanece proibida |
 
 Todas as decisões estão adiadas explicitamente e têm Caique como responsável. Nenhuma bloqueia a vertical slice local; DA-01, DA-02 e DA-03 bloqueiam o aceite do MVP completo.
@@ -661,7 +662,7 @@ Todas as decisões estão adiadas explicitamente e têm Caique como responsável
 
 | Termo | Significado |
 | --- | --- |
-| CVC | Crow Vault Canvas |
+| Codex Noctarium | Nome do produto desde 2026-11-12; antes Crow Vault Canvas (CVC) |
 | Vault | Contêiner físico de conhecimento; um fixo no MVP |
 | Universo | Região ampla navegável dentro do vault |
 | Contexto | Recorte semântico não exclusivo de entidades e relações |
