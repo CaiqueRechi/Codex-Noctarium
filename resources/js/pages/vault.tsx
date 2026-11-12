@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 import '../../css/presets.css';
 import '../../css/cvc.css';
-import cvcMark from '../../images/brand/cvc-mark-reduced.png';
+import brandMark from '../../images/brand/codex-noctarium-mark.png';
 
 import { AttachmentsPanel } from '../attachments/attachments-panel';
 import type { AttachmentSummary } from '../attachments/types';
@@ -1235,19 +1235,19 @@ export default function VaultPage({
 
     return (
         <div className="cvc-theme cvc-shell">
-            <Head title="CVC">
-                <link rel="icon" type="image/png" href={cvcMark} />
+            <Head title="Codex Noctarium">
+                <link rel="icon" type="image/png" href={brandMark} />
             </Head>
             <header className="cvc-header">
                 <div className="cvc-brand">
                     <img
                         className="cvc-brand-mark"
-                        src={cvcMark}
+                        src={brandMark}
                         alt=""
                         aria-hidden="true"
                     />
                     <div>
-                        <span className="cvc-eyebrow">Crow Vault Canvas</span>
+                        <span className="cvc-eyebrow">Codex Noctarium</span>
                         <h1>{vault.name}</h1>
                     </div>
                 </div>

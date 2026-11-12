@@ -11,7 +11,7 @@
 
 ## 1. Resumo
 
-Redesenhar o Crow Vault Canvas para priorizar o espaço de conhecimento e uma navegação visual próxima do grafo do Obsidian. A visão inicial mostra universos como galáxias; o zoom revela constelações, planetas, continentes e níveis seguintes. Notas possuem conteúdo normal ou fluxograma, independentemente da representação cósmica. A distribuição usa orçamento espacial fixo, pesos de conteúdo e uma simulação de gravidade, elasticidade, contato e amortecimento.
+Redesenhar o Codex Noctarium para priorizar o espaço de conhecimento e uma navegação visual próxima do grafo do Obsidian. A visão inicial mostra universos como galáxias; o zoom revela constelações, planetas, continentes e níveis seguintes. Notas possuem conteúdo normal ou fluxograma, independentemente da representação cósmica. A distribuição usa orçamento espacial fixo, pesos de conteúdo e uma simulação de gravidade, elasticidade, contato e amortecimento.
 
 Este documento consolida as decisões da entrevista. Complementa `crow-vault-canvas.md` e o planejamento de persistência no banco com criptografia. As decisões novas substituem as anteriores somente nos comportamentos explicitamente discutidos; não autorizam apagar trabalho existente ou alterar produção.
 
@@ -119,12 +119,12 @@ Incluir na implementação uma seeder local, explicitamente acionada, que cria o
 
 | Categoria de exemplo | Projeto | Exemplos de conteúdo |
 | --- | --- | --- |
-| Ecossistema Crow | Crow Vault Canvas | Visão geral, modelo de notas, regras matemáticas, navegação, tecnologias e fluxograma de salvamento |
+| Ecossistema Crow | Codex Noctarium | Visão geral, modelo de notas, regras matemáticas, navegação, tecnologias e fluxograma de salvamento |
 | Aplicações pessoais | Rechi OS | Visão geral, integração com o Vault, navegação e tecnologias confirmadas nos manifests |
 | Inteligência artificial | E.R.I.S. | Identidade do projeto, documentação e tecnologias apenas conforme fontes disponíveis do próprio projeto |
 | Projetos afetivos | Memorial Salem | Propósito e documentação técnica disponível; detalhes pessoais adicionais não devem ser inventados |
 
-Usar os projetos já identificados na conversa como inventário inicial, não como uma lista supostamente completa de todos os repositórios. Antes de gerar documentação técnica de um projeto, ler seus arquivos e manifests quando disponíveis. Para CVC e Rechi OS, Laravel/PHP e React/TypeScript são exemplos sustentados pelo código local e documentação existente; nomes e versões exatas devem vir das fontes consultadas na implementação. Projetos sem fonte local disponível podem receber uma visão geral baseada nos fatos fornecidos pelo usuário e uma indicação de documentação técnica pendente, sem inventar funcionalidades ou status.
+Usar os projetos já identificados na conversa como inventário inicial, não como uma lista supostamente completa de todos os repositórios. Antes de gerar documentação técnica de um projeto, ler seus arquivos e manifests quando disponíveis. Para Codex Noctarium e Rechi OS, Laravel/PHP e React/TypeScript são exemplos sustentados pelo código local e documentação existente; nomes e versões exatas devem vir das fontes consultadas na implementação. Projetos sem fonte local disponível podem receber uma visão geral baseada nos fatos fornecidos pelo usuário e uma indicação de documentação técnica pendente, sem inventar funcionalidades ou status.
 
 Requisitos da seeder:
 

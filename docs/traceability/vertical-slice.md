@@ -30,21 +30,21 @@ This is the historical vertical-slice checkpoint. Current arbitrary-depth hierar
 
 The following numbers are the original vertical-slice checkpoint executed on 2026-10-30, not the current MVP totals:
 
-- CVC PHP: 14 tests, 83 assertions.
+- Codex Noctarium PHP: 14 tests, 83 assertions.
 - Rechi OS PHP: 70 tests, 347 assertions; 2 tests skipped by the existing suite.
 - React/Vitest: 12 files, 33 tests.
 - Frontend coverage: 86.04% statements, 85.82% lines for the configured scope.
 - TypeScript: passed with no emitted output.
 - ESLint: passed.
-- Production Vite build: passed with CVC bundled as a host page.
+- Production Vite build: passed with Codex Noctarium bundled as a host page.
 - Composer audit: zero advisories.
 - NPM audit: zero vulnerabilities.
 
-The optional Fontaine optimization notice and the pre-existing large game chunk warning do not block the CVC vertical slice.
+The optional Fontaine optimization notice and the pre-existing large game chunk warning do not block the Codex Noctarium vertical slice.
 
 ## Delivered commits
 
-The CVC branch `cm-crow-vault-canvas-vertical-slice` contains separate commits for package isolation, feature-flag normalization, flag coverage, vault initialization, semantic navigation, durable document editing, and workspace restoration.
+The Codex Noctarium branch `cm-crow-vault-canvas-vertical-slice` contains separate commits for package isolation, feature-flag normalization, flag coverage, vault initialization, semantic navigation, durable document editing, and workspace restoration.
 
 The matching Rechi OS branch contains separate commits for package mounting, initialized-vault exposure, frontend compilation, secure document integration, workspace integration, and dependency security patches.
 
