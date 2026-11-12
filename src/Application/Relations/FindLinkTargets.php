@@ -37,12 +37,12 @@ final readonly class FindLinkTargets
             ->where('kind', KnowledgeEntity::KIND_DOCUMENT)
             ->whereNotNull('title')
             ->when($exceptEntityId !== null, fn ($query) => $query->whereKeyNot($exceptEntityId))
-            ->get(['id', 'title'])
+            ->get(['id', 'title', 'access_count', 'search_count'])
             ->filter(fn (KnowledgeEntity $entity): bool => str_starts_with(
                 $this->normalize((string) $entity->title),
                 $wanted,
             ));
-        $scores = $this->scores($candidates->map(fn (KnowledgeEntity $entity): string => (string) $entity->getKey()));
+        $scores = $this->scores($candidates);
 
         return $candidates
             ->sort(fn (KnowledgeEntity $a, KnowledgeEntity $b): int => [
@@ -69,19 +69,23 @@ final readonly class FindLinkTargets
     }
 
     /**
-     * S = accesses + searches + links (D-09). Accesses and searches are not
-     * counted yet, so today the score is the number of active connections.
+     * S = accesses + searches + links (D-09), each with weight one.
      *
-     * @param  Collection<int, string>  $entityIds
+     * @param  Collection<int, KnowledgeEntity>  $candidates
      * @return array<string, int>
      */
-    private function scores(Collection $entityIds): array
+    private function scores(Collection $candidates): array
     {
-        if ($entityIds->isEmpty()) {
+        if ($candidates->isEmpty()) {
             return [];
         }
 
-        $scores = [];
+        $entityIds = $candidates->map(fn (KnowledgeEntity $entity): string => (string) $entity->getKey());
+        $scores = $candidates
+            ->mapWithKeys(fn (KnowledgeEntity $entity): array => [
+                (string) $entity->getKey() => (int) $entity->access_count + (int) $entity->search_count,
+            ])
+            ->all();
         $relations = KnowledgeRelation::query()
             ->where('vault_id', $this->vaultId())
             ->where(fn ($query) => $query

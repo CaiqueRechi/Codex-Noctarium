@@ -39,6 +39,8 @@ final class KnowledgeEntity extends Model
             'properties' => 'array',
             'tags' => 'array',
             'search_version' => 'integer',
+            'access_count' => 'integer',
+            'search_count' => 'integer',
         ];
     }
 

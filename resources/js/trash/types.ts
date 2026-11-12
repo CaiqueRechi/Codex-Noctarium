@@ -10,7 +10,14 @@ export type TrashItem = {
 export type EntityDeletion = {
     trashItem: TrashItem;
     deletedRelationIds: string[];
+    trashedSubnoteIds?: string[];
 };
+
+// D-13: a note with subnotes is not deleted until the user agrees to take
+// its subnotes along.
+export type DeletionOutcome =
+    | { kind: 'deleted'; deletion: EntityDeletion }
+    | { kind: 'has-subnotes'; subnotes: number };
 
 export type EntityRestoration = {
     entity: DocumentSummary;

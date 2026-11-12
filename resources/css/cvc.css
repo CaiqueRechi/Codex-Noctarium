@@ -879,6 +879,80 @@
     -webkit-line-clamp: 2;
 }
 
+/* RF-09: indications of links leaving the space, discreet and pinned to the
+   corners, kept clear of the path, the tools, the compass and the zoom. */
+.cvc-external {
+    position: absolute;
+    z-index: 7;
+    display: grid;
+    gap: 0.3rem;
+    max-width: min(14rem, 40vw);
+    opacity: 0.6;
+    transition: opacity 150ms ease;
+}
+
+.cvc-external:hover,
+.cvc-external:focus-within {
+    opacity: 1;
+}
+
+.cvc-external[data-corner^='top'] {
+    top: 4.5rem;
+}
+
+.cvc-external[data-corner^='bottom'] {
+    bottom: 4.5rem;
+}
+
+.cvc-external[data-corner$='left'] {
+    left: 0.75rem;
+    justify-items: start;
+}
+
+.cvc-external[data-corner$='right'] {
+    right: 0.75rem;
+    justify-items: end;
+}
+
+.cvc-external__link,
+.cvc-external__more {
+    overflow: hidden;
+    max-width: 100%;
+    min-height: 2.25rem;
+    border: 1px dashed var(--cvc-accent);
+    border-radius: 999px;
+    background: var(--cvc-surface);
+    padding: 0.25rem 0.75rem;
+    color: var(--cvc-text-muted);
+    font: inherit;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.cvc-external__link:hover,
+.cvc-external__link:focus-visible,
+.cvc-external__more:focus-visible {
+    border-style: solid;
+    outline: 2px solid var(--cvc-focus);
+    color: var(--cvc-text);
+}
+
+.cvc-external__list {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-external {
+        transition: none;
+    }
+}
+
 /* D-11: a far result is reached through a short fade to the dark of the
    theme and back. */
 .cvc-fade {
@@ -1096,6 +1170,62 @@
     padding: 0 clamp(1.25rem, 4vw, 4rem) 0.5rem;
     color: var(--cvc-text-muted);
     font-size: 0.85rem;
+}
+
+.cvc-button--danger {
+    border-color: var(--cvc-danger);
+    color: var(--cvc-danger);
+}
+
+/* RF-08: what can be done with the note, asked in place before anything
+   is lost. */
+.cvc-note-actions {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.cvc-note-actions__question,
+.cvc-move-picker {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 30rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.75rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.75rem;
+}
+
+.cvc-note-actions__question p {
+    margin: 0;
+}
+
+.cvc-move-picker__list {
+    display: grid;
+    gap: 0.3rem;
+    max-height: 16rem;
+    overflow: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cvc-move-picker__open {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.5rem;
+    background: var(--cvc-surface);
+    padding: 0.4rem 0.7rem;
+    color: var(--cvc-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cvc-move-picker__open:hover,
+.cvc-move-picker__open:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 2px solid var(--cvc-focus);
 }
 
 .cvc-note-color__options {

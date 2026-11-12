@@ -42,6 +42,11 @@ import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
 import type { SimulationBody } from '../canvas/physics/simulation-body';
 import { describeSpaceScene } from '../canvas/physics/space-scene';
 import { useCosmicSimulation } from '../canvas/physics/use-cosmic-simulation';
+import { ExternalConnectionsOverlay } from '../canvas/external-connections-overlay';
+import {
+    findExternalConnections,
+    travelThroughCommonAncestor,
+} from '../canvas/external-connections';
 import { useLongPress } from '../canvas/use-long-press';
 import type { LongPressPoint } from '../canvas/use-long-press';
 import { decideZoomNavigation } from '../canvas/zoom-navigation';
@@ -57,6 +62,8 @@ import { DocumentEditor } from '../documents/document-editor';
 import type { DocumentSummary, OpenedDocument } from '../documents/types';
 import { useDocumentAutosave } from '../documents/use-document-autosave';
 import {
+    countNoteSearch,
+    fetchEntityPath,
     paintEntity,
     renameEntity,
     updateEntityProperties,
@@ -93,6 +100,8 @@ import {
     attachEntityToContext,
     createRelation,
     deleteRelation,
+    detachEntityFromContext,
+    moveEntity,
     saveEntityLayout,
 } from '../relations/api';
 import { RelationsPanel } from '../relations/relations-panel';
@@ -103,7 +112,7 @@ import { CompassSearch } from '../search/compass-search';
 import { SearchPanel } from '../search/search-panel';
 import { deleteEntity, restoreEntity } from '../trash/api';
 import { TrashPanel } from '../trash/trash-panel';
-import type { TrashItem } from '../trash/types';
+import type { DeletionOutcome, TrashItem } from '../trash/types';
 import { createVersion, restoreVersion } from '../versions/api';
 import { saveWorkspaceState } from '../workspace/api';
 
@@ -181,6 +190,9 @@ type CompassReturn = {
 };
 
 const fadeHalfDuration = 150;
+// How long each level of a travel stays on screen (D-10); the timing of
+// zoom animations is still open in D-12.
+const travelStepDuration = 400;
 
 function prefersReducedMotion(): boolean {
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -1394,6 +1406,11 @@ export default function VaultPage({
                 trail: breadcrumbs,
                 viewport: { ...viewport.current },
             });
+            // The count only ranks /link suggestions; a failure to count
+            // must not stop the user from reaching the note.
+            void countNoteSearch(endpoints.entities, result.id).catch(
+                () => undefined,
+            );
             const half = prefersReducedMotion() ? 0 : fadeHalfDuration;
 
             try {
@@ -1422,7 +1439,14 @@ export default function VaultPage({
                 );
             }
         },
-        [activeContextId, breadcrumbs, flow, handleOpenContext, openNote],
+        [
+            activeContextId,
+            breadcrumbs,
+            endpoints.entities,
+            flow,
+            handleOpenContext,
+            openNote,
+        ],
     );
 
     // "Voltar" restores the place left for a result, with its zoom and
@@ -1458,6 +1482,67 @@ export default function VaultPage({
             );
         }
     }, [activeContextId, compassReturn, flow, handleOpenContext, session]);
+
+    // RF-09: notes of the open space linked to notes elsewhere.
+    const externalConnections = useMemo(() => {
+        const insideNotes = new Map(
+            nodes.flatMap((node) =>
+                node.data.kind === 'document' && node.data.entityId
+                    ? [[node.data.entityId, node.position] as const]
+                    : [],
+            ),
+        );
+        const center =
+            enclosingCircle(spaceCircles.current.all)?.center ?? { x: 0, y: 0 };
+
+        return findExternalConnections(insideNotes, center, relations);
+    }, [nodes, relations]);
+
+    // D-10: up to the nearest common ancestor, then down to the target's
+    // space, one level at a time so the way is seen; then the camera
+    // approaches the target.
+    const travelToNote = useCallback(
+        async (targetId: string) => {
+            try {
+                const path = await fetchEntityPath(endpoints.entities, targetId);
+                const trail = breadcrumbs.map((crumb) => crumb.id);
+                const steps = travelThroughCommonAncestor(
+                    trail,
+                    path.map((step) => step.id),
+                );
+                const stepPause = prefersReducedMotion() ? 0 : travelStepDuration;
+
+                for (const step of steps) {
+                    // A step not on the trail goes down; the ancestor is on it.
+                    await handleOpenContext(
+                        step,
+                        step !== null && !trail.includes(step),
+                    );
+                    await pause(stepPause);
+                }
+
+                setBreadcrumbs(path);
+                setFocusEntityId(targetId);
+                const targetSpace = path.at(-1)?.id;
+
+                if (flow && targetSpace) {
+                    await flow.fitView({
+                        nodes: [{ id: entityNodeId(targetSpace, targetId) }],
+                        padding: 0.6,
+                        duration: stepPause,
+                    });
+                    viewport.current = flow.getViewport();
+                }
+            } catch (exception) {
+                setError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível chegar à nota.',
+                );
+            }
+        },
+        [breadcrumbs, endpoints.entities, flow, handleOpenContext],
+    );
 
     const handleLocate = useCallback(
         async (target: ExplorerTarget) => {
@@ -1588,6 +1673,65 @@ export default function VaultPage({
             );
         },
         [endpoints.entities, setActiveDocument],
+    );
+
+    // The note left the open space: by a move or by "só daqui". Its editor
+    // closes, since what it showed is no longer here.
+    const removeFromOpenSpace = useCallback(
+        (entityId: string) => {
+            if (!activeContextId) {
+                return;
+            }
+
+            setUniverses((current) =>
+                updateContext(current, activeContextId, (context) => ({
+                    ...context,
+                    documents: context.documents.filter(
+                        (document) => document.id !== entityId,
+                    ),
+                })),
+            );
+            setFocusEntityId(null);
+            session.close();
+        },
+        [activeContextId, session],
+    );
+
+    const handleMoveNote = useCallback(
+        async (entityId: string, toContextId: string) => {
+            if (!activeContextId || !(await session.flush())) {
+                return;
+            }
+
+            await moveEntity(
+                endpoints.entities,
+                entityId,
+                activeContextId,
+                toContextId,
+            );
+            removeFromOpenSpace(entityId);
+        },
+        [activeContextId, endpoints.entities, removeFromOpenSpace, session],
+    );
+
+    const handleRemoveNoteHere = useCallback(
+        async (entityId: string) => {
+            if (!activeContextId || !endpoints.contexts) {
+                return;
+            }
+
+            if (!(await session.flush())) {
+                return;
+            }
+
+            await detachEntityFromContext(
+                endpoints.contexts,
+                activeContextId,
+                entityId,
+            );
+            removeFromOpenSpace(entityId);
+        },
+        [activeContextId, endpoints.contexts, removeFromOpenSpace, session],
     );
 
     const requireRelationEndpoints = useCallback(() => {
@@ -1776,18 +1920,32 @@ export default function VaultPage({
     );
 
     const handleEntityDelete = useCallback(
-        async (entityId: string) => {
+        async (entityId: string, withSubnotes = false): Promise<DeletionOutcome> => {
             if (activeDocument?.id === entityId && !(await session.flush())) {
                 throw new Error(
                     'Não foi possível salvar a nota antes de mover para a lixeira.',
                 );
             }
 
-            const deletion = await deleteEntity(endpoints.entities, entityId);
+            const outcome = await deleteEntity(
+                endpoints.entities,
+                entityId,
+                withSubnotes,
+            );
+
+            if (outcome.kind === 'has-subnotes') {
+                return outcome;
+            }
+
+            const { deletion } = outcome;
+            const trashed = new Set([
+                entityId,
+                ...(deletion.trashedSubnoteIds ?? []),
+            ]);
 
             setUniverses((current) =>
                 mapDocuments(current, (document) =>
-                    document.id === entityId ? null : document,
+                    trashed.has(document.id) ? null : document,
                 ),
             );
             setRelations((current) =>
@@ -1811,6 +1969,8 @@ export default function VaultPage({
                     activePerspectiveId,
                 );
             }
+
+            return outcome;
         },
         [
             activeDocument?.id,
@@ -2002,6 +2162,11 @@ export default function VaultPage({
                 )}
                 <div className="cvc-fade" data-state={fade} aria-hidden="true" />
 
+                <ExternalConnectionsOverlay
+                    connections={externalConnections}
+                    onTravel={(targetId) => void travelToNote(targetId)}
+                />
+
                 {pinMenu && pinMenuNode && (
                     <div
                         className="cvc-pin-menu"
@@ -2132,7 +2297,15 @@ export default function VaultPage({
                             focusedDocument={focusedDocument}
                             items={trash}
                             notice={trashNotice}
-                            onDelete={handleEntityDelete}
+                            onDelete={async (entityId) => {
+                                const outcome = await handleEntityDelete(entityId);
+
+                                if (outcome.kind === 'has-subnotes') {
+                                    throw new Error(
+                                        `Esta nota tem ${outcome.subnotes} subnota(s). Abra a nota e exclua por ela para escolher o que fazer com as subnotas.`,
+                                    );
+                                }
+                            }}
                             onRestore={handleEntityRestore}
                         />
                     )}
@@ -2247,6 +2420,30 @@ export default function VaultPage({
                     }
                     onPaint={(color) =>
                         handlePaintNote(activeDocument.id, color)
+                    }
+                    actions={
+                        activeContextId && endpoints.contexts
+                            ? {
+                                  placeCount:
+                                      (focusedDocument?.id === activeDocument.id
+                                          ? focusedDocument.placeCount
+                                          : null) ?? 1,
+                                  contextsEndpoint: endpoints.contexts,
+                                  currentContextId: activeContextId,
+                                  onMove: (toContextId) =>
+                                      handleMoveNote(
+                                          activeDocument.id,
+                                          toContextId,
+                                      ),
+                                  onRemoveHere: () =>
+                                      handleRemoveNoteHere(activeDocument.id),
+                                  onDelete: (withSubnotes) =>
+                                      handleEntityDelete(
+                                          activeDocument.id,
+                                          withSubnotes,
+                                      ),
+                              }
+                            : undefined
                     }
                     linking={
                         endpoints.linkTargets && endpoints.relations

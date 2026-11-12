@@ -6,11 +6,13 @@ namespace CrowVaultCanvas;
 
 use CrowVaultCanvas\Console\Commands\InitializeVaultCommand;
 use CrowVaultCanvas\Console\Commands\MeasureDocumentsCommand;
+use CrowVaultCanvas\Console\Commands\PurgeTrashCommand;
 use CrowVaultCanvas\Console\Commands\ReindexVaultCommand;
 use CrowVaultCanvas\Infrastructure\Storage\AttachmentStorage;
 use CrowVaultCanvas\Infrastructure\Storage\LocalAttachmentStorage;
 use CrowVaultCanvas\Infrastructure\Storage\LocalMarkdownStorage;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
 use Illuminate\Foundation\Http\Middleware\TrimStrings;
 use Illuminate\Http\Request;
@@ -32,8 +34,14 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
         $this->commands([
             InitializeVaultCommand::class,
             MeasureDocumentsCommand::class,
+            PurgeTrashCommand::class,
             ReindexVaultCommand::class,
         ]);
+        // D-13: the trash empties itself after seven days; the host's
+        // scheduler has to be running for this to happen.
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command(PurgeTrashCommand::class)->daily()->withoutOverlapping();
+        });
 
         if (! $this->app['config']->boolean('crow-vault-canvas.enabled')) {
             return;

@@ -870,6 +870,97 @@ Security review: no new endpoint; the existing search adds paths made of
 names the same user can open, behind the same authorization and throttle.
 Results render as escaped text. No issue found in the changed paths.
 
+## Phase 17 — the counters of the link score (RF-10)
+
+Branch: `cm-contadores-link`, 2026-11-12, based on `cm-rosa-dos-ventos`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Accesses counted on every opening of a note | `CountNoteUse::access`, called by `ShowDocumentController` | `UseCountersTest` |
+| Searches counted when a compass result is chosen | `POST /vault/entities/{entity}/searches`, `countNoteSearch` in `entities/api.ts` | `UseCountersTest` |
+| Score = accesses + searches + links | `FindLinkTargets::scores` | `UseCountersTest` (ordering and values) |
+| Counter columns | migration `2026_11_12_000018`, `access_count` and `search_count` | `UseCountersTest` (rollback) |
+
+D-09 is now complete: the counters are added in the database, so two
+openings at once never lose one, and existing notes start at zero, as the
+specification asks for no invented history. A search that fails to be
+counted does not stop the user from reaching the note.
+
+Implementation default: the document endpoint, a GET, now writes a counter;
+it serves only the vault's own pages, behind the same authorization.
+
+Not verified: written and not run, at Rechi's request.
+
+Security review: the new endpoint is a write behind the entity write
+authorization and throttle, scoped to the vault (404 outside it); it
+changes a number only. No issue found in the changed paths.
+
+## Phase 18 — external connections (RF-09)
+
+Branch: `cm-conexoes-externas`, 2026-11-12, based on `cm-contadores-link`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Links leaving the open space found and placed in a corner | `findExternalConnections`, `cornerFor` in `canvas/external-connections.ts` | `external-connections.test.tsx` |
+| Three per corner, then "+N" | `groupByCorner`, `canvas/external-connections-overlay.tsx`, `.cvc-external` | same file |
+| Travel through the nearest common ancestor | `travelThroughCommonAncestor`; `travelToNote` in `vault.tsx` | same file (4 cases); the page flow is not covered |
+| Where a note sits | `GET /vault/entities/{entity}/path`, `ShowEntityPathController` | `EntityPathTest` |
+
+D-10 rules applied: the corner nearest the direction, three per corner then
+"+N" opening the list, pinned to the screen and outside the physics. The
+travel goes up to the nearest common ancestor, through the galaxy view
+between universes, then down to the target's space, and the camera
+approaches the target, which is focused, not opened.
+
+Implementation defaults, open in D-10 and D-12 and easy to change: the
+direction is taken from the middle of the open space to the inside note,
+because the outside note has no position on this canvas; each level of a
+travel stays 400 ms on screen; indications sit at 60 % opacity and clear
+the other floating controls.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser.
+
+Security review: one new read endpoint behind the vault's read
+authorization and search throttle, scoped to the vault (404 outside it),
+returning names the same user can open. Titles render as escaped text. No
+issue found in the changed paths.
+
+## Phase 19 — moving, removing and the trash (RF-08, D-13)
+
+Branch: `cm-mover-e-lixeira`, 2026-11-12, based on `cm-conexoes-externas`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| "Mover para…", subnotes along, cycles refused | `MoveEntity`, `POST /vault/entities/{entity}/move`; `NoteActions` and its destination picker | `MoveAndTrashTest` (2), `note-actions.test.tsx` |
+| "Só daqui" / "De todos os lugares" | `DetachEntityFromContext`, `DELETE /vault/contexts/{context}/entities/{entity}`; `placeCount` in the slice | `MoveAndTrashTest`, `note-actions.test.tsx` |
+| Deleting a note with subnotes asks first | `SubnoteTree`, `TrashNoteWithSubnotes`; `DELETE /vault/entities/{entity}` answers 409 `has_subnotes` until `with_subnotes=1` | `MoveAndTrashTest` (2), `note-actions.test.tsx` |
+| Trash emptied after seven days | `PurgeTrash`, `cvc:purge-trash`, scheduled daily by the package | `PurgeTrashTest` |
+
+D-13 rules applied: subnotes that also appear in a space outside the
+deleted tree stay alive there; every version is kept while the note lives,
+and a note's revisions go with it when it is deleted for good. Taking a
+note out of its only space is refused, since that is a deletion.
+
+Consequences to know: the purge is permanent and deletes the note's private
+files; a named version that held a purged note can no longer be restored,
+because restoration verifies every file it points to and refuses as a
+whole. The purge runs only if the host's scheduler runs
+(`php artisan schedule:work` or a cron of `schedule:run`). The trash panel
+cannot ask about subnotes, so it sends the user to the note's editor.
+
+Implementation defaults: a space of subnotes holding a nested context is
+hidden instead of deleted at purge; the destination picker lists contexts
+and universes, not other notes' spaces.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser. The purge was not run against real data.
+
+Security review: the new writes reuse the relation and trash middleware
+(authorization, CSRF, throttle) and scope every id to the vault. The purge
+deletes only a directory named by two UUIDs inside the private root. No
+issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
@@ -880,9 +971,9 @@ Results render as escaped text. No issue found in the changed paths.
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
 | RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
-| RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept; migration of existing data still open |
-| RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
-| RF-10 | partial | `/link` and `/l` with prefix-only suggestions built (phase 12); counting accesses and searches for the score remains |
+| RF-08 | built | Move with subnotes, "só daqui", deletion asking about subnotes and the 7-day purge (phase 19); migration of existing data (D-13) still open |
+| RF-09 | built | Corner indications, "+N" and travel through the common ancestor (phase 18); travel timing open in D-12 |
+| RF-10 | built | `/link` and `/l` with prefix-only suggestions (phase 12) and the full score of D-09 (phase 17) |
 | RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
 
 Follow-up questions are asked only when their decisions block the next phase.
