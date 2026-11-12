@@ -42,6 +42,8 @@ import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
 import type { SimulationBody } from '../canvas/physics/simulation-body';
 import { describeSpaceScene } from '../canvas/physics/space-scene';
 import { useCosmicSimulation } from '../canvas/physics/use-cosmic-simulation';
+import { useLongPress } from '../canvas/use-long-press';
+import type { LongPressPoint } from '../canvas/use-long-press';
 import { decideZoomNavigation } from '../canvas/zoom-navigation';
 import type { EnterableCircle } from '../canvas/zoom-navigation';
 import {
@@ -160,6 +162,10 @@ const emptySpaceCircle: CanvasCircle = {
     center: { x: 0, y: 0 },
     radius: radiusForArea(1) * canvasUnitsPerLogicalUnit,
 };
+
+// Where the "Fixar / Liberar" menu of a long-pressed note opens, in pixels
+// from the top-left corner of the canvas.
+type PinMenu = { nodeId: string; x: number; y: number };
 
 type ZoomPlacement =
     | { kind: 'enter'; circle: CanvasCircle }
@@ -436,6 +442,10 @@ export default function VaultPage({
         Edge
     > | null>(null);
     const canvas = useRef<HTMLElement | null>(null);
+    const [pinMenu, setPinMenu] = useState<PinMenu | null>(null);
+    // A long press ends with the finger lifting, which the browser reports
+    // as a tap; that tap belongs to the long press, not to the note.
+    const suppressNextTap = useRef(false);
     const framesNextScene = useRef(false);
     const savedViewport = useRef<Viewport>({ ...workspace.viewport });
     const pendingViewportSave = useRef<number | null>(null);
@@ -1064,6 +1074,12 @@ export default function VaultPage({
 
     const handleNodeClick = useCallback<NodeMouseHandler<CosmicNoteCanvasNode>>(
         (event, node) => {
+            if (suppressNextTap.current) {
+                suppressNextTap.current = false;
+
+                return;
+            }
+
             if (node.data.kind !== 'document' || !node.data.entityId) {
                 return;
             }
@@ -1166,12 +1182,10 @@ export default function VaultPage({
         [holdBody],
     );
 
-    const handleNodeDragStop = useCallback<OnNodeDrag<CosmicNoteCanvasNode>>(
-        (event, node) => {
-            // RN-07: a note dropped freely settles with the others; holding
-            // Ctrl while dropping pins it.
-            const isPinned = 'ctrlKey' in event && event.ctrlKey;
-
+    // Leaves a note where it is, pinned or free to settle, and saves that
+    // place: in the active perspective when there is one, else in the space.
+    const placeNote = useCallback(
+        (node: CosmicNoteCanvasNode, isPinned: boolean) => {
             dropBody(node.id, isPinned);
 
             if (!node.data.entityId || !node.data.contextId) {
@@ -1272,6 +1286,56 @@ export default function VaultPage({
             endpoints.perspectives,
         ],
     );
+
+    const handleNodeDragStop = useCallback<OnNodeDrag<CosmicNoteCanvasNode>>(
+        (event, node) => {
+            // RN-07: a note dropped freely settles with the others; holding
+            // Ctrl while dropping pins it.
+            placeNote(node, 'ctrlKey' in event && event.ctrlKey);
+        },
+        [placeNote],
+    );
+
+    // D-12 on a phone: a long press on an empty point creates a note there,
+    // and a long press on a note offers to pin or release it.
+    const handleLongPress = useCallback(
+        (target: Element, point: LongPressPoint) => {
+            const element = canvas.current;
+
+            if (!element) {
+                return;
+            }
+
+            suppressNextTap.current = true;
+            const bounds = element.getBoundingClientRect();
+            const local = {
+                x: point.clientX - bounds.left,
+                y: point.clientY - bounds.top,
+            };
+            const nodeId = target
+                .closest('.react-flow__node')
+                ?.getAttribute('data-id');
+
+            if (nodeId) {
+                const node = nodes.find((candidate) => candidate.id === nodeId);
+
+                if (node?.data.kind === 'document') {
+                    setPinMenu({ nodeId, ...local });
+                }
+
+                return;
+            }
+
+            if (target.closest('.react-flow__pane')) {
+                void handleCreate(screenToCanvasPoint(viewport.current, local));
+            }
+        },
+        [handleCreate, nodes],
+    );
+    const longPress = useLongPress(handleLongPress);
+    const pinMenuNode = pinMenu
+        ? (nodes.find((node) => node.id === pinMenu.nodeId) ?? null)
+        : null;
 
     const handleLocate = useCallback(
         async (target: ExplorerTarget) => {
@@ -1772,6 +1836,44 @@ export default function VaultPage({
                     </button>
                 </div>
 
+                {pinMenu && pinMenuNode && (
+                    <div
+                        className="cvc-pin-menu"
+                        role="menu"
+                        aria-label={`Ações de ${pinMenuNode.data.label}`}
+                        style={{ left: pinMenu.x, top: pinMenu.y }}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                                setPinMenu(null);
+                            }
+                        }}
+                    >
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className="cvc-button"
+                            autoFocus
+                            onClick={() => {
+                                placeNote(
+                                    pinMenuNode,
+                                    !pinMenuNode.data.isPinned,
+                                );
+                                setPinMenu(null);
+                            }}
+                        >
+                            {pinMenuNode.data.isPinned ? 'Liberar' : 'Fixar'}
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className="cvc-button"
+                            onClick={() => setPinMenu(null)}
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                )}
+
                 {(error || workspaceError) && !activeDocument && (
                     <p className="cvc-page-error" role="alert">
                         {error ?? workspaceError}
@@ -1784,6 +1886,8 @@ export default function VaultPage({
                     aria-label="Canvas do vault"
                     aria-busy={isCreating}
                     onDoubleClick={handleCanvasDoubleClick}
+                    onContextMenu={(event) => event.preventDefault()}
+                    {...longPress}
                     style={
                         {
                             '--cvc-zoom': workspace.viewport.zoom,
