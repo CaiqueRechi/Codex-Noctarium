@@ -41,6 +41,37 @@ export async function openContextSlice(
     return payload.slice;
 }
 
+type NoteSpaceResponse = {
+    spaceId?: string;
+    slice?: ContextSlice;
+    message?: string;
+};
+
+// The space of subnotes of a note. The server creates it the first time and
+// returns the same space afterwards.
+export async function openNoteSpace(
+    documentsEndpoint: string,
+    entityId: string,
+): Promise<{ spaceId: string; slice: ContextSlice }> {
+    const response = await fetch(
+        `${documentsEndpoint}/${encodeURIComponent(entityId)}/space`,
+        {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json', ...xsrfHeaders() },
+        },
+    );
+    const payload = (await response.json()) as NoteSpaceResponse;
+
+    if (!response.ok || !payload.spaceId || !payload.slice) {
+        throw new Error(
+            payload.message ?? 'Não foi possível abrir as subnotas da nota.',
+        );
+    }
+
+    return { spaceId: payload.spaceId, slice: payload.slice };
+}
+
 export async function createContext(
     endpoint: string,
     name: string,

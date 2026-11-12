@@ -25,19 +25,29 @@ import type {
 } from '../canvas/cosmic-note-node';
 import {
     canvasUnitsPerLogicalUnit,
+    circleOnScreen,
+    enclosingCircle,
     frameCircles,
     radiusForArea,
     screenToCanvasPoint,
     toCanvasPoint,
     toLogicalPoint,
+    viewportPlacingCircle,
 } from '../canvas/math/geometry';
-import type { CanvasPoint } from '../canvas/math/geometry';
+import type { CanvasCircle, CanvasPoint } from '../canvas/math/geometry';
 import { contextNodeId, entityNodeId } from '../canvas/node-identifiers';
 import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
 import type { SimulationBody } from '../canvas/physics/simulation-body';
 import { describeSpaceScene } from '../canvas/physics/space-scene';
 import { useCosmicSimulation } from '../canvas/physics/use-cosmic-simulation';
-import { createContext, openContextSlice } from '../contexts/api';
+import { decideZoomNavigation } from '../canvas/zoom-navigation';
+import type { EnterableCircle } from '../canvas/zoom-navigation';
+import {
+    createContext,
+    openContextSlice,
+    openNoteSpace,
+} from '../contexts/api';
+import type { ContextSlice } from '../contexts/api';
 import { createDocument, openDocument } from '../documents/api';
 import { DocumentEditor } from '../documents/document-editor';
 import type { DocumentSummary, OpenedDocument } from '../documents/types';
@@ -45,6 +55,7 @@ import { useDocumentAutosave } from '../documents/use-document-autosave';
 import { updateEntityProperties } from '../entities/api';
 import { PropertiesPanel } from '../entities/properties-panel';
 import type { EntityProperties } from '../entities/types';
+import { continueTrail } from '../explorer/navigation-trail';
 import {
     flattenContexts,
     mapDocuments,
@@ -141,6 +152,52 @@ const zoomLimits = { minZoom: 0.01, maxZoom: 100 };
 // Framing a space is automatic, so it stays within a readable range.
 const viewportSaveDelay = 400;
 const framingLimits = { minZoom: zoomLimits.minZoom, maxZoom: 2 };
+// A space with nothing in it still has its whole budget, X = 1.
+const emptySpaceCircle: CanvasCircle = {
+    center: { x: 0, y: 0 },
+    radius: radiusForArea(1) * canvasUnitsPerLogicalUnit,
+};
+
+type ZoomPlacement =
+    | { kind: 'enter'; circle: CanvasCircle }
+    | { kind: 'leave'; circle: CanvasCircle; childBodyId: string };
+
+type PlacedBody = Pick<SimulationBody, 'id' | 'area' | 'position'>;
+
+function sceneCircles(bodies: readonly PlacedBody[]) {
+    return bodies.map((body) => ({
+        id: body.id,
+        center: toCanvasPoint(body.position),
+        radius: radiusForArea(body.area) * canvasUnitsPerLogicalUnit,
+    }));
+}
+
+// The viewport that continues a zoom into, or out of, a space: the space
+// arriving takes the screen circle the space before it occupied.
+function placeArrivingSpace(
+    placement: ZoomPlacement,
+    bodies: readonly PlacedBody[],
+    currentViewport: Viewport,
+): Viewport | null {
+    const circles = sceneCircles(bodies);
+    const screenCircle = circleOnScreen(currentViewport, placement.circle);
+
+    if (placement.kind === 'enter') {
+        return viewportPlacingCircle(
+            enclosingCircle(circles) ?? emptySpaceCircle,
+            screenCircle,
+            zoomLimits,
+        );
+    }
+
+    const child = circles.find(
+        (circle) => circle.id === placement.childBodyId,
+    );
+
+    return child
+        ? viewportPlacingCircle(child, screenCircle, zoomLimits)
+        : null;
+}
 
 function normalizeContexts(
     contexts: ContextPayload[],
@@ -382,6 +439,11 @@ export default function VaultPage({
     const viewport = useRef<Viewport>({ ...workspace.viewport });
     const returnViewport = useRef<Viewport | null>(null);
     const navigationPending = useRef(false);
+    const zoomPlacement = useRef<ZoomPlacement | null>(null);
+    const spaceCircles = useRef<{
+        all: CanvasCircle[];
+        enterable: EnterableCircle[];
+    }>({ all: [], enterable: [] });
     const activeContextId = breadcrumbs.at(-1)?.id ?? null;
     const activePerspective = useMemo(
         () =>
@@ -444,6 +506,39 @@ export default function VaultPage({
     );
     const documentContextId = activeContextId;
     const hasPendingDraft = session.hasPendingChanges();
+
+    useEffect(() => {
+        const all = nodes.map((node) => ({
+            center: node.position,
+            radius: node.data.diameter / 2,
+        }));
+
+        spaceCircles.current = {
+            all,
+            enterable: nodes.flatMap((node, index): EnterableCircle[] => {
+                if (node.data.kind === 'document' && node.data.entityId) {
+                    return [
+                        {
+                            ...all[index],
+                            entry: { kind: 'note', entityId: node.data.entityId },
+                        },
+                    ];
+                }
+
+                return node.data.kind === 'context' && node.data.contextId
+                    ? [
+                          {
+                              ...all[index],
+                              entry: {
+                                  kind: 'context',
+                                  contextId: node.data.contextId,
+                              },
+                          },
+                      ]
+                    : [];
+            }),
+        };
+    }, [nodes]);
 
     useEffect(() => {
         if (!isToolsOpen) {
@@ -515,17 +610,6 @@ export default function VaultPage({
             document.removeEventListener('inertia:before', guardNavigation);
         };
     }, [hasPendingDraft, saveState, session]);
-
-    const handleMove = useCallback(
-        (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
-            viewport.current = nextViewport;
-            canvas.current?.style.setProperty(
-                '--cvc-zoom',
-                String(nextViewport.zoom),
-            );
-        },
-        [],
-    );
 
     const persistWorkspace = useCallback(
         async (
@@ -606,37 +690,159 @@ export default function VaultPage({
         [session],
     );
 
+    // The framing of the arriving space saves the workspace, with this
+    // context as its focus, so entering a space costs one save, not two.
+    const showSlice = useCallback(
+        (slice: ContextSlice, entering: boolean) => {
+            framesNextScene.current = true;
+            setUniverses(slice.contexts);
+            setBreadcrumbs((previous) =>
+                continueTrail(previous, slice.breadcrumbs, { entering }),
+            );
+            setFocusEntityId(null);
+            setActiveDocument(null);
+            setError(null);
+        },
+        [setActiveDocument],
+    );
+
     const handleOpenContext = useCallback(
-        async (contextId: string | null) => {
+        async (contextId: string | null, entering = false): Promise<boolean> => {
             if (!(await session.flush())) {
-                return;
+                return false;
             }
 
             if (!endpoints.contexts) {
                 throw new Error('O endpoint de contextos não está disponível.');
             }
 
-            const slice = await openContextSlice(endpoints.contexts, contextId);
-            framesNextScene.current = true;
-            setUniverses(slice.contexts);
-            setBreadcrumbs(slice.breadcrumbs);
-            setFocusEntityId(null);
-            setActiveDocument(null);
-            setError(null);
-            await persistWorkspace(
-                viewport.current,
-                null,
-                activePerspectiveId,
-                contextId,
+            showSlice(
+                await openContextSlice(endpoints.contexts, contextId),
+                entering,
             );
+
+            return true;
+        },
+        [endpoints.contexts, session, showSlice],
+    );
+
+    const handleOpenNoteSpace = useCallback(
+        async (entityId: string): Promise<boolean> => {
+            if (!(await session.flush())) {
+                return false;
+            }
+
+            const { slice } = await openNoteSpace(endpoints.documents, entityId);
+            showSlice(slice, true);
+
+            return true;
+        },
+        [endpoints.documents, session, showSlice],
+    );
+
+    // The body that stands for the open space inside its parent: a note
+    // for the space of its subnotes, a circle of its own for a context.
+    const bodyOfOpenSpace = useCallback((): string | null => {
+        if (activeContextId === null) {
+            return null;
+        }
+
+        const parentId = breadcrumbs.at(-2)?.id;
+
+        return activeSpace.ownerEntityId && parentId
+            ? entityNodeId(parentId, activeSpace.ownerEntityId)
+            : contextNodeId(activeContextId);
+    }, [activeContextId, activeSpace.ownerEntityId, breadcrumbs]);
+
+    const navigateByZoom = useCallback(
+        (nextViewport: Viewport) => {
+            const element = canvas.current;
+
+            if (zoomPlacement.current !== null || !element) {
+                return;
+            }
+
+            const { all, enterable } = spaceCircles.current;
+            const decision = decideZoomNavigation({
+                viewport: nextViewport,
+                size: {
+                    width: element.clientWidth,
+                    height: element.clientHeight,
+                },
+                enterable,
+                spaceCircles: all.length > 0 ? all : [emptySpaceCircle],
+                canLeave: activeContextId !== null,
+            });
+
+            if (!decision) {
+                return;
+            }
+
+            let arrival: Promise<boolean>;
+
+            if (decision.kind === 'enter') {
+                zoomPlacement.current = {
+                    kind: 'enter',
+                    circle: decision.circle,
+                };
+                arrival =
+                    decision.entry.kind === 'note'
+                        ? handleOpenNoteSpace(decision.entry.entityId)
+                        : handleOpenContext(decision.entry.contextId, true);
+            } else {
+                const childBodyId = bodyOfOpenSpace();
+
+                if (childBodyId === null) {
+                    return;
+                }
+
+                zoomPlacement.current = {
+                    kind: 'leave',
+                    circle: decision.circle,
+                    childBodyId,
+                };
+                arrival = handleOpenContext(breadcrumbs.at(-2)?.id ?? null);
+            }
+
+            arrival
+                .then((opened) => {
+                    if (!opened) {
+                        zoomPlacement.current = null;
+                    }
+                })
+                .catch((exception: unknown) => {
+                    zoomPlacement.current = null;
+                    setError(
+                        exception instanceof Error
+                            ? exception.message
+                            : 'Não foi possível abrir o assunto.',
+                    );
+                });
         },
         [
-            activePerspectiveId,
-            endpoints.contexts,
-            persistWorkspace,
-            session,
-            setActiveDocument,
+            activeContextId,
+            bodyOfOpenSpace,
+            breadcrumbs,
+            handleOpenContext,
+            handleOpenNoteSpace,
         ],
+    );
+
+    const handleMove = useCallback(
+        (event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
+            viewport.current = nextViewport;
+            canvas.current?.style.setProperty(
+                '--cvc-zoom',
+                String(nextViewport.zoom),
+            );
+
+            // Only the user's own zoom navigates; a viewport set by the page
+            // (framing, placing an arriving space) arrives without an event.
+            if (event !== null) {
+                navigateByZoom(nextViewport);
+            }
+        },
+        [navigateByZoom],
     );
 
     const handleCreateContext = useCallback(
@@ -756,7 +962,7 @@ export default function VaultPage({
                 }
 
                 try {
-                    await handleOpenContext(node.data.contextId);
+                    await handleOpenContext(node.data.contextId, true);
                 } catch (exception) {
                     setError(
                         exception instanceof Error
@@ -825,23 +1031,29 @@ export default function VaultPage({
         }
 
         framesNextScene.current = false;
-        const framed = frameCircles(
-            scene.bodies.map((body) => ({
-                center: toCanvasPoint(body.position),
-                radius: radiusForArea(body.area) * canvasUnitsPerLogicalUnit,
-            })),
-            { width: element.clientWidth, height: element.clientHeight },
-            { ...framingLimits, margin: 0.1 },
-        );
+        const placement = zoomPlacement.current;
+        zoomPlacement.current = null;
+        const framed =
+            (placement &&
+                placeArrivingSpace(placement, scene.bodies, viewport.current)) ??
+            frameCircles(
+                sceneCircles(scene.bodies),
+                { width: element.clientWidth, height: element.clientHeight },
+                { ...framingLimits, margin: 0.1 },
+            );
 
         if (!framed) {
+            void persistWorkspace(viewport.current, null);
+
             return;
         }
 
         viewport.current = framed;
         savedViewport.current = framed;
         element.style.setProperty('--cvc-zoom', String(framed.zoom));
-        void flow.setViewport(framed, { duration: 250 });
+        // A zoom that crossed into another space continues without a jump;
+        // only a space entered by a click is framed with a short animation.
+        void flow.setViewport(framed, { duration: placement ? 0 : 250 });
         void persistWorkspace(framed, null);
     }, [flow, persistWorkspace, scene]);
 
@@ -1492,7 +1704,9 @@ export default function VaultPage({
                         universes={visibleUniverses}
                         isAtVaultRoot={activeContextId === null}
                         onLocate={(target) => void handleLocate(target)}
-                        onOpenContext={handleOpenContext}
+                        onOpenContext={async (contextId) => {
+                            await handleOpenContext(contextId);
+                        }}
                         onCreateContext={handleCreateContext}
                     />
                     {endpoints.operations && (

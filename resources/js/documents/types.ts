@@ -13,6 +13,7 @@ export type DocumentSummary = {
     attachments?: AttachmentSummary[];
     position?: { x: number; y: number } | null;
     isPinned?: boolean;
+    spaceId?: string | null;
 };
 
 export type OpenedDocument = DocumentSummary & {

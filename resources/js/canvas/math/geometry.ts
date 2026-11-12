@@ -88,6 +88,71 @@ export function frameCircles(
     };
 }
 
+// Smallest circle centred on the bounding box of the circles that still
+// contains all of them. Null when there are no circles.
+export function enclosingCircle(
+    circles: readonly CanvasCircle[],
+): CanvasCircle | null {
+    if (circles.length === 0) {
+        return null;
+    }
+
+    const left = Math.min(...circles.map((c) => c.center.x - c.radius));
+    const right = Math.max(...circles.map((c) => c.center.x + c.radius));
+    const top = Math.min(...circles.map((c) => c.center.y - c.radius));
+    const bottom = Math.max(...circles.map((c) => c.center.y + c.radius));
+    const center = { x: (left + right) / 2, y: (top + bottom) / 2 };
+    const radius = Math.max(
+        ...circles.map(
+            (c) =>
+                Math.hypot(c.center.x - center.x, c.center.y - center.y) +
+                c.radius,
+        ),
+    );
+    requireFinite(radius, 'Enclosing radius');
+
+    return { center, radius };
+}
+
+// Where a circle of the canvas lands on the screen, measured from the
+// top-left corner of the canvas element.
+export function circleOnScreen(
+    viewport: CanvasViewport,
+    circle: CanvasCircle,
+): CanvasCircle {
+    return {
+        center: {
+            x: viewport.x + circle.center.x * viewport.zoom,
+            y: viewport.y + circle.center.y * viewport.zoom,
+        },
+        radius: circle.radius * viewport.zoom,
+    };
+}
+
+// Viewport that draws a circle of the canvas exactly over a circle of the
+// screen, zoom kept within the limits given.
+export function viewportPlacingCircle(
+    canvasCircle: CanvasCircle,
+    screenCircle: CanvasCircle,
+    { minZoom, maxZoom }: Pick<ViewportFit, 'minZoom' | 'maxZoom'>,
+): CanvasViewport {
+    if (!(canvasCircle.radius > 0) || !(screenCircle.radius > 0)) {
+        throw new RangeError('Circle radii must be positive.');
+    }
+
+    const zoom = Math.min(
+        maxZoom,
+        Math.max(minZoom, screenCircle.radius / canvasCircle.radius),
+    );
+    const x = screenCircle.center.x - canvasCircle.center.x * zoom;
+    const y = screenCircle.center.y - canvasCircle.center.y * zoom;
+    requireFinite(x, 'Viewport x');
+    requireFinite(y, 'Viewport y');
+    requireFinite(zoom, 'Viewport zoom');
+
+    return { x, y, zoom };
+}
+
 export function preserveViewportCenter(
     viewport: CanvasViewport,
     previous: ViewportSize,

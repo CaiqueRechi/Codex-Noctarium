@@ -8,6 +8,7 @@ export type ContextSummary = {
     parentId: string | null;
     kind: 'universe' | 'context';
     name: string;
+    ownerEntityId?: string | null;
     ownContent?: number | null;
     descendantContent?: number | null;
     hasChildren: boolean;
