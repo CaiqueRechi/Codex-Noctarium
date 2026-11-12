@@ -5,6 +5,7 @@ declare(strict_types=1);
 use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
 use CrowVaultCanvas\Http\Controllers\DestroyEntityController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
+use CrowVaultCanvas\Http\Controllers\FindLinkTargetsController;
 use CrowVaultCanvas\Http\Controllers\ListContextRootsController;
 use CrowVaultCanvas\Http\Controllers\OperationalStatusController;
 use CrowVaultCanvas\Http\Controllers\RestoreEntityController;
@@ -40,6 +41,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('search');
         Route::get('/operations', OperationalStatusController::class)
+        Route::get('/link-targets', FindLinkTargetsController::class)
+            ->middleware(config('crow-vault-canvas.route.search_middleware'))
+            ->name('link-targets');
             ->middleware(config('crow-vault-canvas.route.operations_middleware'))
             ->name('operations.index');
         Route::get('/contexts', ListContextRootsController::class)->name('contexts.index');

@@ -129,6 +129,7 @@ export type VaultPageProps = {
         perspectives?: string;
         versions?: string;
         search?: string;
+        linkTargets?: string;
         operations?: string;
         trash?: string;
         attachments?: string;
@@ -1935,6 +1936,15 @@ export default function VaultPage({
                     saveState={saveState}
                     error={saveError ?? error}
                     onChange={handleDraftChange}
+                    linking={
+                        endpoints.linkTargets && endpoints.relations
+                            ? {
+                                  targetsEndpoint: endpoints.linkTargets,
+                                  onLink: (targetId) =>
+                                      linkNotes(activeDocument.id, targetId),
+                              }
+                            : undefined
+                    }
                     onSave={() => void session.save()}
                     onBack={() => void handleBack()}
                 />

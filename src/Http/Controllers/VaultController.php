@@ -75,6 +75,7 @@ final class VaultController
                 'perspectives' => route('cvc.perspectives.store'),
                 'versions' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/versions'),
                 'search' => route('cvc.search'),
+                'linkTargets' => route('cvc.link-targets'),
                 'operations' => route('cvc.operations.index'),
                 'attachments' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/attachments'),
                 'trash' => url('/'.trim((string) config('crow-vault-canvas.route.prefix'), '/').'/trash'),

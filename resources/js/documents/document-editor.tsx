@@ -1,6 +1,11 @@
+import { LinkingTextarea } from './linking-textarea';
 import type { OpenedDocument, SaveState } from './types';
 
 type DocumentEditorProps = {
+    linking?: {
+        targetsEndpoint: string;
+        onLink: (targetEntityId: string) => Promise<void>;
+    };
     document: OpenedDocument;
     draft: string;
     saveState: SaveState;
@@ -18,6 +23,7 @@ const statusLabels: Record<SaveState, string> = {
 };
 
 export function DocumentEditor({
+    linking,
     document,
     draft,
     saveState,
@@ -77,14 +83,24 @@ export function DocumentEditor({
                 </p>
             )}
 
-            <textarea
-                className="cvc-editor__textarea"
-                aria-label="Conteúdo Markdown"
-                autoFocus
-                spellCheck
-                value={draft}
-                onChange={(event) => onChange(event.target.value)}
-            />
+            {linking ? (
+                <LinkingTextarea
+                    value={draft}
+                    entityId={document.id}
+                    linkTargetsEndpoint={linking.targetsEndpoint}
+                    onChange={onChange}
+                    onLink={linking.onLink}
+                />
+            ) : (
+                <textarea
+                    className="cvc-editor__textarea"
+                    aria-label="Conteúdo Markdown"
+                    autoFocus
+                    spellCheck
+                    value={draft}
+                    onChange={(event) => onChange(event.target.value)}
+                />
+            )}
         </section>
     );
 }

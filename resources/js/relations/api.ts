@@ -48,6 +48,37 @@ export async function createRelation(
     return payload.relation;
 }
 
+export type LinkTarget = {
+    id: string;
+    title: string;
+    path: string[];
+    score: number;
+};
+
+export async function findLinkTargets(
+    endpoint: string,
+    prefix: string,
+    exceptEntityId: string,
+    signal?: AbortSignal,
+): Promise<LinkTarget[]> {
+    const query = new URLSearchParams({ prefix, except: exceptEntityId });
+    const response = await fetch(`${endpoint}?${query.toString()}`, {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+        signal,
+    });
+    const payload = (await response.json()) as {
+        targets?: LinkTarget[];
+        message?: string;
+    };
+
+    if (!response.ok || !payload.targets) {
+        throw new Error(payload.message ?? 'Não foi possível buscar as notas.');
+    }
+
+    return payload.targets;
+}
+
 export async function deleteRelation(endpoint: string, relationId: string) {
     await mutation(`${endpoint}/${encodeURIComponent(relationId)}`, {
         method: 'DELETE',

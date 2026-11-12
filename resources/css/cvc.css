@@ -776,6 +776,57 @@
     padding: 1rem 1.5rem;
 }
 
+/* The suggestions float over the top of the text, so the list never pushes
+   the line being typed out of view. */
+.cvc-linking {
+    position: relative;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-height: 0;
+}
+
+.cvc-linking__list {
+    position: absolute;
+    z-index: 2;
+    top: 1rem;
+    left: clamp(1.25rem, 4vw, 4rem);
+    width: min(26rem, calc(100% - 2rem));
+    margin: 0;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.65rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.35rem;
+    box-shadow: 0 0.75rem 2rem var(--cvc-shadow);
+    list-style: none;
+}
+
+.cvc-linking__option {
+    display: grid;
+    gap: 0.1rem;
+    min-height: 44px;
+    align-content: center;
+    border-radius: 0.45rem;
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+}
+
+.cvc-linking__option[aria-selected='true'] {
+    background: var(--cvc-surface);
+    outline: 2px solid var(--cvc-accent);
+}
+
+.cvc-linking__option small {
+    color: var(--cvc-text-muted);
+}
+
+.cvc-linking__status {
+    min-height: 1.4rem;
+    margin: 0;
+    padding: 0 clamp(1.25rem, 4vw, 4rem) 0.5rem;
+    color: var(--cvc-text-muted);
+    font-size: 0.85rem;
+}
+
 .cvc-editor__header h2 {
     margin: 0.2rem 0 0;
 }

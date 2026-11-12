@@ -1,0 +1,129 @@
+<?php
+
+declare(strict_types=1);
+
+namespace CrowVaultCanvas\Application\Relations;
+
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+
+/**
+ * RF-10: the notes a "/link" command may connect to. Only titles that
+ * start with the typed text qualify (D-09: ignoring case, accents and
+ * leading spaces); they are ordered by score, then alphabetically, and at
+ * most five are returned.
+ */
+final readonly class FindLinkTargets
+{
+    public const LIMIT = 5;
+
+    private const MAXIMUM_PATH_DEPTH = 64;
+
+    public function __construct(private Repository $config) {}
+
+    /** @return list<array{id: string, title: string, path: list<string>, score: int}> */
+    public function handle(string $prefix, ?string $exceptEntityId): array
+    {
+        $wanted = $this->normalize($prefix);
+
+        if ($wanted === '') {
+            return [];
+        }
+
+        $candidates = KnowledgeEntity::query()
+            ->where('vault_id', $this->vaultId())
+            ->where('kind', KnowledgeEntity::KIND_DOCUMENT)
+            ->whereNotNull('title')
+            ->when($exceptEntityId !== null, fn ($query) => $query->whereKeyNot($exceptEntityId))
+            ->get(['id', 'title'])
+            ->filter(fn (KnowledgeEntity $entity): bool => str_starts_with(
+                $this->normalize((string) $entity->title),
+                $wanted,
+            ));
+        $scores = $this->scores($candidates->map(fn (KnowledgeEntity $entity): string => (string) $entity->getKey()));
+
+        return $candidates
+            ->sort(fn (KnowledgeEntity $a, KnowledgeEntity $b): int => [
+                $scores[(string) $b->getKey()] ?? 0,
+                $this->normalize((string) $a->title),
+            ] <=> [
+                $scores[(string) $a->getKey()] ?? 0,
+                $this->normalize((string) $b->title),
+            ])
+            ->take(self::LIMIT)
+            ->map(fn (KnowledgeEntity $entity): array => [
+                'id' => (string) $entity->getKey(),
+                'title' => (string) $entity->title,
+                'path' => $this->path($entity),
+                'score' => $scores[(string) $entity->getKey()] ?? 0,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function normalize(string $text): string
+    {
+        return Str::lower(Str::ascii(ltrim($text)));
+    }
+
+    /**
+     * S = accesses + searches + links (D-09). Accesses and searches are not
+     * counted yet, so today the score is the number of active connections.
+     *
+     * @param  Collection<int, string>  $entityIds
+     * @return array<string, int>
+     */
+    private function scores(Collection $entityIds): array
+    {
+        if ($entityIds->isEmpty()) {
+            return [];
+        }
+
+        $scores = [];
+        $relations = KnowledgeRelation::query()
+            ->where('vault_id', $this->vaultId())
+            ->where(fn ($query) => $query
+                ->whereIn('source_entity_id', $entityIds->all())
+                ->orWhereIn('target_entity_id', $entityIds->all()))
+            ->get(['source_entity_id', 'target_entity_id']);
+
+        foreach ($relations as $relation) {
+            foreach ([$relation->source_entity_id, $relation->target_entity_id] as $endpoint) {
+                $scores[$endpoint] = ($scores[$endpoint] ?? 0) + 1;
+            }
+        }
+
+        return $scores;
+    }
+
+    /**
+     * Where the note sits, from its universe down, so two notes with the
+     * same title can be told apart. A note in several spaces shows the
+     * first one it was placed in.
+     *
+     * @return list<string>
+     */
+    private function path(KnowledgeEntity $entity): array
+    {
+        $context = $entity->contexts()->orderBy('cvc_context_entity.created_at')->first();
+        $names = [];
+
+        for ($depth = 0; $context !== null && $depth < self::MAXIMUM_PATH_DEPTH; $depth++) {
+            array_unshift($names, $context->noteSpace?->entity?->title ?? $context->name);
+            $context = $context->parent_id === null
+                ? null
+                : KnowledgeContext::query()->with('noteSpace.entity')->find($context->parent_id);
+        }
+
+        return $names;
+    }
+
+    private function vaultId(): string
+    {
+        return (string) $this->config->get('crow-vault-canvas.vault.id');
+    }
+}
