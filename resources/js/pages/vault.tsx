@@ -959,32 +959,8 @@ export default function VaultPage({
         [handleCreate],
     );
 
-    const handleNodeDoubleClick = useCallback<
-        NodeMouseHandler<CosmicNoteCanvasNode>
-    >(
-        async (_event, node) => {
-            if (node.data.kind !== 'document') {
-                if (!node.data.contextId) {
-                    return;
-                }
-
-                try {
-                    await handleOpenContext(node.data.contextId, true);
-                } catch (exception) {
-                    setError(
-                        exception instanceof Error
-                            ? exception.message
-                            : 'Não foi possível abrir o assunto.',
-                    );
-                }
-
-                return;
-            }
-
-            if (!node.data.entityId) {
-                return;
-            }
-
+    const openNote = useCallback(
+        async (entityId: string) => {
             if (!(await session.flush())) {
                 return;
             }
@@ -994,7 +970,7 @@ export default function VaultPage({
             try {
                 const document = await openDocument(
                     endpoints.documents,
-                    node.data.entityId,
+                    entityId,
                 );
                 setFocusEntityId(document.id);
                 showDocument(document);
@@ -1007,13 +983,30 @@ export default function VaultPage({
                 );
             }
         },
-        [
-            endpoints.documents,
-            handleOpenContext,
-            persistWorkspace,
-            session,
-            showDocument,
-        ],
+        [endpoints.documents, persistWorkspace, session, showDocument],
+    );
+
+    // A note opens on a single click (D-12); a double click is left to the
+    // circles of contexts, which it enters.
+    const handleNodeDoubleClick = useCallback<
+        NodeMouseHandler<CosmicNoteCanvasNode>
+    >(
+        async (_event, node) => {
+            if (node.data.kind === 'document' || !node.data.contextId) {
+                return;
+            }
+
+            try {
+                await handleOpenContext(node.data.contextId, true);
+            } catch (exception) {
+                setError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível abrir o assunto.',
+                );
+            }
+        },
+        [handleOpenContext],
     );
 
     // Relations between notes are global and undirected: a link drawn on the
@@ -1084,10 +1077,9 @@ export default function VaultPage({
                 return;
             }
 
-            setFocusEntityId(node.data.entityId);
-            void persistWorkspace(viewport.current, node.data.entityId);
+            void openNote(node.data.entityId);
         },
-        [createLinkedSibling, persistWorkspace, reportLinkFailure],
+        [createLinkedSibling, openNote, reportLinkFailure],
     );
 
     // A link dragged from the dot ends on whatever note is under the
