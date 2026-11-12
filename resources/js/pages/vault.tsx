@@ -2111,7 +2111,7 @@ export default function VaultPage({
             </Head>
             <h1 className="cvc-visually-hidden">{vault.name}</h1>
 
-            <div className="cvc-workspace">
+            <div className="cvc-workspace" inert={Boolean(activeDocument)}>
                 {/* Nothing takes a strip of the screen from the canvas: the
                     path, the status and the tools float over its corners. */}
                 <div className="cvc-overlay cvc-overlay--start">

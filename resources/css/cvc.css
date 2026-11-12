@@ -1,5 +1,6 @@
 /* The canvas is the whole screen; everything else floats over it. */
 .cvc-shell {
+    position: relative;
     display: grid;
     height: 100vh;
     grid-template-rows: minmax(0, 1fr);
@@ -1013,13 +1014,17 @@
 }
 
 .cvc-editor {
-    position: fixed;
+    position: absolute;
     z-index: 20;
-    inset: 0;
+    inset: clamp(0.5rem, 4vw, 3rem);
     /* A column, not fixed rows: the error and the connections come and go,
        and the text always takes what is left. */
     display: flex;
     flex-direction: column;
+    overflow: auto;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 1rem 3rem var(--cvc-shadow);
     background: var(--cvc-background);
     color: var(--cvc-text);
 }
@@ -1187,7 +1192,7 @@
     display: grid;
     flex: 1 1 auto;
     grid-template-rows: auto minmax(0, 1fr);
-    min-height: 0;
+    min-height: 12rem;
 }
 
 .cvc-flowchart-note__description {
@@ -1464,7 +1469,7 @@
 .cvc-editor__textarea {
     flex: 1 1 auto;
     width: 100%;
-    min-height: 0;
+    min-height: 8rem;
     resize: none;
     border: 0;
     outline: 0;
