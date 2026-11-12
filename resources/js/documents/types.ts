@@ -15,6 +15,7 @@ export type DocumentSummary = {
     position?: { x: number; y: number } | null;
     isPinned?: boolean;
     spaceId?: string | null;
+    placeCount?: number | null;
 };
 
 export type OpenedDocument = DocumentSummary & {

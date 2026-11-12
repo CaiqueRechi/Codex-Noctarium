@@ -1,4 +1,6 @@
 import { LinkingTextarea } from './linking-textarea';
+import { NoteActions } from './note-actions';
+import type { NoteActionsProps } from './note-actions';
 import { NoteColorPicker } from './note-color-picker';
 import type { NoteColorName } from './note-color-picker';
 import { NoteConnections } from './note-connections';
@@ -21,6 +23,7 @@ type DocumentEditorProps = {
     onRename: (title: string) => Promise<void>;
     color: string | null;
     onPaint: (color: NoteColorName | null) => Promise<void>;
+    actions?: NoteActionsProps;
     onSave: () => void;
     onBack: () => void;
 };
@@ -42,6 +45,7 @@ export function DocumentEditor({
     onRename,
     color,
     onPaint,
+    actions,
     onSave,
     onBack,
 }: DocumentEditorProps) {
@@ -54,6 +58,7 @@ export function DocumentEditor({
             <header className="cvc-editor__header">
                 <NoteTitleField title={document.title} onRename={onRename} />
                 <NoteColorPicker color={color} onPaint={onPaint} />
+                {actions && <NoteActions {...actions} />}
                 <div className="cvc-editor__actions">
                     <output
                         className="cvc-save-state"

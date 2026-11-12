@@ -100,6 +100,8 @@ import {
     attachEntityToContext,
     createRelation,
     deleteRelation,
+    detachEntityFromContext,
+    moveEntity,
     saveEntityLayout,
 } from '../relations/api';
 import { RelationsPanel } from '../relations/relations-panel';
@@ -110,7 +112,7 @@ import { CompassSearch } from '../search/compass-search';
 import { SearchPanel } from '../search/search-panel';
 import { deleteEntity, restoreEntity } from '../trash/api';
 import { TrashPanel } from '../trash/trash-panel';
-import type { TrashItem } from '../trash/types';
+import type { DeletionOutcome, TrashItem } from '../trash/types';
 import { createVersion, restoreVersion } from '../versions/api';
 import { saveWorkspaceState } from '../workspace/api';
 
@@ -1673,6 +1675,65 @@ export default function VaultPage({
         [endpoints.entities, setActiveDocument],
     );
 
+    // The note left the open space: by a move or by "só daqui". Its editor
+    // closes, since what it showed is no longer here.
+    const removeFromOpenSpace = useCallback(
+        (entityId: string) => {
+            if (!activeContextId) {
+                return;
+            }
+
+            setUniverses((current) =>
+                updateContext(current, activeContextId, (context) => ({
+                    ...context,
+                    documents: context.documents.filter(
+                        (document) => document.id !== entityId,
+                    ),
+                })),
+            );
+            setFocusEntityId(null);
+            session.close();
+        },
+        [activeContextId, session],
+    );
+
+    const handleMoveNote = useCallback(
+        async (entityId: string, toContextId: string) => {
+            if (!activeContextId || !(await session.flush())) {
+                return;
+            }
+
+            await moveEntity(
+                endpoints.entities,
+                entityId,
+                activeContextId,
+                toContextId,
+            );
+            removeFromOpenSpace(entityId);
+        },
+        [activeContextId, endpoints.entities, removeFromOpenSpace, session],
+    );
+
+    const handleRemoveNoteHere = useCallback(
+        async (entityId: string) => {
+            if (!activeContextId || !endpoints.contexts) {
+                return;
+            }
+
+            if (!(await session.flush())) {
+                return;
+            }
+
+            await detachEntityFromContext(
+                endpoints.contexts,
+                activeContextId,
+                entityId,
+            );
+            removeFromOpenSpace(entityId);
+        },
+        [activeContextId, endpoints.contexts, removeFromOpenSpace, session],
+    );
+
     const requireRelationEndpoints = useCallback(() => {
         if (!endpoints.contexts || !endpoints.relations) {
             throw new Error('Os endpoints de relações não estão disponíveis.');
@@ -1859,18 +1920,32 @@ export default function VaultPage({
     );
 
     const handleEntityDelete = useCallback(
-        async (entityId: string) => {
+        async (entityId: string, withSubnotes = false): Promise<DeletionOutcome> => {
             if (activeDocument?.id === entityId && !(await session.flush())) {
                 throw new Error(
                     'Não foi possível salvar a nota antes de mover para a lixeira.',
                 );
             }
 
-            const deletion = await deleteEntity(endpoints.entities, entityId);
+            const outcome = await deleteEntity(
+                endpoints.entities,
+                entityId,
+                withSubnotes,
+            );
+
+            if (outcome.kind === 'has-subnotes') {
+                return outcome;
+            }
+
+            const { deletion } = outcome;
+            const trashed = new Set([
+                entityId,
+                ...(deletion.trashedSubnoteIds ?? []),
+            ]);
 
             setUniverses((current) =>
                 mapDocuments(current, (document) =>
-                    document.id === entityId ? null : document,
+                    trashed.has(document.id) ? null : document,
                 ),
             );
             setRelations((current) =>
@@ -1894,6 +1969,8 @@ export default function VaultPage({
                     activePerspectiveId,
                 );
             }
+
+            return outcome;
         },
         [
             activeDocument?.id,
@@ -2220,7 +2297,15 @@ export default function VaultPage({
                             focusedDocument={focusedDocument}
                             items={trash}
                             notice={trashNotice}
-                            onDelete={handleEntityDelete}
+                            onDelete={async (entityId) => {
+                                const outcome = await handleEntityDelete(entityId);
+
+                                if (outcome.kind === 'has-subnotes') {
+                                    throw new Error(
+                                        `Esta nota tem ${outcome.subnotes} subnota(s). Abra a nota e exclua por ela para escolher o que fazer com as subnotas.`,
+                                    );
+                                }
+                            }}
                             onRestore={handleEntityRestore}
                         />
                     )}
@@ -2335,6 +2420,30 @@ export default function VaultPage({
                     }
                     onPaint={(color) =>
                         handlePaintNote(activeDocument.id, color)
+                    }
+                    actions={
+                        activeContextId && endpoints.contexts
+                            ? {
+                                  placeCount:
+                                      (focusedDocument?.id === activeDocument.id
+                                          ? focusedDocument.placeCount
+                                          : null) ?? 1,
+                                  contextsEndpoint: endpoints.contexts,
+                                  currentContextId: activeContextId,
+                                  onMove: (toContextId) =>
+                                      handleMoveNote(
+                                          activeDocument.id,
+                                          toContextId,
+                                      ),
+                                  onRemoveHere: () =>
+                                      handleRemoveNoteHere(activeDocument.id),
+                                  onDelete: (withSubnotes) =>
+                                      handleEntityDelete(
+                                          activeDocument.id,
+                                          withSubnotes,
+                                      ),
+                              }
+                            : undefined
                     }
                     linking={
                         endpoints.linkTargets && endpoints.relations
