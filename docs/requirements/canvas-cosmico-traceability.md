@@ -961,6 +961,43 @@ Security review: the new writes reuse the relation and trash middleware
 deletes only a directory named by two UUIDs inside the private root. No
 issue found in the changed paths.
 
+## Phase 20 — flowchart notes and their conversion (RF-04, RF-05)
+
+Branch: `cm-fluxograma`, 2026-11-12, based on `cm-mover-e-lixeira`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Flowchart stored as JSON in the note, self-describing | `Flowchart.php`, `resources/js/flowchart/flowchart.ts` | `FlowchartContentTest`, `flowchart.test.ts` |
+| Editor of blocks and arrows, placed by hand | `flowchart-editor.tsx`, `flowchart-note.tsx`, `.cvc-flow-block` | none at component level |
+| Type switch and D-07 conversions through a `mermaid` block | `content-type-switch.tsx`, `mermaid.ts` | `flowchart.test.ts` (7 cases) |
+| Refusal of a broken flowchart on save; measure by the formulas | `SaveDocument`, `NoteContent`, `NormalNoteContent::measureText` | `FlowchartSaveTest`, `FlowchartContentTest` |
+
+D-07 rules applied: the block is a `mermaid` code block with a flowchart
+subset (start/end `([…])`, process `[…]`, decision `{…}`, input/output
+`[/…/]`, arrows with optional `|text|`) and `%% cvc-pos id x y` comments;
+more than one block refuses the conversion, and once rebuilt the block
+leaves the description. Converting back asks to keep the diagram as text
+or to discard it. Text quotes are written as `#quot;`, as Mermaid does.
+
+Measure (section 1 of the formulas): description measured as a normal
+note, plus the text of blocks and arrows, plus 0.8 per block and 0.4 per
+arrow; the JSON is never counted. Two empty blocks and one arrow measure 2.
+
+Design decision taken here: the type lives in the content (`"format":
+"cvc-flowchart"`), not in a new column, so a restored version brings back
+the right type and every measuring path recognizes it unchanged. Known
+limit: the search index reads the stored content, so a flowchart is
+searchable by its texts but its JSON keys can match a search too.
+
+Not verified: written and not run, and this item was not even type
+checked, at Rechi's request to stop and push; not seen in a browser.
+
+Security review: the flowchart is validated on the server (known format
+and version, at most 500 blocks and 1000 arrows, 500 characters per text,
+identifiers limited to letters, digits, `_` and `-`, arrows only between
+existing blocks); texts render as escaped React text. No issue found in
+the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
@@ -968,8 +1005,8 @@ issue found in the changed paths.
 | RF-01 | partial | Cosmic spaces, framing, zoom navigation at 60 % / 30 % into notes as well, the linked-sibling dot and the touch gestures are built (phases 10 to 15). Zoom animation timings are still open in D-12; Rechi found the result not yet fluid |
 | RF-02 | partial | Title limit, rename, color, the connection list with "Conectar a…" and a single click opening a note are built (phases 13 and 15). The editor still opens over the whole screen instead of expanding on the canvas, and the content type belongs to RF-04 |
 | RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
-| RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
-| RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
+| RF-04 | built | Flowchart notes with hand-placed blocks and arrows with text (phase 20) |
+| RF-05 | built | Conversion through one `mermaid` block both ways (phase 20) |
 | RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
 | RF-08 | built | Move with subnotes, "só daqui", deletion asking about subnotes and the 7-day purge (phase 19); migration of existing data (D-13) still open |
 | RF-09 | built | Corner indications, "+N" and travel through the common ancestor (phase 18); travel timing open in D-12 |
