@@ -7,11 +7,12 @@ namespace CrowVaultCanvas\Http\Controllers;
 use CrowVaultCanvas\Application\Attachments\AttachmentSummary;
 use CrowVaultCanvas\Application\Trash\RestoreEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
+use CrowVaultCanvas\Http\RelationPresenter;
 use Illuminate\Http\JsonResponse;
 
 final class RestoreEntityController
 {
-    public function __invoke(string $entity, RestoreEntity $restoreEntity): JsonResponse
+    public function __invoke(string $entity, RestoreEntity $restoreEntity, RelationPresenter $presenter): JsonResponse
     {
         $restoration = $restoreEntity->handle($entity);
 
@@ -38,15 +39,8 @@ final class RestoreEntityController
                 'isPinned' => (bool) ($context->pivot?->is_pinned ?? false),
             ])->values(),
             'restoredRelations' => $restoration->restoredRelations
-                ->map(fn (KnowledgeRelation $relation): array => [
-                    'id' => $relation->getKey(),
-                    'sourceEntityId' => $relation->source_entity_id,
-                    'targetEntityId' => $relation->target_entity_id,
-                    'contextId' => $relation->context_id,
-                    'relationType' => $relation->relation_type,
-                    'isDirected' => $relation->is_directed,
-                    'properties' => (object) ($relation->properties ?? []),
-                ])->values(),
+                ->map(fn (KnowledgeRelation $relation): array => $presenter->relation($relation))
+                ->values(),
             'brokenRelations' => $restoration->brokenRelations,
         ]);
     }
