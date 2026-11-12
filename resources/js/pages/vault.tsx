@@ -97,6 +97,9 @@ import {
 } from '../relations/api';
 import { RelationsPanel } from '../relations/relations-panel';
 import type { RelationSummary } from '../relations/types';
+import type { SearchResult } from '../search/api';
+import { isNearResult } from '../search/compass-groups';
+import { CompassSearch } from '../search/compass-search';
 import { SearchPanel } from '../search/search-panel';
 import { deleteEntity, restoreEntity } from '../trash/api';
 import { TrashPanel } from '../trash/trash-panel';
@@ -170,6 +173,22 @@ const emptySpaceCircle: CanvasCircle = {
 // Where the "Fixar / Liberar" menu of a long-pressed note opens, in pixels
 // from the top-left corner of the canvas.
 type PinMenu = { nodeId: string; x: number; y: number };
+
+type CompassReturn = {
+    contextId: string | null;
+    trail: ContextBreadcrumb[];
+    viewport: Viewport;
+};
+
+const fadeHalfDuration = 150;
+
+function prefersReducedMotion(): boolean {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+function pause(milliseconds: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
 
 type ZoomPlacement =
     | { kind: 'enter'; circle: CanvasCircle }
@@ -452,6 +471,13 @@ export default function VaultPage({
     // as a tap; that tap belongs to the long press, not to the note.
     const suppressNextTap = useRef(false);
     const framesNextScene = useRef(false);
+    // A viewport to restore on the next space instead of framing it: the
+    // compass's "Voltar" returns to the exact camera it left.
+    const restoredViewport = useRef<Viewport | null>(null);
+    const [compassReturn, setCompassReturn] = useState<CompassReturn | null>(
+        null,
+    );
+    const [fade, setFade] = useState<'clear' | 'dark'>('clear');
     const savedViewport = useRef<Viewport>({ ...workspace.viewport });
     const pendingViewportSave = useRef<number | null>(null);
     const viewport = useRef<Viewport>({ ...workspace.viewport });
@@ -1169,7 +1195,10 @@ export default function VaultPage({
         framesNextScene.current = false;
         const placement = zoomPlacement.current;
         zoomPlacement.current = null;
+        const restored = restoredViewport.current;
+        restoredViewport.current = null;
         const framed =
+            restored ??
             (placement &&
                 placeArrivingSpace(placement, scene.bodies, viewport.current)) ??
             frameCircles(
@@ -1355,6 +1384,80 @@ export default function VaultPage({
     const pinMenuNode = pinMenu
         ? (nodes.find((node) => node.id === pinMenu.nodeId) ?? null)
         : null;
+
+    // D-11: a result in the open space is approached with the camera; any
+    // other is reached through a 300 ms fade, 150 ms to dark and 150 ms back.
+    const handleCompassChoose = useCallback(
+        async (result: SearchResult) => {
+            setCompassReturn({
+                contextId: activeContextId,
+                trail: breadcrumbs,
+                viewport: { ...viewport.current },
+            });
+            const half = prefersReducedMotion() ? 0 : fadeHalfDuration;
+
+            try {
+                if (isNearResult(result, activeContextId) && flow) {
+                    await flow.fitView({
+                        nodes: [{ id: entityNodeId(result.contextId, result.id) }],
+                        padding: 0.6,
+                        duration: half * 2,
+                    });
+                    viewport.current = flow.getViewport();
+                } else {
+                    setFade('dark');
+                    await pause(half);
+                    await handleOpenContext(result.contextId);
+                    await pause(half);
+                    setFade('clear');
+                }
+
+                await openNote(result.id);
+            } catch (exception) {
+                setFade('clear');
+                setError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível abrir o resultado.',
+                );
+            }
+        },
+        [activeContextId, breadcrumbs, flow, handleOpenContext, openNote],
+    );
+
+    // "Voltar" restores the place left for a result, with its zoom and
+    // camera, and the trail that led there.
+    const handleCompassReturn = useCallback(async () => {
+        const back = compassReturn;
+
+        if (!back || !(await session.flush())) {
+            return;
+        }
+
+        session.close();
+        setCompassReturn(null);
+
+        if (back.contextId === activeContextId) {
+            viewport.current = back.viewport;
+            void flow?.setViewport(back.viewport);
+
+            return;
+        }
+
+        restoredViewport.current = back.viewport;
+
+        try {
+            await handleOpenContext(back.contextId);
+            setBreadcrumbs(back.trail);
+        } catch (exception) {
+            restoredViewport.current = null;
+            setError(
+                exception instanceof Error
+                    ? exception.message
+                    : 'Não foi possível voltar.',
+            );
+        }
+    }, [activeContextId, compassReturn, flow, handleOpenContext, session]);
 
     const handleLocate = useCallback(
         async (target: ExplorerTarget) => {
@@ -1887,6 +1990,17 @@ export default function VaultPage({
                         <span aria-hidden="true">☰</span>
                     </button>
                 </div>
+
+                {endpoints.search && (
+                    <CompassSearch
+                        endpoint={endpoints.search}
+                        currentUniverseId={breadcrumbs[0]?.id ?? null}
+                        canReturn={compassReturn !== null}
+                        onChoose={(result) => void handleCompassChoose(result)}
+                        onReturn={() => void handleCompassReturn()}
+                    />
+                )}
+                <div className="cvc-fade" data-state={fade} aria-hidden="true" />
 
                 {pinMenu && pinMenuNode && (
                     <div

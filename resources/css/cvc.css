@@ -755,6 +755,152 @@
     cursor: pointer;
 }
 
+/* RF-07: the compass sits in the lower left corner; the zoom controls hold
+   the right one. */
+.cvc-overlay--compass {
+    top: auto;
+    bottom: 0.75rem;
+    left: 0.75rem;
+}
+
+.cvc-compass__toggle {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border-color: var(--cvc-gilt);
+    border-radius: 50%;
+}
+
+.cvc-compass__toggle svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: var(--cvc-gilt);
+    stroke-width: 1.2;
+}
+
+.cvc-compass__toggle svg path {
+    fill: var(--cvc-gilt);
+}
+
+.cvc-compass__return {
+    min-height: 2.75rem;
+}
+
+.cvc-compass {
+    position: absolute;
+    z-index: 8;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    align-content: start;
+    gap: 0.6rem;
+    overflow: auto;
+    width: min(24rem, 100%);
+    border-right: 1px solid var(--cvc-border);
+    background: var(--cvc-surface);
+    padding: 4.25rem 1rem 4.5rem;
+    box-shadow: 1rem 0 2.5rem var(--cvc-shadow);
+}
+
+.cvc-compass[hidden] {
+    display: none;
+}
+
+.cvc-compass .cvc-input {
+    min-height: 2.75rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.6rem;
+    background: var(--cvc-surface-raised);
+    padding: 0 0.75rem;
+    color: var(--cvc-text);
+    font: inherit;
+}
+
+.cvc-compass .cvc-input:focus-visible {
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 2px;
+}
+
+.cvc-compass h3 {
+    margin: 0.5rem 0 0.25rem;
+}
+
+.cvc-compass__status {
+    margin: 0;
+    color: var(--cvc-text-muted);
+    font-size: 0.85rem;
+}
+
+.cvc-compass__status:empty {
+    display: none;
+}
+
+.cvc-compass__results {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cvc-compass__result {
+    display: grid;
+    gap: 0.15rem;
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.6rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.5rem 0.7rem;
+    color: var(--cvc-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cvc-compass__result:hover,
+.cvc-compass__result:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 2px solid var(--cvc-focus);
+}
+
+.cvc-compass__result small {
+    color: var(--cvc-text-muted);
+}
+
+.cvc-compass__snippet {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+/* D-11: a far result is reached through a short fade to the dark of the
+   theme and back. */
+.cvc-fade {
+    position: absolute;
+    z-index: 12;
+    inset: 0;
+    background: var(--cvc-background);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+}
+
+.cvc-fade[data-state='dark'] {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-fade {
+        transition: none;
+    }
+}
+
 .cvc-pin-menu {
     position: absolute;
     z-index: 10;
