@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace CrowVaultCanvas\Application\Versions;
 
 use CrowVaultCanvas\Application\Contexts\NoteSpaceHierarchy;
-use CrowVaultCanvas\Domain\Knowledge\Content\NormalNoteContent;
+use CrowVaultCanvas\Domain\Knowledge\Content\NoteContent;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
@@ -30,7 +30,7 @@ final readonly class RestoreVaultVersion
         private SnapshotCodec $snapshotCodec,
         private MarkdownStorage $storage,
         private NoteSpaceHierarchy $hierarchy,
-        private NormalNoteContent $noteContent,
+        private NoteContent $noteContent,
     ) {}
 
     public function handle(string $versionId, string $restoredBy): VersionRestoration

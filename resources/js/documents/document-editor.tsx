@@ -1,3 +1,6 @@
+import { ContentTypeSwitch } from '../flowchart/content-type-switch';
+import { isFlowchartContent } from '../flowchart/flowchart';
+import { FlowchartNote } from '../flowchart/flowchart-note';
 import { LinkingTextarea } from './linking-textarea';
 import { NoteActions } from './note-actions';
 import type { NoteActionsProps } from './note-actions';
@@ -58,6 +61,7 @@ export function DocumentEditor({
             <header className="cvc-editor__header">
                 <NoteTitleField title={document.title} onRename={onRename} />
                 <NoteColorPicker color={color} onPaint={onPaint} />
+                <ContentTypeSwitch content={draft} onChange={onChange} />
                 {actions && <NoteActions {...actions} />}
                 <div className="cvc-editor__actions">
                     <output
@@ -109,7 +113,9 @@ export function DocumentEditor({
                 />
             )}
 
-            {linking ? (
+            {isFlowchartContent(draft) ? (
+                <FlowchartNote content={draft} onChange={onChange} />
+            ) : linking ? (
                 <LinkingTextarea
                     value={draft}
                     entityId={document.id}

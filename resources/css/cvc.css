@@ -1172,6 +1172,111 @@
     font-size: 0.85rem;
 }
 
+/* RF-04: the body of a flowchart note. */
+.cvc-content-type__options {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.cvc-content-type__options [aria-checked='true'] {
+    border-color: var(--cvc-energy);
+    color: var(--cvc-energy);
+}
+
+.cvc-flowchart-note {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+}
+
+.cvc-flowchart-note__description {
+    min-height: 5rem;
+    resize: vertical;
+    border: 0;
+    border-bottom: 1px solid var(--cvc-border);
+    background: var(--cvc-background);
+    padding: 0.75rem clamp(1.25rem, 4vw, 4rem);
+    color: var(--cvc-text);
+    font-family: var(--cvc-font-mono);
+}
+
+.cvc-flowchart {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+}
+
+.cvc-flowchart__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.4rem;
+    padding: 0.5rem clamp(1.25rem, 4vw, 4rem);
+}
+
+.cvc-flowchart__text {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.cvc-flowchart__text .cvc-input {
+    min-height: 2.5rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.5rem;
+    background: var(--cvc-surface);
+    padding: 0 0.6rem;
+    color: var(--cvc-text);
+    font: inherit;
+}
+
+.cvc-flowchart__canvas {
+    min-height: 18rem;
+}
+
+.cvc-flow-block {
+    display: grid;
+    place-items: center;
+    min-width: 8rem;
+    min-height: 3rem;
+    border: 1.5px solid var(--cvc-gilt);
+    background: var(--cvc-surface-raised);
+    padding: 0.5rem 1rem;
+    color: var(--cvc-text);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.cvc-flow-block[data-kind='start'] {
+    border-radius: 999px;
+}
+
+.cvc-flow-block[data-kind='process'] {
+    border-radius: 0.3rem;
+}
+
+.cvc-flow-block[data-kind='decision'] {
+    min-width: 7rem;
+    min-height: 7rem;
+    border-color: var(--cvc-accent);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.cvc-flow-block[data-kind='io'] {
+    transform: skewX(-12deg);
+}
+
+.cvc-flow-block[data-kind='io'] span {
+    display: inline-block;
+    transform: skewX(12deg);
+}
+
+.cvc-flow-block[data-selected='true'] {
+    border-color: var(--cvc-energy);
+    outline: 2px solid var(--cvc-energy);
+    outline-offset: 2px;
+}
+
 .cvc-button--danger {
     border-color: var(--cvc-danger);
     color: var(--cvc-danger);

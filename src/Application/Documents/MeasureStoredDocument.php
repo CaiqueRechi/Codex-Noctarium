@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Documents;
 
-use CrowVaultCanvas\Domain\Knowledge\Content\NormalNoteContent;
+use CrowVaultCanvas\Domain\Knowledge\Content\NoteContent;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\MarkdownDocument;
 use CrowVaultCanvas\Infrastructure\Storage\MarkdownStorage;
@@ -16,7 +16,7 @@ final readonly class MeasureStoredDocument
 {
     public function __construct(
         private MarkdownStorage $storage,
-        private NormalNoteContent $noteContent,
+        private NoteContent $noteContent,
         private DatabaseManager $database,
         private Repository $config,
     ) {}

@@ -39,6 +39,13 @@ final readonly class NormalNoteContent
         return $this->textWeight($source) + self::BLOCK_BONUS * $this->blockCounter->count($source);
     }
 
+    // T_i alone: also the weight of the text of a flowchart's blocks and
+    // arrows, which have no Markdown blocks.
+    public function measureText(string $text): float
+    {
+        return $this->textWeight(mb_scrub($text, 'UTF-8'));
+    }
+
     private function textWeight(string $text): float
     {
         $unixLines = str_replace(["\r\n", "\r"], "\n", $text);
