@@ -140,6 +140,7 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 
 ## Documentation
 
+- [Working context: where the work stands and how to resume it](CONTEXT.md)
 - [Product requirements](docs/requirements/crow-vault-canvas.md)
 - [Vertical-slice architecture](docs/architecture/vertical-slice.md)
 - [MVP architecture](docs/architecture/mvp.md)
