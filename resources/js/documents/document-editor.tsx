@@ -1,11 +1,15 @@
 import { LinkingTextarea } from './linking-textarea';
+import { NoteConnections } from './note-connections';
 import { NoteTitleField } from './note-title-field';
 import type { OpenedDocument, SaveState } from './types';
+import type { RelationSummary } from '../relations/types';
 
 type DocumentEditorProps = {
     linking?: {
         targetsEndpoint: string;
+        relations: readonly RelationSummary[];
         onLink: (targetEntityId: string) => Promise<void>;
+        onRemove: (relationId: string) => Promise<void>;
     };
     document: OpenedDocument;
     draft: string;
@@ -81,6 +85,16 @@ export function DocumentEditor({
                     {error} Existem alterações não salvas apenas nesta aba.
                     Fechar ou recarregar pode perder essas alterações.
                 </p>
+            )}
+
+            {linking && (
+                <NoteConnections
+                    noteId={document.id}
+                    relations={linking.relations}
+                    targetsEndpoint={linking.targetsEndpoint}
+                    onLink={linking.onLink}
+                    onRemove={linking.onRemove}
+                />
             )}
 
             {linking ? (

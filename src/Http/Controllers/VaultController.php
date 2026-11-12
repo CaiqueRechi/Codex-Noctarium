@@ -48,6 +48,7 @@ final class VaultController
                 'universes' => $contextSlice['contexts'],
                 'breadcrumbs' => $contextSlice['breadcrumbs'],
                 'relations' => $vault->relations
+                    ->loadMissing(['source:id,title', 'target:id,title'])
                     ->map(fn (KnowledgeRelation $relation): array => $relationPresenter->relation($relation))
                     ->values(),
                 'perspectives' => $vault->perspectives

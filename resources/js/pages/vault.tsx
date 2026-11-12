@@ -1044,6 +1044,20 @@ export default function VaultPage({
         [endpoints.relations],
     );
 
+    const unlinkNotes = useCallback(
+        async (relationId: string) => {
+            if (!endpoints.relations) {
+                throw new Error('O endpoint de relações não está disponível.');
+            }
+
+            await deleteRelation(endpoints.relations, relationId);
+            setRelations((current) =>
+                current.filter((relation) => relation.id !== relationId),
+            );
+        },
+        [endpoints.relations],
+    );
+
     const reportLinkFailure = useCallback((exception: unknown) => {
         setError(
             exception instanceof Error
@@ -1430,6 +1444,19 @@ export default function VaultPage({
                         ? { ...crumb, name: renamed.title }
                         : crumb,
                 ),
+            );
+            setRelations((current) =>
+                current.map((relation) => ({
+                    ...relation,
+                    sourceTitle:
+                        relation.sourceEntityId === entityId
+                            ? renamed.title
+                            : relation.sourceTitle,
+                    targetTitle:
+                        relation.targetEntityId === entityId
+                            ? renamed.title
+                            : relation.targetTitle,
+                })),
             );
         },
         [endpoints.entities, setActiveDocument, universes],
@@ -2078,8 +2105,10 @@ export default function VaultPage({
                         endpoints.linkTargets && endpoints.relations
                             ? {
                                   targetsEndpoint: endpoints.linkTargets,
+                                  relations,
                                   onLink: (targetId) =>
                                       linkNotes(activeDocument.id, targetId),
+                                  onRemove: unlinkNotes,
                               }
                             : undefined
                     }
