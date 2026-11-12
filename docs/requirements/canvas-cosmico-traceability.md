@@ -837,6 +837,39 @@ Relation titles are titles the same user can open, sent with the vault
 they already load. No new rendered HTML. No issue found in the changed
 paths.
 
+## Phase 16 — the compass search (RF-07)
+
+Branch: `cm-rosa-dos-ventos`, 2026-11-12, based on `cm-editor-e-gestos`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Compass in the lower left corner and its floating panel | `search/compass-search.tsx`, `.cvc-compass*` | `compass-search.test.tsx` (4 panel cases) |
+| Groups "Neste universo" / "Outros universos", one list at the galaxy view | `groupCompassResults` in `search/compass-groups.ts` | same file (2 cases) |
+| Near result approached, far result through a 300 ms fade, "Voltar" | `handleCompassChoose`, `handleCompassReturn`, `.cvc-fade` in `vault.tsx` | `isNearResult` (1 case); the page flow is not covered |
+| Path of every result, a subnote through its note | `ContextPath`, used by `SearchVault` and `FindLinkTargets` | `SearchPathTest`, `LinkTargetsTest` (subnote case) |
+
+D-11 rules: near is the space open now, and the camera fits the note and
+opens it; anything else goes dark in 150 ms, the space of the result opens,
+and the view clears in 150 ms before the note opens. With no universe open
+the results form one list with their paths. "Voltar" returns to the exact
+viewport and trail that were left, overriding the framing of the space.
+Reduced motion skips the fade and the camera travel.
+
+Implementation defaults: search starts at two characters and waits 250 ms;
+the compass sits bottom left because the zoom controls take bottom right;
+the fade uses the background of the theme.
+
+Found and fixed on the way: the path of a subnote among link targets
+stopped at its note, because a space of subnotes has no parent; it now
+goes on through the first space the note sits in.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser. Searches counted for RF-10 are the next item.
+
+Security review: no new endpoint; the existing search adds paths made of
+names the same user can open, behind the same authorization and throttle.
+Results render as escaped text. No issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
@@ -846,7 +879,7 @@ paths.
 | RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
-| RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |
+| RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
 | RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept; migration of existing data still open |
 | RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
 | RF-10 | partial | `/link` and `/l` with prefix-only suggestions built (phase 12); counting accesses and searches for the score remains |
