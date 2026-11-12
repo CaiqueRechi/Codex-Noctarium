@@ -4,6 +4,7 @@ import type { EntityProperties } from '../entities/types';
 export type DocumentSummary = {
     id: string;
     title: string | null;
+    color?: string | null;
     revision: number;
     ownContent?: number | null;
     descendantContent?: number | null;
@@ -14,6 +15,7 @@ export type DocumentSummary = {
     position?: { x: number; y: number } | null;
     isPinned?: boolean;
     spaceId?: string | null;
+    placeCount?: number | null;
 };
 
 export type OpenedDocument = DocumentSummary & {

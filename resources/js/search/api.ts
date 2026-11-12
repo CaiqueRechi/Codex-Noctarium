@@ -1,6 +1,7 @@
 export type SearchResult = {
     id: string;
     contextId: string;
+    path?: { id: string; name: string }[];
     title: string | null;
     snippet: string;
     entityType: string | null;

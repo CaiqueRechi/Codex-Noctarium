@@ -20,6 +20,14 @@
     --cvc-danger-surface: #3a1022;
     --cvc-shadow: rgb(3 2 10 / 0.55);
 
+    /* RF-02: the tones a note may be painted with, stored by name. */
+    --cvc-note-vazio: #7b5cff;
+    --cvc-note-energia: #cfe3ff;
+    --cvc-note-champanhe: #ebcb86;
+    --cvc-note-nebulosa: #d46bdf;
+    --cvc-note-aurora: #5fd3c4;
+    --cvc-note-brasa: #ff8a6b;
+
     --cvc-font-display: 'Cinzel', 'Trajan Pro', Georgia, serif;
     --cvc-font-body: 'Manrope', system-ui, sans-serif;
     --cvc-font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;

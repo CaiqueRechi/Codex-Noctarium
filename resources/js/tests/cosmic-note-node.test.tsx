@@ -85,6 +85,19 @@ describe('RF-03 note drawn as a circle of its area', () => {
         expect(article).toHaveAttribute('data-selected', 'true');
     });
 
+    it('carries the tone a note was painted with, and none by default', () => {
+        renderNote({ color: 'nebulosa' });
+        expect(screen.getByRole('article')).toHaveAttribute(
+            'data-color',
+            'nebulosa',
+        );
+    });
+
+    it('leaves an unpainted note without a tone', () => {
+        renderNote();
+        expect(screen.getByRole('article')).not.toHaveAttribute('data-color');
+    });
+
     it('says that the size of an unmeasured note is provisional', () => {
         renderNote({ label: 'Antiga', isUnmeasured: true });
 

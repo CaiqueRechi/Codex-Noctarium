@@ -801,19 +801,179 @@ suites were not run, at Rechi's request.
 Security review: no request, endpoint or script added; the fonts are local
 static files, so the content security policy stays as strict as before.
 
+## Phase 15 — the editor and the gestures of D-12
+
+Branch: `cm-editor-e-gestos`, 2026-11-12, based on
+`cm-paleta-rapinante-cosmico`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| A click opens a note; a double click only enters contexts | `openNote` and `handleNodeClick` in `vault.tsx` | `vault-cosmic-space.test.tsx` (2 cases) |
+| Long press on a phone: create on empty, "Fixar / Liberar" on a note | `canvas/use-long-press.ts`; `handleLongPress`, `placeNote` and the pin menu in `vault.tsx` | `long-press.test.tsx` (4 cases) |
+| Connections listed in the editor, removable, with "Conectar a…" | `documents/note-connections.tsx`, `relations/use-link-targets.ts`; `RelationPresenter` sends the title of both ends | `note-connections.test.tsx` (4 cases), `RelationTitlesTest` |
+| Note color | `NoteColor`, `PaintEntity`, `PATCH /vault/entities/{entity}/color`, migration `2026_11_12_000017`; `documents/note-color-picker.tsx`; `--cvc-note-*` tokens | `PaintEntityTest` (5 cases, rollback included), `note-color-picker.test.tsx` (3), `cosmic-note-node.test.tsx` (2 more) |
+| Tests for the zoom navigation of phase 11 | — | `zoom-navigation.test.ts` (12 cases) |
+
+Gestures: only touch counts for the long press (500 ms, at most 10 px of
+slide), since the mouse has the double click and Ctrl. The tap reported
+when the finger lifts belongs to the long press and opens nothing; the
+canvas no longer shows the browser's menu on a long press. Pinning from
+the menu takes the same path as a drop with Ctrl.
+
+Color: a note stores the name of one of six tones, never a value, so a
+theme change repaints every note (RN-20). The tone is mixed at 30 % into
+the dark of the theme, keeping the title between 6.09:1 and 9.72:1.
+
+Refactors done on the way, each in its own commit: relations are written
+by one presenter instead of three copies, and the lookup of link targets
+became a hook shared by `/link` and "Conectar a…".
+
+Not verified: written and not run, at Rechi's request; none of it seen in
+a browser or on a phone.
+
+Security review: the color endpoint accepts only the six names or null,
+behind the entity write authorization and throttle, scoped to the vault.
+Relation titles are titles the same user can open, sent with the vault
+they already load. No new rendered HTML. No issue found in the changed
+paths.
+
+## Phase 16 — the compass search (RF-07)
+
+Branch: `cm-rosa-dos-ventos`, 2026-11-12, based on `cm-editor-e-gestos`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Compass in the lower left corner and its floating panel | `search/compass-search.tsx`, `.cvc-compass*` | `compass-search.test.tsx` (4 panel cases) |
+| Groups "Neste universo" / "Outros universos", one list at the galaxy view | `groupCompassResults` in `search/compass-groups.ts` | same file (2 cases) |
+| Near result approached, far result through a 300 ms fade, "Voltar" | `handleCompassChoose`, `handleCompassReturn`, `.cvc-fade` in `vault.tsx` | `isNearResult` (1 case); the page flow is not covered |
+| Path of every result, a subnote through its note | `ContextPath`, used by `SearchVault` and `FindLinkTargets` | `SearchPathTest`, `LinkTargetsTest` (subnote case) |
+
+D-11 rules: near is the space open now, and the camera fits the note and
+opens it; anything else goes dark in 150 ms, the space of the result opens,
+and the view clears in 150 ms before the note opens. With no universe open
+the results form one list with their paths. "Voltar" returns to the exact
+viewport and trail that were left, overriding the framing of the space.
+Reduced motion skips the fade and the camera travel.
+
+Implementation defaults: search starts at two characters and waits 250 ms;
+the compass sits bottom left because the zoom controls take bottom right;
+the fade uses the background of the theme.
+
+Found and fixed on the way: the path of a subnote among link targets
+stopped at its note, because a space of subnotes has no parent; it now
+goes on through the first space the note sits in.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser. Searches counted for RF-10 are the next item.
+
+Security review: no new endpoint; the existing search adds paths made of
+names the same user can open, behind the same authorization and throttle.
+Results render as escaped text. No issue found in the changed paths.
+
+## Phase 17 — the counters of the link score (RF-10)
+
+Branch: `cm-contadores-link`, 2026-11-12, based on `cm-rosa-dos-ventos`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Accesses counted on every opening of a note | `CountNoteUse::access`, called by `ShowDocumentController` | `UseCountersTest` |
+| Searches counted when a compass result is chosen | `POST /vault/entities/{entity}/searches`, `countNoteSearch` in `entities/api.ts` | `UseCountersTest` |
+| Score = accesses + searches + links | `FindLinkTargets::scores` | `UseCountersTest` (ordering and values) |
+| Counter columns | migration `2026_11_12_000018`, `access_count` and `search_count` | `UseCountersTest` (rollback) |
+
+D-09 is now complete: the counters are added in the database, so two
+openings at once never lose one, and existing notes start at zero, as the
+specification asks for no invented history. A search that fails to be
+counted does not stop the user from reaching the note.
+
+Implementation default: the document endpoint, a GET, now writes a counter;
+it serves only the vault's own pages, behind the same authorization.
+
+Not verified: written and not run, at Rechi's request.
+
+Security review: the new endpoint is a write behind the entity write
+authorization and throttle, scoped to the vault (404 outside it); it
+changes a number only. No issue found in the changed paths.
+
+## Phase 18 — external connections (RF-09)
+
+Branch: `cm-conexoes-externas`, 2026-11-12, based on `cm-contadores-link`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Links leaving the open space found and placed in a corner | `findExternalConnections`, `cornerFor` in `canvas/external-connections.ts` | `external-connections.test.tsx` |
+| Three per corner, then "+N" | `groupByCorner`, `canvas/external-connections-overlay.tsx`, `.cvc-external` | same file |
+| Travel through the nearest common ancestor | `travelThroughCommonAncestor`; `travelToNote` in `vault.tsx` | same file (4 cases); the page flow is not covered |
+| Where a note sits | `GET /vault/entities/{entity}/path`, `ShowEntityPathController` | `EntityPathTest` |
+
+D-10 rules applied: the corner nearest the direction, three per corner then
+"+N" opening the list, pinned to the screen and outside the physics. The
+travel goes up to the nearest common ancestor, through the galaxy view
+between universes, then down to the target's space, and the camera
+approaches the target, which is focused, not opened.
+
+Implementation defaults, open in D-10 and D-12 and easy to change: the
+direction is taken from the middle of the open space to the inside note,
+because the outside note has no position on this canvas; each level of a
+travel stays 400 ms on screen; indications sit at 60 % opacity and clear
+the other floating controls.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser.
+
+Security review: one new read endpoint behind the vault's read
+authorization and search throttle, scoped to the vault (404 outside it),
+returning names the same user can open. Titles render as escaped text. No
+issue found in the changed paths.
+
+## Phase 19 — moving, removing and the trash (RF-08, D-13)
+
+Branch: `cm-mover-e-lixeira`, 2026-11-12, based on `cm-conexoes-externas`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| "Mover para…", subnotes along, cycles refused | `MoveEntity`, `POST /vault/entities/{entity}/move`; `NoteActions` and its destination picker | `MoveAndTrashTest` (2), `note-actions.test.tsx` |
+| "Só daqui" / "De todos os lugares" | `DetachEntityFromContext`, `DELETE /vault/contexts/{context}/entities/{entity}`; `placeCount` in the slice | `MoveAndTrashTest`, `note-actions.test.tsx` |
+| Deleting a note with subnotes asks first | `SubnoteTree`, `TrashNoteWithSubnotes`; `DELETE /vault/entities/{entity}` answers 409 `has_subnotes` until `with_subnotes=1` | `MoveAndTrashTest` (2), `note-actions.test.tsx` |
+| Trash emptied after seven days | `PurgeTrash`, `cvc:purge-trash`, scheduled daily by the package | `PurgeTrashTest` |
+
+D-13 rules applied: subnotes that also appear in a space outside the
+deleted tree stay alive there; every version is kept while the note lives,
+and a note's revisions go with it when it is deleted for good. Taking a
+note out of its only space is refused, since that is a deletion.
+
+Consequences to know: the purge is permanent and deletes the note's private
+files; a named version that held a purged note can no longer be restored,
+because restoration verifies every file it points to and refuses as a
+whole. The purge runs only if the host's scheduler runs
+(`php artisan schedule:work` or a cron of `schedule:run`). The trash panel
+cannot ask about subnotes, so it sends the user to the note's editor.
+
+Implementation defaults: a space of subnotes holding a nested context is
+hidden instead of deleted at purge; the destination picker lists contexts
+and universes, not other notes' spaces.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser. The purge was not run against real data.
+
+Security review: the new writes reuse the relation and trash middleware
+(authorization, CSRF, throttle) and scope every id to the vault. The purge
+deletes only a directory named by two UUIDs inside the private root. No
+issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | partial | The vault root and every context are drawn as cosmic spaces, a space is framed when entered (phase 10), zoom navigates at 60 % / 30 %, into notes as well (phase 11), and the dot creates a linked sibling (phase 12). Touch gestures remain; zoom animation timings still open; the result is not yet fluid |
-| RF-02 | partial | Title limit and legacy-context document backend implemented, note renamed from its editor (phase 13); cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
+| RF-01 | partial | Cosmic spaces, framing, zoom navigation at 60 % / 30 % into notes as well, the linked-sibling dot and the touch gestures are built (phases 10 to 15). Zoom animation timings are still open in D-12; Rechi found the result not yet fluid |
+| RF-02 | partial | Title limit, rename, color, the connection list with "Conectar a…" and a single click opening a note are built (phases 13 and 15). The editor still opens over the whole screen instead of expanding on the canvas, and the content type belongs to RF-04 |
 | RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
-| RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |
-| RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept; migration of existing data still open |
-| RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
-| RF-10 | partial | `/link` and `/l` with prefix-only suggestions built (phase 12); counting accesses and searches for the score remains |
+| RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
+| RF-08 | built | Move with subnotes, "só daqui", deletion asking about subnotes and the 7-day purge (phase 19); migration of existing data (D-13) still open |
+| RF-09 | built | Corner indications, "+N" and travel through the common ancestor (phase 18); travel timing open in D-12 |
+| RF-10 | built | `/link` and `/l` with prefix-only suggestions (phase 12) and the full score of D-09 (phase 17) |
 | RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
 
 Follow-up questions are asked only when their decisions block the next phase.

@@ -46,6 +46,8 @@ vi.mock('@xyflow/react', () => ({
         onMove,
         onNodeDrag,
         onNodeDragStop,
+        onNodeClick,
+        onNodeDoubleClick,
     }: {
         children: ReactNode;
         nodes: MockNode[];
@@ -57,6 +59,11 @@ vi.mock('@xyflow/react', () => ({
         ) => void;
         onNodeDrag: DragHandler;
         onNodeDragStop: DragHandler;
+        onNodeClick?: (event: { target: EventTarget }, node: MockNode) => void;
+        onNodeDoubleClick?: (
+            event: { target: EventTarget },
+            node: MockNode,
+        ) => void;
     }) => {
         const dragTo = (node: MockNode, ctrlKey: boolean) => {
             const moved = { ...node, position: { x: 1024, y: -512 } };
@@ -95,6 +102,25 @@ vi.mock('@xyflow/react', () => ({
                             onClick={() => dragTo(node, true)}
                         >
                             fixar {node.data.label}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(event) =>
+                                onNodeClick?.({ target: event.target }, node)
+                            }
+                        >
+                            clicar {node.data.label}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(event) =>
+                                onNodeDoubleClick?.(
+                                    { target: event.target },
+                                    node,
+                                )
+                            }
+                        >
+                            duplo clique {node.data.label}
                         </button>
                     </span>
                 ))}
@@ -485,6 +511,38 @@ describe('RF-03 space drawn and moved by the physics', () => {
             clientX: 300,
             clientY: 200,
         });
+
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('opens a note with a single click (D-12)', async () => {
+        fetchMock.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                document: { ...note('a', 'Alfa'), content: '# Alfa' },
+            }),
+        });
+        renderSpace([note('a', 'Alfa')]);
+
+        fireEvent.click(screen.getByRole('button', { name: 'clicar Alfa' }));
+
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenCalledWith(
+                '/vault/documents/a',
+                expect.anything(),
+            ),
+        );
+        expect(
+            await screen.findByRole('textbox', { name: 'Conteúdo Markdown' }),
+        ).toHaveValue('# Alfa');
+    });
+
+    it('leaves a double click on a note to the single click before it', () => {
+        renderSpace([note('a', 'Alfa')]);
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'duplo clique Alfa' }),
+        );
 
         expect(fetchMock).not.toHaveBeenCalled();
     });
