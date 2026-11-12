@@ -4,6 +4,7 @@ import type { EntityProperties } from '../entities/types';
 export type DocumentSummary = {
     id: string;
     title: string | null;
+    color?: string | null;
     revision: number;
     ownContent?: number | null;
     descendantContent?: number | null;

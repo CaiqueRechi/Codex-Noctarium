@@ -36,6 +36,36 @@ export async function renameEntity(
     return payload.entity;
 }
 
+export async function paintEntity(
+    entitiesEndpoint: string,
+    entityId: string,
+    color: string | null,
+): Promise<{ id: string; color: string | null }> {
+    const response = await fetch(
+        `${entitiesEndpoint}/${encodeURIComponent(entityId)}/color`,
+        {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                ...xsrfHeaders(),
+            },
+            body: JSON.stringify({ color }),
+        },
+    );
+    const payload = (await response.json()) as {
+        entity?: { id: string; color: string | null };
+        message?: string;
+    };
+
+    if (!response.ok || !payload.entity) {
+        throw new Error(payload.message ?? 'Não foi possível mudar a cor.');
+    }
+
+    return payload.entity;
+}
+
 export async function updateEntityProperties(
     entitiesEndpoint: string,
     entityId: string,

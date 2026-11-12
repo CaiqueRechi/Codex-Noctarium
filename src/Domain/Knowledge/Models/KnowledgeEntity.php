@@ -27,6 +27,7 @@ final class KnowledgeEntity extends Model
         'kind',
         'entity_type',
         'title',
+        'color',
         'properties',
         'tags',
         'search_version',

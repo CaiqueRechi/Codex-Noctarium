@@ -952,6 +952,65 @@
     font-size: 0.85rem;
 }
 
+.cvc-note-color__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.cvc-note-color__swatch {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid var(--cvc-border);
+    border-radius: 50%;
+    background: var(--cvc-surface-raised);
+    cursor: pointer;
+}
+
+.cvc-note-color__swatch[data-color='none'] {
+    background: linear-gradient(
+        135deg,
+        transparent 45%,
+        var(--cvc-text-muted) 45% 55%,
+        transparent 55%
+    );
+}
+
+.cvc-note-color__swatch[aria-checked='true'] {
+    border-color: var(--cvc-energy);
+    outline: 2px solid var(--cvc-energy);
+    outline-offset: 2px;
+}
+
+.cvc-note-color__swatch:focus-visible {
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 2px;
+}
+
+.cvc-note-color__swatch[data-color='vazio'] {
+    background: var(--cvc-note-vazio);
+}
+
+.cvc-note-color__swatch[data-color='energia'] {
+    background: var(--cvc-note-energia);
+}
+
+.cvc-note-color__swatch[data-color='champanhe'] {
+    background: var(--cvc-note-champanhe);
+}
+
+.cvc-note-color__swatch[data-color='nebulosa'] {
+    background: var(--cvc-note-nebulosa);
+}
+
+.cvc-note-color__swatch[data-color='aurora'] {
+    background: var(--cvc-note-aurora);
+}
+
+.cvc-note-color__swatch[data-color='brasa'] {
+    background: var(--cvc-note-brasa);
+}
+
 .cvc-note-title {
     display: grid;
     flex: 1 1 18rem;
@@ -1092,6 +1151,32 @@
 
 .cvc-cosmic-note[data-unmeasured='true'] .cvc-cosmic-note__body {
     border-style: dashed;
+}
+
+/* RF-02: a painted note keeps the dark of the theme under its tone, so its
+   light title stays readable on every color. */
+.cvc-cosmic-note[data-color='vazio'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-vazio) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='energia'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-energia) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='champanhe'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-champanhe) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='nebulosa'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-nebulosa) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='aurora'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-aurora) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='brasa'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-brasa) 30%, var(--cvc-surface-raised));
 }
 
 /* Signature: the note in focus carries the blue-white energy on its edge;

@@ -56,7 +56,11 @@ import { createDocument, openDocument } from '../documents/api';
 import { DocumentEditor } from '../documents/document-editor';
 import type { DocumentSummary, OpenedDocument } from '../documents/types';
 import { useDocumentAutosave } from '../documents/use-document-autosave';
-import { renameEntity, updateEntityProperties } from '../entities/api';
+import {
+    paintEntity,
+    renameEntity,
+    updateEntityProperties,
+} from '../entities/api';
 import { PropertiesPanel } from '../entities/properties-panel';
 import type { EntityProperties } from '../entities/types';
 import { continueTrail } from '../explorer/navigation-trail';
@@ -298,7 +302,7 @@ function buildSpaceNodes(
 ): CosmicNoteCanvasNode[] {
     type Description = Pick<
         CosmicNoteData,
-        'kind' | 'label' | 'entityId' | 'contextId'
+        'kind' | 'label' | 'entityId' | 'contextId' | 'color'
     >;
     const descriptions = new Map<string, Description>([
         ...space.documents.map((document): [string, Description] => [
@@ -308,6 +312,7 @@ function buildSpaceNodes(
                 label: document.title ?? 'Sem título',
                 entityId: document.id,
                 contextId: space.id,
+                color: document.color ?? null,
             },
         ]),
         ...space.contexts.map((context): [string, Description] => [
@@ -1462,6 +1467,26 @@ export default function VaultPage({
         [endpoints.entities, setActiveDocument, universes],
     );
 
+    const handlePaintNote = useCallback(
+        async (entityId: string, color: string | null) => {
+            const painted = await paintEntity(endpoints.entities, entityId, color);
+
+            setUniverses((current) =>
+                mapDocuments(current, (document) =>
+                    document.id === entityId
+                        ? { ...document, color: painted.color }
+                        : document,
+                ),
+            );
+            setActiveDocument((current) =>
+                current?.id === entityId
+                    ? { ...current, color: painted.color }
+                    : current,
+            );
+        },
+        [endpoints.entities, setActiveDocument],
+    );
+
     const requireRelationEndpoints = useCallback(() => {
         if (!endpoints.contexts || !endpoints.relations) {
             throw new Error('Os endpoints de relações não estão disponíveis.');
@@ -2100,6 +2125,14 @@ export default function VaultPage({
                     onChange={handleDraftChange}
                     onRename={(title) =>
                         handleRenameNote(activeDocument.id, title)
+                    }
+                    color={
+                        focusedDocument?.id === activeDocument.id
+                            ? (focusedDocument.color ?? null)
+                            : (activeDocument.color ?? null)
+                    }
+                    onPaint={(color) =>
+                        handlePaintNote(activeDocument.id, color)
                     }
                     linking={
                         endpoints.linkTargets && endpoints.relations

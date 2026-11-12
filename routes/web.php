@@ -8,6 +8,7 @@ use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
 use CrowVaultCanvas\Http\Controllers\FindLinkTargetsController;
 use CrowVaultCanvas\Http\Controllers\ListContextRootsController;
 use CrowVaultCanvas\Http\Controllers\OperationalStatusController;
+use CrowVaultCanvas\Http\Controllers\PaintEntityController;
 use CrowVaultCanvas\Http\Controllers\RenameEntityController;
 use CrowVaultCanvas\Http\Controllers\RestoreEntityController;
 use CrowVaultCanvas\Http\Controllers\RestoreVersionController;
@@ -71,6 +72,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::patch('/entities/{entity}/title', RenameEntityController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
                     ->name('entities.title.update');
+                Route::patch('/entities/{entity}/color', PaintEntityController::class)
+                    ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
+                    ->name('entities.color.update');
                 Route::post('/contexts', StoreContextController::class)
                     ->middleware(config('crow-vault-canvas.route.context_write_middleware'))
                     ->name('contexts.store');

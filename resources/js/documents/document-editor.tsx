@@ -1,4 +1,6 @@
 import { LinkingTextarea } from './linking-textarea';
+import { NoteColorPicker } from './note-color-picker';
+import type { NoteColorName } from './note-color-picker';
 import { NoteConnections } from './note-connections';
 import { NoteTitleField } from './note-title-field';
 import type { OpenedDocument, SaveState } from './types';
@@ -17,6 +19,8 @@ type DocumentEditorProps = {
     error: string | null;
     onChange: (content: string) => void;
     onRename: (title: string) => Promise<void>;
+    color: string | null;
+    onPaint: (color: NoteColorName | null) => Promise<void>;
     onSave: () => void;
     onBack: () => void;
 };
@@ -36,6 +40,8 @@ export function DocumentEditor({
     error,
     onChange,
     onRename,
+    color,
+    onPaint,
     onSave,
     onBack,
 }: DocumentEditorProps) {
@@ -47,6 +53,7 @@ export function DocumentEditor({
         <section className="cvc-editor" aria-label="Editor Markdown">
             <header className="cvc-editor__header">
                 <NoteTitleField title={document.title} onRename={onRename} />
+                <NoteColorPicker color={color} onPaint={onPaint} />
                 <div className="cvc-editor__actions">
                     <output
                         className="cvc-save-state"

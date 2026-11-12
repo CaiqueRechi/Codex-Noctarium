@@ -70,6 +70,7 @@ final class ContextPresenter
         return [
             'id' => (string) $entity->getKey(),
             'title' => $entity->title,
+            'color' => $entity->color,
             'revision' => $entity->document?->revision,
             'ownContent' => $entity->document?->own_content,
             'descendantContent' => $spaceId === null ? 0.0 : ($descendantContents[$spaceId] ?? null),
