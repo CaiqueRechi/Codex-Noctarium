@@ -6,8 +6,10 @@ use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
 use CrowVaultCanvas\Http\Controllers\CountNoteSearchController;
 use CrowVaultCanvas\Http\Controllers\DestroyEntityController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
+use CrowVaultCanvas\Http\Controllers\DetachEntityFromContextController;
 use CrowVaultCanvas\Http\Controllers\FindLinkTargetsController;
 use CrowVaultCanvas\Http\Controllers\ListContextRootsController;
+use CrowVaultCanvas\Http\Controllers\MoveEntityController;
 use CrowVaultCanvas\Http\Controllers\OperationalStatusController;
 use CrowVaultCanvas\Http\Controllers\PaintEntityController;
 use CrowVaultCanvas\Http\Controllers\RenameEntityController;
@@ -17,6 +19,7 @@ use CrowVaultCanvas\Http\Controllers\SearchVaultController;
 use CrowVaultCanvas\Http\Controllers\ShowAttachmentController;
 use CrowVaultCanvas\Http\Controllers\ShowContextController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
+use CrowVaultCanvas\Http\Controllers\ShowEntityPathController;
 use CrowVaultCanvas\Http\Controllers\StoreAttachmentController;
 use CrowVaultCanvas\Http\Controllers\StoreContextController;
 use CrowVaultCanvas\Http\Controllers\StoreContextDocumentController;
@@ -43,6 +46,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
         Route::get('/search', SearchVaultController::class)
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('search');
+        Route::get('/entities/{entity}/path', ShowEntityPathController::class)
+            ->middleware(config('crow-vault-canvas.route.search_middleware'))
+            ->name('entities.path');
         Route::get('/link-targets', FindLinkTargetsController::class)
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('link-targets');
@@ -97,6 +103,12 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::post('/contexts/{context}/entities', AttachEntityToContextController::class)
                     ->middleware(config('crow-vault-canvas.route.relation_write_middleware'))
                     ->name('contexts.entities.store');
+                Route::delete('/contexts/{context}/entities/{entity}', DetachEntityFromContextController::class)
+                    ->middleware(config('crow-vault-canvas.route.relation_write_middleware'))
+                    ->name('contexts.entities.destroy');
+                Route::post('/entities/{entity}/move', MoveEntityController::class)
+                    ->middleware(config('crow-vault-canvas.route.relation_write_middleware'))
+                    ->name('entities.move');
                 Route::patch('/contexts/{context}/entities/{entity}/layout', UpdateEntityLayoutController::class)
                     ->middleware(config('crow-vault-canvas.route.layout_write_middleware'))
                     ->name('contexts.entities.layout.update');
