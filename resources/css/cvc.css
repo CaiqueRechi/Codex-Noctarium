@@ -907,6 +907,45 @@
     transform: translate(-50%, -50%);
 }
 
+/* The link dot keeps its size on screen at any zoom, like the title, and a
+   44 px touch area around it (D-05). */
+.cvc-shell .cvc-cosmic-note__dot {
+    top: 50%;
+    width: calc(0.75rem / var(--cvc-zoom, 1));
+    min-width: 0;
+    height: calc(0.75rem / var(--cvc-zoom, 1));
+    min-height: 0;
+    border: calc(2px / var(--cvc-zoom, 1)) solid var(--cvc-background);
+    border-radius: 50%;
+    background: var(--cvc-accent);
+    cursor: crosshair;
+    opacity: 0.55;
+    transform: translate(-50%, -50%);
+    transition: opacity 150ms ease;
+}
+
+.cvc-shell .cvc-cosmic-note__dot::before {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: calc(44px / var(--cvc-zoom, 1));
+    height: calc(44px / var(--cvc-zoom, 1));
+    border-radius: 50%;
+    content: '';
+    transform: translate(-50%, -50%);
+}
+
+.cvc-shell .react-flow__node:hover .cvc-cosmic-note__dot,
+.cvc-shell .react-flow__node.selected .cvc-cosmic-note__dot,
+.cvc-shell .cvc-cosmic-note__dot:focus-visible {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-shell .cvc-cosmic-note__dot {
+        transition: none;
+    }
+}
+
 .cvc-shell .react-flow__edge-path {
     stroke: var(--cvc-accent);
     stroke-width: 2;

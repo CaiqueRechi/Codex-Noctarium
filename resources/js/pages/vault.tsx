@@ -3,6 +3,7 @@ import { Controls, ReactFlow } from '@xyflow/react';
 import type {
     Edge,
     NodeMouseHandler,
+    OnConnectEnd,
     NodeTypes,
     OnNodeDrag,
     ReactFlowInstance,
@@ -18,7 +19,7 @@ import cvcMark from '../../images/brand/cvc-mark-reduced.png';
 
 import { AttachmentsPanel } from '../attachments/attachments-panel';
 import type { AttachmentSummary } from '../attachments/types';
-import { CosmicNoteNode } from '../canvas/cosmic-note-node';
+import { CosmicNoteNode, linkDotClassName } from '../canvas/cosmic-note-node';
 import type {
     CosmicNoteCanvasNode,
     CosmicNoteData,
@@ -863,9 +864,9 @@ export default function VaultPage({
     );
 
     const handleCreate = useCallback(
-        async (position: CanvasPoint) => {
+        async (position: CanvasPoint): Promise<string | null> => {
             if (!documentContextId || isCreating) {
-                return;
+                return null;
             }
 
             setIsCreating(true);
@@ -873,7 +874,7 @@ export default function VaultPage({
 
             try {
                 if (!(await session.flush())) {
-                    return;
+                    return null;
                 }
 
                 const document = await createDocument(
@@ -909,12 +910,16 @@ export default function VaultPage({
                 setFocusEntityId(document.id);
                 showDocument(document);
                 void persistWorkspace(viewport.current, document.id);
+
+                return document.id;
             } catch (exception) {
                 setError(
                     exception instanceof Error
                         ? exception.message
                         : 'Não foi possível criar a nota.',
                 );
+
+                return null;
             } finally {
                 setIsCreating(false);
             }
@@ -1009,16 +1014,118 @@ export default function VaultPage({
         ],
     );
 
+    // Relations between notes are global and undirected: a link drawn on the
+    // canvas says only that the two notes belong together.
+    const linkNotes = useCallback(
+        async (sourceEntityId: string, targetEntityId: string) => {
+            if (!endpoints.relations) {
+                throw new Error('O endpoint de relações não está disponível.');
+            }
+
+            const relation = await createRelation(
+                endpoints.relations,
+                sourceEntityId,
+                targetEntityId,
+                null,
+                null,
+                false,
+            );
+            setRelations((current) =>
+                current.some((existing) => existing.id === relation.id)
+                    ? current
+                    : [...current, relation],
+            );
+        },
+        [endpoints.relations],
+    );
+
+    const reportLinkFailure = useCallback((exception: unknown) => {
+        setError(
+            exception instanceof Error
+                ? exception.message
+                : 'Não foi possível ligar as notas.',
+        );
+    }, []);
+
+    // RN-02: a click on the dot creates a sibling beside the note, in the
+    // same space, already linked to it.
+    const createLinkedSibling = useCallback(
+        async (node: CosmicNoteCanvasNode) => {
+            if (!node.data.entityId) {
+                return;
+            }
+
+            const siblingId = await handleCreate({
+                x: node.position.x + node.data.diameter * 1.5,
+                y: node.position.y,
+            });
+
+            if (siblingId) {
+                await linkNotes(node.data.entityId, siblingId);
+            }
+        },
+        [handleCreate, linkNotes],
+    );
+
     const handleNodeClick = useCallback<NodeMouseHandler<CosmicNoteCanvasNode>>(
-        (_event, node) => {
+        (event, node) => {
             if (node.data.kind !== 'document' || !node.data.entityId) {
+                return;
+            }
+
+            if (
+                event.target instanceof Element &&
+                event.target.closest(`.${linkDotClassName}`)
+            ) {
+                void createLinkedSibling(node).catch(reportLinkFailure);
+
                 return;
             }
 
             setFocusEntityId(node.data.entityId);
             void persistWorkspace(viewport.current, node.data.entityId);
         },
-        [persistWorkspace],
+        [createLinkedSibling, persistWorkspace, reportLinkFailure],
+    );
+
+    // A link dragged from the dot ends on whatever note is under the
+    // pointer; dropping it anywhere on that circle is enough.
+    const handleConnectEnd = useCallback<
+        OnConnectEnd
+    >(
+        (event, connection) => {
+            const sourceEntityId = (
+                connection.fromNode as CosmicNoteCanvasNode | null
+            )?.data.entityId;
+            const point = 'changedTouches' in event
+                ? event.changedTouches[0]
+                : event;
+
+            if (!sourceEntityId || !point) {
+                return;
+            }
+
+            const targetId = document
+                .elementFromPoint(point.clientX, point.clientY)
+                ?.closest('.react-flow__node')
+                ?.getAttribute('data-id');
+            const target = nodes.find((candidate) => candidate.id === targetId);
+            const targetEntityId = target?.data.entityId;
+
+            if (
+                !target ||
+                target.data.kind !== 'document' ||
+                !targetEntityId ||
+                targetEntityId === sourceEntityId
+            ) {
+                return;
+            }
+
+            void linkNotes(sourceEntityId, targetEntityId).catch(
+                reportLinkFailure,
+            );
+        },
+        [linkNotes, nodes, reportLinkFailure],
     );
 
     // A space that was just entered is framed whole. The stored viewport
@@ -1665,6 +1772,9 @@ export default function VaultPage({
                         onNodeDrag={handleNodeDrag}
                         onNodeDragStop={handleNodeDragStop}
                         onNodeDoubleClick={handleNodeDoubleClick}
+                        onConnectEnd={handleConnectEnd}
+                        connectOnClick={false}
+                        nodesConnectable
                         nodesDraggable
                         nodesFocusable
                         selectionOnDrag

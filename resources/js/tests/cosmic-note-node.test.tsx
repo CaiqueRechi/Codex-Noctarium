@@ -2,8 +2,28 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@xyflow/react', () => ({
-    Handle: () => null,
-    Position: { Top: 'top', Bottom: 'bottom' },
+    Handle: ({
+        id,
+        className,
+        isConnectable,
+        style,
+        'aria-label': label,
+    }: {
+        id?: string;
+        className?: string;
+        isConnectable?: boolean;
+        style?: object;
+        'aria-label'?: string;
+    }) => (
+        <div
+            className={className}
+            data-handle-id={id}
+            data-connectable={isConnectable === false ? 'false' : 'true'}
+            aria-label={label}
+            style={style}
+        />
+    ),
+    Position: { Top: 'top', Bottom: 'bottom', Right: 'right' },
 }));
 
 import { CosmicNoteNode } from '../canvas/cosmic-note-node';
@@ -73,6 +93,40 @@ describe('RF-03 note drawn as a circle of its area', () => {
         expect(article).toHaveAttribute('data-unmeasured', 'true');
         expect(article.getAttribute('title')).toContain(
             'conteúdo ainda não medido',
+        );
+    });
+});
+
+describe('RN-02 link dot on the edge of a note', () => {
+    it('puts a connectable dot on the edge of a note', () => {
+        const { container } = renderNote({ label: 'Planeta', diameter: 300 });
+        const dot = container.querySelector<HTMLElement>(
+            '.cvc-cosmic-note__dot',
+        );
+
+        expect(dot).not.toBeNull();
+        expect(dot).toHaveAttribute('data-handle-id', 'link');
+        expect(dot).toHaveAttribute('data-connectable', 'true');
+        expect(dot!.style.left).toBe('calc(50% + 150px)');
+        expect(dot).toHaveAttribute(
+            'aria-label',
+            expect.stringContaining('Planeta'),
+        );
+    });
+
+    it('gives no dot to a context, which relations do not connect', () => {
+        const { container } = renderNote({ kind: 'context' });
+
+        expect(container.querySelector('.cvc-cosmic-note__dot')).toBeNull();
+    });
+
+    it('keeps the anchors that draw relations out of reach of the pointer', () => {
+        const { container } = renderNote();
+        const anchors = container.querySelectorAll('.cvc-cosmic-note__anchor');
+
+        expect(anchors).toHaveLength(2);
+        anchors.forEach((anchor) =>
+            expect(anchor).toHaveAttribute('data-connectable', 'false'),
         );
     });
 });

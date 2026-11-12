@@ -15,6 +15,11 @@ export type CosmicNoteData = {
 
 export type CosmicNoteCanvasNode = Node<CosmicNoteData, 'cosmic'>;
 
+// RN-02: the dot on a note's edge links it to another note when dragged
+// there, and creates a linked sibling when clicked.
+export const linkDotHandleId = 'link';
+export const linkDotClassName = 'cvc-cosmic-note__dot';
+
 export function CosmicNoteNode({
     data,
     selected,
@@ -52,6 +57,17 @@ export function CosmicNoteNode({
                 position={Position.Bottom}
                 isConnectable={false}
             />
+            {data.kind === 'document' && (
+                <Handle
+                    id={linkDotHandleId}
+                    className={linkDotClassName}
+                    type="source"
+                    position={Position.Right}
+                    style={{ left: `calc(50% + ${data.diameter / 2}px)` }}
+                    aria-label={`Conectar ${data.label}: arraste até outra nota, ou clique para criar uma nota ligada`}
+                    title="Arraste até outra nota para ligar; clique para criar uma nota ligada"
+                />
+            )}
         </article>
     );
 }
