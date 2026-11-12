@@ -801,12 +801,48 @@ suites were not run, at Rechi's request.
 Security review: no request, endpoint or script added; the fonts are local
 static files, so the content security policy stays as strict as before.
 
+## Phase 15 — the editor and the gestures of D-12
+
+Branch: `cm-editor-e-gestos`, 2026-11-12, based on
+`cm-paleta-rapinante-cosmico`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| A click opens a note; a double click only enters contexts | `openNote` and `handleNodeClick` in `vault.tsx` | `vault-cosmic-space.test.tsx` (2 cases) |
+| Long press on a phone: create on empty, "Fixar / Liberar" on a note | `canvas/use-long-press.ts`; `handleLongPress`, `placeNote` and the pin menu in `vault.tsx` | `long-press.test.tsx` (4 cases) |
+| Connections listed in the editor, removable, with "Conectar a…" | `documents/note-connections.tsx`, `relations/use-link-targets.ts`; `RelationPresenter` sends the title of both ends | `note-connections.test.tsx` (4 cases), `RelationTitlesTest` |
+| Note color | `NoteColor`, `PaintEntity`, `PATCH /vault/entities/{entity}/color`, migration `2026_11_12_000017`; `documents/note-color-picker.tsx`; `--cvc-note-*` tokens | `PaintEntityTest` (5 cases, rollback included), `note-color-picker.test.tsx` (3), `cosmic-note-node.test.tsx` (2 more) |
+| Tests for the zoom navigation of phase 11 | — | `zoom-navigation.test.ts` (12 cases) |
+
+Gestures: only touch counts for the long press (500 ms, at most 10 px of
+slide), since the mouse has the double click and Ctrl. The tap reported
+when the finger lifts belongs to the long press and opens nothing; the
+canvas no longer shows the browser's menu on a long press. Pinning from
+the menu takes the same path as a drop with Ctrl.
+
+Color: a note stores the name of one of six tones, never a value, so a
+theme change repaints every note (RN-20). The tone is mixed at 30 % into
+the dark of the theme, keeping the title between 6.09:1 and 9.72:1.
+
+Refactors done on the way, each in its own commit: relations are written
+by one presenter instead of three copies, and the lookup of link targets
+became a hook shared by `/link` and "Conectar a…".
+
+Not verified: written and not run, at Rechi's request; none of it seen in
+a browser or on a phone.
+
+Security review: the color endpoint accepts only the six names or null,
+behind the entity write authorization and throttle, scoped to the vault.
+Relation titles are titles the same user can open, sent with the vault
+they already load. No new rendered HTML. No issue found in the changed
+paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | partial | The vault root and every context are drawn as cosmic spaces, a space is framed when entered (phase 10), zoom navigates at 60 % / 30 %, into notes as well (phase 11), and the dot creates a linked sibling (phase 12). Touch gestures remain; zoom animation timings still open; the result is not yet fluid |
-| RF-02 | partial | Title limit and legacy-context document backend implemented, note renamed from its editor (phase 13); cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
+| RF-01 | partial | Cosmic spaces, framing, zoom navigation at 60 % / 30 % into notes as well, the linked-sibling dot and the touch gestures are built (phases 10 to 15). Zoom animation timings are still open in D-12; Rechi found the result not yet fluid |
+| RF-02 | partial | Title limit, rename, color, the connection list with "Conectar a…" and a single click opening a note are built (phases 13 and 15). The editor still opens over the whole screen instead of expanding on the canvas, and the content type belongs to RF-04 |
 | RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
