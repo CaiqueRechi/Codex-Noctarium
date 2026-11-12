@@ -895,6 +895,37 @@ Security review: the new endpoint is a write behind the entity write
 authorization and throttle, scoped to the vault (404 outside it); it
 changes a number only. No issue found in the changed paths.
 
+## Phase 18 — external connections (RF-09)
+
+Branch: `cm-conexoes-externas`, 2026-11-12, based on `cm-contadores-link`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Links leaving the open space found and placed in a corner | `findExternalConnections`, `cornerFor` in `canvas/external-connections.ts` | `external-connections.test.tsx` |
+| Three per corner, then "+N" | `groupByCorner`, `canvas/external-connections-overlay.tsx`, `.cvc-external` | same file |
+| Travel through the nearest common ancestor | `travelThroughCommonAncestor`; `travelToNote` in `vault.tsx` | same file (4 cases); the page flow is not covered |
+| Where a note sits | `GET /vault/entities/{entity}/path`, `ShowEntityPathController` | `EntityPathTest` |
+
+D-10 rules applied: the corner nearest the direction, three per corner then
+"+N" opening the list, pinned to the screen and outside the physics. The
+travel goes up to the nearest common ancestor, through the galaxy view
+between universes, then down to the target's space, and the camera
+approaches the target, which is focused, not opened.
+
+Implementation defaults, open in D-10 and D-12 and easy to change: the
+direction is taken from the middle of the open space to the inside note,
+because the outside note has no position on this canvas; each level of a
+travel stays 400 ms on screen; indications sit at 60 % opacity and clear
+the other floating controls.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser.
+
+Security review: one new read endpoint behind the vault's read
+authorization and search throttle, scoped to the vault (404 outside it),
+returning names the same user can open. Titles render as escaped text. No
+issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
@@ -906,7 +937,7 @@ changes a number only. No issue found in the changed paths.
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
 | RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
 | RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept; migration of existing data still open |
-| RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
+| RF-09 | built | Corner indications, "+N" and travel through the common ancestor (phase 18); travel timing open in D-12 |
 | RF-10 | built | `/link` and `/l` with prefix-only suggestions (phase 12) and the full score of D-09 (phase 17) |
 | RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
 
