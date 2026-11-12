@@ -167,6 +167,9 @@ failures, validation errors, and invalid acknowledgements stop immediately.
 Resolve the session or revision conflict before retrying; no automatic overwrite
 or revision replacement occurs.
 
+The note editor opens as a dialog over the canvas. Keyboard focus starts in
+the Markdown field or on the Back to canvas button for a flowchart note.
+
 Leaving the editor starts an immediate save and waits for all pending edits.
 Failure keeps the editor open. Once a cycle has failed, navigation does not
 silently start another cycle. Browser closing or reloading requests the native
