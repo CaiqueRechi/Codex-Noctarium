@@ -751,12 +751,40 @@ returns titles and paths the same user can already open. Relations reuse
 the existing endpoint and its validation. Titles render as escaped React
 text. No issue found in the changed paths.
 
+## Phase 13 — renaming a note
+
+Branch: `cm-renomear-nota`, 2026-11-12, based on `cm-ligacoes-entre-notas`.
+Rechi could not change a note's title with the note open: titles were set
+only at creation, always empty, and the editor showed "Sem título" as text.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Title field in the editor | `documents/note-title-field.tsx`, used by `document-editor.tsx` | `note-title-field.test.tsx` (5 cases) |
+| Rename endpoint | `RenameEntity`, `RenameEntityRequest`, `PATCH /vault/entities/{entity}/title` | `RenameEntityTest` (5 cases) |
+| Every place follows the new name | `handleRenameNote` in `vault.tsx` | none at page level |
+
+The field saves when it is left or on Enter, Escape restores the saved
+title, and an empty title is refused both in the field and by the server.
+Titles are trimmed and limited to 120 characters, the limit of a context
+name. A note that stands for a legacy context keeps that context's name in
+step, the mirror of renaming the context; the space of subnotes of an
+ordinary note keeps its own name, since the page always shows the owner's
+title for it. The search version advances so the index follows.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser.
+
+Security review: the endpoint reuses the entity write authorization and
+throttle, scopes the entity to the configured vault (404 outside it),
+validates on the server and renders the title as escaped text. No issue
+found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
 | RF-01 | partial | The vault root and every context are drawn as cosmic spaces, a space is framed when entered (phase 10), zoom navigates at 60 % / 30 %, into notes as well (phase 11), and the dot creates a linked sibling (phase 12). Touch gestures remain; zoom animation timings still open; the result is not yet fluid |
-| RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
+| RF-02 | partial | Title limit and legacy-context document backend implemented, note renamed from its editor (phase 13); cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
 | RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
