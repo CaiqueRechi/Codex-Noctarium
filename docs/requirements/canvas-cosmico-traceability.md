@@ -870,6 +870,31 @@ Security review: no new endpoint; the existing search adds paths made of
 names the same user can open, behind the same authorization and throttle.
 Results render as escaped text. No issue found in the changed paths.
 
+## Phase 17 — the counters of the link score (RF-10)
+
+Branch: `cm-contadores-link`, 2026-11-12, based on `cm-rosa-dos-ventos`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Accesses counted on every opening of a note | `CountNoteUse::access`, called by `ShowDocumentController` | `UseCountersTest` |
+| Searches counted when a compass result is chosen | `POST /vault/entities/{entity}/searches`, `countNoteSearch` in `entities/api.ts` | `UseCountersTest` |
+| Score = accesses + searches + links | `FindLinkTargets::scores` | `UseCountersTest` (ordering and values) |
+| Counter columns | migration `2026_11_12_000018`, `access_count` and `search_count` | `UseCountersTest` (rollback) |
+
+D-09 is now complete: the counters are added in the database, so two
+openings at once never lose one, and existing notes start at zero, as the
+specification asks for no invented history. A search that fails to be
+counted does not stop the user from reaching the note.
+
+Implementation default: the document endpoint, a GET, now writes a counter;
+it serves only the vault's own pages, behind the same authorization.
+
+Not verified: written and not run, at Rechi's request.
+
+Security review: the new endpoint is a write behind the entity write
+authorization and throttle, scoped to the vault (404 outside it); it
+changes a number only. No issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
@@ -882,7 +907,7 @@ Results render as escaped text. No issue found in the changed paths.
 | RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
 | RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept; migration of existing data still open |
 | RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
-| RF-10 | partial | `/link` and `/l` with prefix-only suggestions built (phase 12); counting accesses and searches for the score remains |
+| RF-10 | built | `/link` and `/l` with prefix-only suggestions (phase 12) and the full score of D-09 (phase 17) |
 | RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
 
 Follow-up questions are asked only when their decisions block the next phase.
