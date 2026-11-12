@@ -1591,47 +1591,32 @@ export default function VaultPage({
             <Head title="CVC">
                 <link rel="icon" type="image/png" href={cvcMark} />
             </Head>
-            <header className="cvc-header">
-                <div className="cvc-brand">
-                    <img
-                        className="cvc-brand-mark"
-                        src={cvcMark}
-                        alt=""
-                        aria-hidden="true"
+            <h1 className="cvc-visually-hidden">{vault.name}</h1>
+
+            <div className="cvc-workspace">
+                {/* Nothing takes a strip of the screen from the canvas: the
+                    path, the status and the tools float over its corners. */}
+                <div className="cvc-overlay cvc-overlay--start">
+                    <VaultPath
+                        breadcrumbs={breadcrumbs}
+                        onOpenContext={(contextId) =>
+                            void handleOpenContext(contextId).catch(
+                                (exception: unknown) =>
+                                    setError(
+                                        exception instanceof Error
+                                            ? exception.message
+                                            : 'Não foi possível abrir o assunto.',
+                                    ),
+                            )
+                        }
                     />
-                    <div>
-                        <span className="cvc-eyebrow">Crow Vault Canvas</span>
-                        <h1>{vault.name}</h1>
-                    </div>
-                </div>
-                <VaultPath
-                    breadcrumbs={breadcrumbs}
-                    onOpenContext={(contextId) =>
-                        void handleOpenContext(contextId).catch(
-                            (exception: unknown) =>
-                                setError(
-                                    exception instanceof Error
-                                        ? exception.message
-                                        : 'Não foi possível abrir o assunto.',
-                                ),
-                        )
-                    }
-                />
-                <div className="cvc-header__actions">
-                    {navigation && (
-                        <button
-                            type="button"
-                            className="cvc-button"
-                            onClick={() => void handleReturnHome()}
-                        >
-                            Voltar ao Rechi OS
-                        </button>
-                    )}
                     {isCreating && (
                         <span className="cvc-status" role="status">
                             Criando nota…
                         </span>
                     )}
+                </div>
+                <div className="cvc-overlay cvc-overlay--end">
                     <button
                         type="button"
                         className="cvc-button cvc-tools-toggle"
@@ -1647,15 +1632,13 @@ export default function VaultPage({
                         <span aria-hidden="true">☰</span>
                     </button>
                 </div>
-            </header>
 
-            {(error || workspaceError) && !activeDocument && (
-                <p className="cvc-page-error" role="alert">
-                    {error ?? workspaceError}
-                </p>
-            )}
+                {(error || workspaceError) && !activeDocument && (
+                    <p className="cvc-page-error" role="alert">
+                        {error ?? workspaceError}
+                    </p>
+                )}
 
-            <div className="cvc-workspace">
                 <main
                     ref={canvas}
                     className="cvc-canvas"
@@ -1700,6 +1683,15 @@ export default function VaultPage({
                     aria-label="Ferramentas do vault"
                     hidden={!isToolsOpen}
                 >
+                    {navigation && (
+                        <button
+                            type="button"
+                            className="cvc-button cvc-tools__home"
+                            onClick={() => void handleReturnHome()}
+                        >
+                            Voltar ao Rechi OS
+                        </button>
+                    )}
                     <VaultExplorer
                         universes={visibleUniverses}
                         isAtVaultRoot={activeContextId === null}

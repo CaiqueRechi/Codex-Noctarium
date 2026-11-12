@@ -1,29 +1,44 @@
+/* The canvas is the whole screen; everything else floats over it. */
 .cvc-shell {
     display: grid;
     height: 100vh;
-    /* Header, optional page error, canvas. The error has a row of its own:
-       sharing the rows pushed the canvas out of the screen whenever a
-       message appeared. */
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     background: var(--cvc-background);
     color: var(--cvc-text);
 }
 
-.cvc-header {
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    border-bottom: 1px solid var(--cvc-border);
-    background: var(--cvc-surface);
-    padding: 1rem 1.5rem;
-    box-shadow: 0 0.75rem 2rem var(--cvc-shadow);
+.cvc-visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    white-space: nowrap;
 }
 
-.cvc-header h1 {
-    margin: 0.2rem 0 0;
-    font-size: clamp(1.2rem, 2vw, 1.75rem);
+.cvc-overlay {
+    position: absolute;
+    z-index: 9;
+    top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+}
+
+.cvc-overlay > * {
+    pointer-events: auto;
+}
+
+.cvc-overlay--start {
+    left: 0.75rem;
+    right: 4.5rem;
+    flex-wrap: wrap;
+}
+
+.cvc-overlay--end {
+    right: 0.75rem;
 }
 
 .cvc-brand {
@@ -43,7 +58,6 @@
     filter: grayscale(1) brightness(0) invert(1);
 }
 
-.cvc-header__actions,
 .cvc-editor__actions {
     display: flex;
     align-items: center;
@@ -96,7 +110,7 @@
 
 .cvc-workspace {
     position: relative;
-    grid-row: 3;
+    grid-row: 1;
     display: grid;
     min-height: 0;
 }
@@ -112,8 +126,13 @@
     width: min(24rem, 100%);
     border-left: 1px solid var(--cvc-border);
     background: var(--cvc-surface);
-    padding: 1rem;
+    /* Room for the floating button that closes the panel. */
+    padding: 4.25rem 1rem 1rem;
     box-shadow: -1rem 0 2.5rem var(--cvc-shadow);
+}
+
+.cvc-tools__home {
+    margin-bottom: 1rem;
 }
 
 .cvc-tools[hidden] {
@@ -718,6 +737,16 @@
     cursor: pointer;
 }
 
+.cvc-page-error {
+    position: absolute;
+    z-index: 9;
+    top: 4rem;
+    left: 50%;
+    max-width: min(36rem, calc(100% - 2rem));
+    transform: translateX(-50%);
+    border-radius: 0.65rem;
+}
+
 .cvc-page-error,
 .cvc-editor__error {
     margin: 0;
@@ -796,13 +825,11 @@
 }
 
 @media (max-width: 48rem) {
-    .cvc-header,
     .cvc-editor__header {
         align-items: stretch;
         flex-direction: column;
     }
 
-    .cvc-header__actions,
     .cvc-editor__actions {
         flex-wrap: wrap;
     }
