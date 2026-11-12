@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
-import { findLinkTargets } from '../relations/api';
 import type { LinkTarget } from '../relations/api';
+import { useLinkTargets } from '../relations/use-link-targets';
 import { findLinkCommand, removeLinkCommand } from './link-command';
 import type { LinkCommand } from './link-command';
 
@@ -14,9 +14,6 @@ type LinkingTextareaProps = {
     onLink: (targetEntityId: string) => Promise<void>;
 };
 
-// Typing pauses this long before asking the server, so a word typed fast
-// costs one request, not one per letter.
-const lookupDelay = 150;
 const listId = 'cvc-link-suggestions';
 
 export function LinkingTextarea({
@@ -28,53 +25,14 @@ export function LinkingTextarea({
 }: LinkingTextareaProps) {
     const textarea = useRef<HTMLTextAreaElement | null>(null);
     const [command, setCommand] = useState<LinkCommand | null>(null);
-    const [targets, setTargets] = useState<LinkTarget[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
-    const [message, setMessage] = useState<string | null>(null);
+    const { targets, message, setMessage } = useLinkTargets(
+        linkTargetsEndpoint,
+        command?.query ?? null,
+        entityId,
+    );
 
-    useEffect(() => {
-        if (!command) {
-            setTargets([]);
-
-            return;
-        }
-
-        const controller = new AbortController();
-        const timer = window.setTimeout(() => {
-            findLinkTargets(
-                linkTargetsEndpoint,
-                command.query,
-                entityId,
-                controller.signal,
-            )
-                .then((found) => {
-                    setTargets(found);
-                    setActiveIndex(0);
-                    setMessage(
-                        found.length === 0
-                            ? `Nenhuma nota começa com “${command.query.trim()}”.`
-                            : null,
-                    );
-                })
-                .catch((exception: unknown) => {
-                    if (controller.signal.aborted) {
-                        return;
-                    }
-
-                    setTargets([]);
-                    setMessage(
-                        exception instanceof Error
-                            ? exception.message
-                            : 'Não foi possível buscar as notas.',
-                    );
-                });
-        }, lookupDelay);
-
-        return () => {
-            window.clearTimeout(timer);
-            controller.abort();
-        };
-    }, [command, entityId, linkTargetsEndpoint]);
+    useEffect(() => setActiveIndex(0), [targets]);
 
     const readCommand = (element: HTMLTextAreaElement) => {
         const found = findLinkCommand(element.value, element.selectionStart);
