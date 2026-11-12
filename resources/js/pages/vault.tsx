@@ -53,7 +53,7 @@ import { createDocument, openDocument } from '../documents/api';
 import { DocumentEditor } from '../documents/document-editor';
 import type { DocumentSummary, OpenedDocument } from '../documents/types';
 import { useDocumentAutosave } from '../documents/use-document-autosave';
-import { updateEntityProperties } from '../entities/api';
+import { renameEntity, updateEntityProperties } from '../entities/api';
 import { PropertiesPanel } from '../entities/properties-panel';
 import type { EntityProperties } from '../entities/types';
 import { continueTrail } from '../explorer/navigation-trail';
@@ -1340,6 +1340,44 @@ export default function VaultPage({
         [endpoints.entities, focusedDocument, setActiveDocument],
     );
 
+    // Every place that shows the note's name follows its new title: each
+    // appearance on the canvas, the open editor, and the path when the note's
+    // own space is in it.
+    const handleRenameNote = useCallback(
+        async (entityId: string, title: string) => {
+            const renamed = await renameEntity(endpoints.entities, entityId, title);
+            const spaceIds = new Set(
+                flattenContexts(universes)
+                    .flatMap((context) => context.documents)
+                    .filter((document) => document.id === entityId)
+                    .flatMap((document) =>
+                        document.spaceId ? [document.spaceId] : [],
+                    ),
+            );
+
+            setUniverses((current) =>
+                mapDocuments(current, (document) =>
+                    document.id === entityId
+                        ? { ...document, title: renamed.title }
+                        : document,
+                ),
+            );
+            setActiveDocument((current) =>
+                current?.id === entityId
+                    ? { ...current, title: renamed.title }
+                    : current,
+            );
+            setBreadcrumbs((current) =>
+                current.map((crumb) =>
+                    spaceIds.has(crumb.id)
+                        ? { ...crumb, name: renamed.title }
+                        : crumb,
+                ),
+            );
+        },
+        [endpoints.entities, setActiveDocument, universes],
+    );
+
     const requireRelationEndpoints = useCallback(() => {
         if (!endpoints.contexts || !endpoints.relations) {
             throw new Error('Os endpoints de relações não estão disponíveis.');
@@ -1936,6 +1974,9 @@ export default function VaultPage({
                     saveState={saveState}
                     error={saveError ?? error}
                     onChange={handleDraftChange}
+                    onRename={(title) =>
+                        handleRenameNote(activeDocument.id, title)
+                    }
                     linking={
                         endpoints.linkTargets && endpoints.relations
                             ? {

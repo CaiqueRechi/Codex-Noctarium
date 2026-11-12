@@ -827,8 +827,45 @@
     font-size: 0.85rem;
 }
 
-.cvc-editor__header h2 {
-    margin: 0.2rem 0 0;
+.cvc-note-title {
+    display: grid;
+    flex: 1 1 18rem;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.cvc-note-title__input {
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: transparent;
+    padding: 0.2rem 0.4rem;
+    margin-left: -0.4rem;
+    color: var(--cvc-text);
+    font: inherit;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.cvc-note-title__input:hover {
+    border-color: var(--cvc-border);
+}
+
+.cvc-note-title__input:focus-visible {
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 2px;
+    border-color: var(--cvc-border);
+    background: var(--cvc-surface-raised);
+}
+
+.cvc-note-title__input[aria-invalid='true'] {
+    border-color: var(--cvc-danger);
+}
+
+.cvc-note-title__error {
+    margin: 0;
+    color: var(--cvc-danger);
+    font-size: 0.85rem;
 }
 
 .cvc-save-state {

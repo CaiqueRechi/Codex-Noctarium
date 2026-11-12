@@ -1,4 +1,5 @@
 import { LinkingTextarea } from './linking-textarea';
+import { NoteTitleField } from './note-title-field';
 import type { OpenedDocument, SaveState } from './types';
 
 type DocumentEditorProps = {
@@ -11,6 +12,7 @@ type DocumentEditorProps = {
     saveState: SaveState;
     error: string | null;
     onChange: (content: string) => void;
+    onRename: (title: string) => Promise<void>;
     onSave: () => void;
     onBack: () => void;
 };
@@ -29,6 +31,7 @@ export function DocumentEditor({
     saveState,
     error,
     onChange,
+    onRename,
     onSave,
     onBack,
 }: DocumentEditorProps) {
@@ -39,10 +42,7 @@ export function DocumentEditor({
     return (
         <section className="cvc-editor" aria-label="Editor Markdown">
             <header className="cvc-editor__header">
-                <div>
-                    <span className="cvc-eyebrow">Documento</span>
-                    <h2>{document.title ?? 'Sem título'}</h2>
-                </div>
+                <NoteTitleField title={document.title} onRename={onRename} />
                 <div className="cvc-editor__actions">
                     <output
                         className="cvc-save-state"

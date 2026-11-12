@@ -6,6 +6,36 @@ type EntityResponse = {
     entity: DocumentSummary;
 };
 
+export async function renameEntity(
+    entitiesEndpoint: string,
+    entityId: string,
+    title: string,
+): Promise<{ id: string; title: string }> {
+    const response = await fetch(
+        `${entitiesEndpoint}/${encodeURIComponent(entityId)}/title`,
+        {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                ...xsrfHeaders(),
+            },
+            body: JSON.stringify({ title }),
+        },
+    );
+    const payload = (await response.json()) as {
+        entity?: { id: string; title: string };
+        message?: string;
+    };
+
+    if (!response.ok || !payload.entity) {
+        throw new Error(payload.message ?? 'Não foi possível renomear a nota.');
+    }
+
+    return payload.entity;
+}
+
 export async function updateEntityProperties(
     entitiesEndpoint: string,
     entityId: string,

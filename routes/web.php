@@ -8,6 +8,7 @@ use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
 use CrowVaultCanvas\Http\Controllers\FindLinkTargetsController;
 use CrowVaultCanvas\Http\Controllers\ListContextRootsController;
 use CrowVaultCanvas\Http\Controllers\OperationalStatusController;
+use CrowVaultCanvas\Http\Controllers\RenameEntityController;
 use CrowVaultCanvas\Http\Controllers\RestoreEntityController;
 use CrowVaultCanvas\Http\Controllers\RestoreVersionController;
 use CrowVaultCanvas\Http\Controllers\SearchVaultController;
@@ -40,10 +41,10 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
         Route::get('/search', SearchVaultController::class)
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('search');
-        Route::get('/operations', OperationalStatusController::class)
         Route::get('/link-targets', FindLinkTargetsController::class)
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('link-targets');
+        Route::get('/operations', OperationalStatusController::class)
             ->middleware(config('crow-vault-canvas.route.operations_middleware'))
             ->name('operations.index');
         Route::get('/contexts', ListContextRootsController::class)->name('contexts.index');
@@ -67,6 +68,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::patch('/entities/{entity}', UpdateEntityPropertiesController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
                     ->name('entities.update');
+                Route::patch('/entities/{entity}/title', RenameEntityController::class)
+                    ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
+                    ->name('entities.title.update');
                 Route::post('/contexts', StoreContextController::class)
                     ->middleware(config('crow-vault-canvas.route.context_write_middleware'))
                     ->name('contexts.store');
