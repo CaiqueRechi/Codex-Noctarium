@@ -705,11 +705,57 @@ request per crossing. The zoom bounds widened a validated range and stay
 finite. No storage, cache or rendered user text was added beyond titles
 already shown as escaped React text. No issue found in the changed paths.
 
+## Phase 12 — links between notes
+
+Branch: `cm-ligacoes-entre-notas`, 2026-11-12, based on
+`cm-navegacao-zoom-canvas`. Rechi found no way to connect two notes: no dot
+on the circles and `/link` doing nothing. Both were specified (RN-02,
+RF-10) and never built.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Dot on the edge of a note | `linkDotHandleId`, `linkDotClassName` in `canvas/cosmic-note-node.tsx`; `.cvc-cosmic-note__dot` | `cosmic-note-node.test.tsx` (3 cases) |
+| Drag from the dot onto a note links them | `handleConnectEnd` and `linkNotes` in `vault.tsx` | none at page level |
+| Click on the dot creates a linked sibling | `createLinkedSibling` in `vault.tsx`; `handleCreate` returns the new id | none at page level |
+| `/link` and `/l` in the editor | `link-command.ts`, `linking-textarea.tsx`, `findLinkTargets` in `relations/api.ts` | `link-command.test.ts` (6 cases) |
+| Targets by prefix, score and path | `FindLinkTargets`, `GET /vault/link-targets` | `LinkTargetsTest` (5 cases) |
+
+How it behaves: Rechi chose that the dot does both things. Dragging it
+onto any point of another note's circle creates a global, undirected
+relation; the drop is resolved from the element under the pointer, so it
+does not have to hit a handle. A click creates a sibling 1.5 diameters to
+the right, in the same space, linked to the note, and opens it. Contexts
+have no dot, since relations connect notes.
+
+`/link` and `/l` followed by a space and the start of a title, right before
+the caret, list at most five notes of the vault. D-09 rules apply: prefix
+only, case, accents and leading spaces ignored, score then alphabetical,
+`$l` not accepted. A note does not offer itself. Equal titles show the path
+of each, from the universe down, using the first space the note was placed
+in. Choosing links the two notes and removes the command from the text.
+
+Implementation defaults, not product decisions: links made on the canvas or
+by command are global and undirected; the score counts only links, because
+accesses and searches are not counted yet (RF-10 counters remain); the
+endpoint filters titles in PHP for accent-free prefix matching that works
+the same on MySQL and SQLite, within the 5,000-note target; a sibling opens
+its editor like any new note.
+
+Not verified: the suites were written and not run, at Rechi's request,
+until every remaining item is built. The drag and the click were not seen
+in a browser.
+
+Security review: the new endpoint is a read behind the vault's session,
+authorization and search throttle, scoped to the configured vault; it
+returns titles and paths the same user can already open. Relations reuse
+the existing endpoint and its validation. Titles render as escaped React
+text. No issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | partial | The vault root and every context are drawn as cosmic spaces, a space is framed when entered (phase 10) and zoom navigates at 60 % / 30 %, into notes as well (phase 11). The sibling dot and touch gestures remain; zoom animation timings still open; the result is not yet fluid |
+| RF-01 | partial | The vault root and every context are drawn as cosmic spaces, a space is framed when entered (phase 10), zoom navigates at 60 % / 30 %, into notes as well (phase 11), and the dot creates a linked sibling (phase 12). Touch gestures remain; zoom animation timings still open; the result is not yet fluid |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
 | RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
@@ -717,7 +763,7 @@ already shown as escaped React text. No issue found in the changed paths.
 | RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |
 | RF-08 | ready | D-13 decided: deletion asks about subnotes, removing a participation always asks, 7-day trash, every version kept; migration of existing data still open |
 | RF-09 | ready | D-10 decided: grouped by corner, three per corner then "+N", no physics; not implemented |
-| RF-10 | ready | D-09 decided: counter events, case- and accent-insensitive prefix, only `/link` and `/l` (`$l` was dropped); not implemented |
+| RF-10 | partial | `/link` and `/l` with prefix-only suggestions built (phase 12); counting accesses and searches for the score remains |
 | RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
 
 Follow-up questions are asked only when their decisions block the next phase.
