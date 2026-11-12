@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Relations;
 
-use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
+use CrowVaultCanvas\Application\Contexts\ContextPath;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use Illuminate\Contracts\Config\Repository;
@@ -21,9 +21,7 @@ final readonly class FindLinkTargets
 {
     public const LIMIT = 5;
 
-    private const MAXIMUM_PATH_DEPTH = 64;
-
-    public function __construct(private Repository $config) {}
+    public function __construct(private Repository $config, private ContextPath $contextPath) {}
 
     /** @return list<array{id: string, title: string, path: list<string>, score: int}> */
     public function handle(string $prefix, ?string $exceptEntityId): array
@@ -58,7 +56,7 @@ final readonly class FindLinkTargets
             ->map(fn (KnowledgeEntity $entity): array => [
                 'id' => (string) $entity->getKey(),
                 'title' => (string) $entity->title,
-                'path' => $this->path($entity),
+                'path' => array_column($this->contextPath->toEntity($entity), 'name'),
                 'score' => $scores[(string) $entity->getKey()] ?? 0,
             ])
             ->values()
@@ -98,28 +96,6 @@ final readonly class FindLinkTargets
         }
 
         return $scores;
-    }
-
-    /**
-     * Where the note sits, from its universe down, so two notes with the
-     * same title can be told apart. A note in several spaces shows the
-     * first one it was placed in.
-     *
-     * @return list<string>
-     */
-    private function path(KnowledgeEntity $entity): array
-    {
-        $context = $entity->contexts()->orderBy('cvc_context_entity.created_at')->first();
-        $names = [];
-
-        for ($depth = 0; $context !== null && $depth < self::MAXIMUM_PATH_DEPTH; $depth++) {
-            array_unshift($names, $context->noteSpace?->entity?->title ?? $context->name);
-            $context = $context->parent_id === null
-                ? null
-                : KnowledgeContext::query()->with('noteSpace.entity')->find($context->parent_id);
-        }
-
-        return $names;
     }
 
     private function vaultId(): string
