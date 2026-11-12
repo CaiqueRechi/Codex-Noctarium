@@ -779,6 +779,28 @@ throttle, scopes the entity to the configured vault (404 outside it),
 validates on the server and renders the title as escaped text. No issue
 found in the changed paths.
 
+## Phase 14 — the cosmic reaver palette
+
+Branch: `cm-paleta-rapinante-cosmico`, 2026-11-12, based on
+`cm-renomear-nota`. Decision recorded in section 15.5 of `canvas-cosmico.md`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Palette F as the theme tokens, plus `--cvc-energy` and `--cvc-gilt` | `resources/css/presets.css` | `theme-tokens.test.ts` (3 cases) |
+| Fonts served by the package | `resources/css/fonts.css`, `resources/fonts/*` with their OFL licences | same file |
+| Type and signature applied | `resources/css/cvc.css` | same file |
+
+Measured: every text or line pair used reaches 4.5:1 (from 4.58:1 for the
+violet lines on the background to 17:1 for text). The test keeps raw colors
+out of `cvc.css` (RN-20) and every token it uses defined in the preset.
+Seen in a browser on the local environment: the background, the path in
+Cinzel, the champagne trim and the note in focus; Cinzel and Manrope
+loaded. Not seen: the editor, the tools panel and the dot up close. The
+suites were not run, at Rechi's request.
+
+Security review: no request, endpoint or script added; the fonts are local
+static files, so the content security policy stays as strict as before.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
