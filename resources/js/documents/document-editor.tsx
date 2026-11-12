@@ -52,12 +52,18 @@ export function DocumentEditor({
     onSave,
     onBack,
 }: DocumentEditorProps) {
+    const isFlowchart = isFlowchartContent(draft);
     const isSaving = saveState === 'saving';
     const hasPendingChanges =
         draft !== document.content || saveState === 'failed';
 
     return (
-        <section className="cvc-editor" aria-label="Editor Markdown">
+        <section
+            className="cvc-editor"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Editor de nota"
+        >
             <header className="cvc-editor__header">
                 <NoteTitleField title={document.title} onRename={onRename} />
                 <NoteColorPicker color={color} onPaint={onPaint} />
@@ -89,6 +95,7 @@ export function DocumentEditor({
                     <button
                         type="button"
                         className="cvc-button"
+                        autoFocus={isFlowchart}
                         onClick={onBack}
                     >
                         Voltar ao canvas
@@ -113,7 +120,7 @@ export function DocumentEditor({
                 />
             )}
 
-            {isFlowchartContent(draft) ? (
+            {isFlowchart ? (
                 <FlowchartNote content={draft} onChange={onChange} />
             ) : linking ? (
                 <LinkingTextarea
