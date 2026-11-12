@@ -5,6 +5,7 @@
     grid-template-rows: minmax(0, 1fr);
     background: var(--cvc-background);
     color: var(--cvc-text);
+    font-family: var(--cvc-font-body);
 }
 
 .cvc-visually-hidden {
@@ -93,10 +94,11 @@
 }
 
 .cvc-eyebrow {
-    color: var(--cvc-text-muted);
+    color: var(--cvc-gilt);
+    font-family: var(--cvc-font-display);
     font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
 }
 
@@ -141,7 +143,8 @@
 
 .cvc-status {
     color: var(--cvc-text-muted);
-    font-size: 0.85rem;
+    font-family: var(--cvc-font-mono);
+    font-size: 0.8rem;
 }
 
 .cvc-tools-toggle {
@@ -182,6 +185,21 @@
     color: var(--cvc-text-muted);
     cursor: pointer;
     white-space: nowrap;
+}
+
+/* The path reads like an engraved inscription; the space you are in is the
+   one written in champagne. */
+.cvc-breadcrumbs button {
+    min-height: 2.75rem;
+    padding-inline: 0.85rem;
+    font-family: var(--cvc-font-display);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+}
+
+.cvc-breadcrumbs button:last-child {
+    border-color: var(--cvc-gilt);
+    color: var(--cvc-gilt);
 }
 
 .cvc-breadcrumbs button:hover,
@@ -870,8 +888,8 @@
 
 .cvc-save-state {
     color: var(--cvc-text-muted);
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-family: var(--cvc-font-mono);
+    font-size: 0.8rem;
 }
 
 .cvc-save-state[data-state='saved'] {
@@ -905,9 +923,7 @@
     background: var(--cvc-background);
     padding: clamp(1.25rem, 4vw, 4rem);
     color: var(--cvc-text);
-    font-family:
-        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        'Liberation Mono', monospace;
+    font-family: var(--cvc-font-mono);
     font-size: clamp(1rem, 1.4vw, 1.2rem);
     line-height: 1.7;
 }
@@ -948,10 +964,13 @@
 .cvc-cosmic-note__body {
     display: block;
     grid-area: 1 / 1;
-    border: calc(2px / var(--cvc-zoom, 1)) solid var(--cvc-focus);
+    border: calc(1.5px / var(--cvc-zoom, 1)) solid var(--cvc-gilt);
     border-radius: 50%;
     background: var(--cvc-surface-raised);
     box-shadow: 0 0 calc(24px / var(--cvc-zoom, 1)) var(--cvc-shadow);
+    transition:
+        border-color 200ms ease,
+        box-shadow 200ms ease;
 }
 
 .cvc-cosmic-note[data-kind='context'] .cvc-cosmic-note__body {
@@ -967,9 +986,20 @@
     border-style: dashed;
 }
 
+/* Signature: the note in focus carries the blue-white energy on its edge;
+   the champagne stays as the thin trim of every other note. */
 .cvc-cosmic-note[data-selected='true'] .cvc-cosmic-note__body {
-    outline: calc(3px / var(--cvc-zoom, 1)) solid var(--cvc-focus);
-    outline-offset: calc(3px / var(--cvc-zoom, 1));
+    border-color: var(--cvc-energy);
+    border-width: calc(2px / var(--cvc-zoom, 1));
+    box-shadow:
+        0 0 calc(6px / var(--cvc-zoom, 1)) var(--cvc-energy),
+        0 0 calc(28px / var(--cvc-zoom, 1)) var(--cvc-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-cosmic-note__body {
+        transition: none;
+    }
 }
 
 .cvc-cosmic-note__title {
@@ -977,6 +1007,7 @@
     grid-area: 1 / 1;
     color: var(--cvc-text);
     font-size: calc(0.9rem / var(--cvc-zoom, 1));
+    font-weight: 600;
     pointer-events: none;
     text-shadow: 0 0 calc(4px / var(--cvc-zoom, 1)) var(--cvc-background);
     white-space: nowrap;
@@ -1005,7 +1036,7 @@
     min-height: 0;
     border: calc(2px / var(--cvc-zoom, 1)) solid var(--cvc-background);
     border-radius: 50%;
-    background: var(--cvc-accent);
+    background: var(--cvc-energy);
     cursor: crosshair;
     opacity: 0.55;
     transform: translate(-50%, -50%);
@@ -1036,7 +1067,7 @@
 
 .cvc-shell .react-flow__edge-path {
     stroke: var(--cvc-accent);
-    stroke-width: 2;
+    stroke-width: 1.5;
 }
 
 .cvc-shell .react-flow__handle {

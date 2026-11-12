@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
 
 import '@xyflow/react/dist/style.css';
+import '../../css/fonts.css';
 import '../../css/presets.css';
 import '../../css/cvc.css';
 import cvcMark from '../../images/brand/cvc-mark-reduced.png';
