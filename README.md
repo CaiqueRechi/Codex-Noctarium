@@ -177,6 +177,10 @@ Closing or reloading can lose unconfirmed edits. Returning the draft to its old
 text after a failed request does not clear the warning because persistence may
 still be uncertain.
 
+## Visual style
+
+The vault uses the "Rapinante cósmico" palette and type chosen on 2026-11-12, described in section 15.5 of `docs/requirements/canvas-cosmico.md`. Colors live only in `resources/css/presets.css`, as `--cvc-*` tokens, and a test fails if `cvc.css` writes a color of its own. Cinzel, Manrope and JetBrains Mono are served from `resources/fonts/` under the SIL OFL 1.1 because the host allows fonts only from its own origin; replacing a font means replacing its file, its licence and its `@font-face` in `resources/css/fonts.css`.
+
 ## Brand assets
 
 - `resources/images/brand/cvc-logo-official.png` preserves the definitive artwork supplied by Caique without modification.

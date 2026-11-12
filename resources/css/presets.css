@@ -1,16 +1,34 @@
+/* "Rapinante cósmico", chosen by Caique on 2026-11-12: the indigo void,
+   champagne trim and blue-white energy of a cosmic armour, kept apart from
+   the plum, purple, mustard and orange of the Rechi OS theme. Every pair
+   used for text or lines measures at least 4.5:1. */
 .cvc-theme {
-    --cvc-background: oklch(0.15 0.018 270);
-    --cvc-surface: oklch(0.2 0.025 270);
-    --cvc-surface-raised: oklch(0.25 0.035 270);
-    --cvc-border: oklch(0.42 0.045 270);
-    --cvc-text: oklch(0.96 0.012 260);
-    --cvc-text-muted: oklch(0.74 0.025 260);
-    --cvc-accent: oklch(0.72 0.16 272);
-    --cvc-accent-strong: oklch(0.65 0.22 286);
-    --cvc-focus: oklch(0.82 0.14 90);
-    --cvc-success: oklch(0.76 0.14 155);
-    --cvc-warning: oklch(0.82 0.14 90);
-    --cvc-danger: oklch(0.68 0.2 25);
-    --cvc-danger-surface: oklch(0.24 0.07 25);
-    --cvc-shadow: oklch(0.06 0.02 270 / 0.45);
+    --cvc-background: #090714;
+    --cvc-surface: #130f2c;
+    --cvc-surface-raised: #1e1747;
+    --cvc-border: #3b3272;
+    --cvc-text: #eeebfa;
+    --cvc-text-muted: #a9a3cc;
+    --cvc-accent: #7b5cff;
+    --cvc-accent-strong: #5b3de0;
+    --cvc-energy: #cfe3ff;
+    --cvc-gilt: #ebcb86;
+    --cvc-focus: var(--cvc-energy);
+    --cvc-success: #74e0b5;
+    --cvc-warning: #f0c75e;
+    --cvc-danger: #ff6b81;
+    --cvc-danger-surface: #3a1022;
+    --cvc-shadow: rgb(3 2 10 / 0.55);
+
+    /* RF-02: the tones a note may be painted with, stored by name. */
+    --cvc-note-vazio: #7b5cff;
+    --cvc-note-energia: #cfe3ff;
+    --cvc-note-champanhe: #ebcb86;
+    --cvc-note-nebulosa: #d46bdf;
+    --cvc-note-aurora: #5fd3c4;
+    --cvc-note-brasa: #ff8a6b;
+
+    --cvc-font-display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+    --cvc-font-body: 'Manrope', system-ui, sans-serif;
+    --cvc-font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 }

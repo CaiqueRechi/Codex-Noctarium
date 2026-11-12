@@ -12,6 +12,7 @@ use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use CrowVaultCanvas\Http\ContextPresenter;
 use CrowVaultCanvas\Http\PerspectivePresenter;
+use CrowVaultCanvas\Http\RelationPresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,6 +26,7 @@ final class VaultController
         OpenContextSlice $openContextSlice,
         ContextPresenter $contextPresenter,
         PerspectivePresenter $perspectivePresenter,
+        RelationPresenter $relationPresenter,
         ListOperationalTasks $listOperationalTasks,
     ): Response {
         $userId = (string) $request->user()?->getAuthIdentifier();
@@ -45,15 +47,10 @@ final class VaultController
                 'name' => $vault->name,
                 'universes' => $contextSlice['contexts'],
                 'breadcrumbs' => $contextSlice['breadcrumbs'],
-                'relations' => $vault->relations->map(fn (KnowledgeRelation $relation): array => [
-                    'id' => $relation->getKey(),
-                    'sourceEntityId' => $relation->source_entity_id,
-                    'targetEntityId' => $relation->target_entity_id,
-                    'contextId' => $relation->context_id,
-                    'relationType' => $relation->relation_type,
-                    'isDirected' => $relation->is_directed,
-                    'properties' => (object) ($relation->properties ?? []),
-                ])->values(),
+                'relations' => $vault->relations
+                    ->loadMissing(['source:id,title', 'target:id,title'])
+                    ->map(fn (KnowledgeRelation $relation): array => $relationPresenter->relation($relation))
+                    ->values(),
                 'perspectives' => $vault->perspectives
                     ->map(fn ($perspective): array => $perspectivePresenter->toArray($perspective))
                     ->values(),

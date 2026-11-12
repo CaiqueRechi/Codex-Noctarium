@@ -377,6 +377,22 @@ Rechi viu a primeira etapa no navegador e decidiu:
 
 Decisão de implementação, não de produto: ao entrar num espaço a câmera o enquadra inteiro, sem passar de 200% de zoom. Isso não substitui a navegação por zoom da D-12, que continua por fazer.
 
+### 15.5 Estilo e paleta aprovados em 2026-11-12
+
+Rechi pediu uma identidade visual própria do vault, independente da do Rechi OS, e escolheu entre seis direções a **F, Rapinante cósmico**, inspirada na skin Cosmic Reaver Kassadin (as fontes divergem entre roxo e dourado e azul, branco e dourado; a paleta é uma interpretação, não uma cópia).
+
+| Nome | Valor | Papel |
+| --- | --- | --- |
+| Fenda | `#090714` | Fundo |
+| Manto | `#130F2C` / `#1E1747` | Superfícies |
+| Vazio | `#7B5CFF` | Linhas, ligações, destaque |
+| Energia | `#CFE3FF` | Foco e seleção |
+| Champanhe | `#EBCB86` | Acabamento: borda das notas, caminho, rótulos |
+
+- Tipografia: Cinzel no caminho e nos rótulos, Manrope na interface e nas notas, JetBrains Mono no editor e nos estados. Fontes servidas pelo pacote, porque a CSP do Rechi OS só aceita fontes da própria origem.
+- Assinatura: toda nota tem borda fina champanhe; a nota em foco ganha a energia branco-azulada com halo violeta.
+- Separação do Rechi OS: fundo azul-preto em vez de ameixa, violeta vivo em vez de roxo apagado, champanhe claro em vez de mostarda, nenhum laranja.
+
 ## 16. Glossário
 
 | Termo | Significado |

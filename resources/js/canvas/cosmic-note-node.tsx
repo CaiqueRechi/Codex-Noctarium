@@ -9,6 +9,7 @@ export type CosmicNoteData = {
     diameter: number;
     isPinned: boolean;
     isUnmeasured: boolean;
+    color?: string | null;
     entityId?: string;
     contextId?: string;
 };
@@ -31,6 +32,7 @@ export function CosmicNoteNode({
             data-selected={selected ? 'true' : 'false'}
             data-pinned={data.isPinned ? 'true' : 'false'}
             data-unmeasured={data.isUnmeasured ? 'true' : 'false'}
+            data-color={data.color ?? undefined}
             title={
                 data.isUnmeasured
                     ? `${data.label} (tamanho provisório: conteúdo ainda não medido)`
