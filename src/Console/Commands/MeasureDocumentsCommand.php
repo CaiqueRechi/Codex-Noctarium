@@ -13,7 +13,7 @@ final class MeasureDocumentsCommand extends Command
 {
     protected $signature = 'cvc:measure-documents {--chunk=100}';
 
-    protected $description = 'Store the content measure of CVC documents that do not have one yet';
+    protected $description = 'Store the content measure of Codex Noctarium documents that do not have one yet';
 
     public function handle(MeasureStoredDocument $measureStoredDocument): int
     {

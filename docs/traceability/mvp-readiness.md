@@ -41,8 +41,8 @@ Online `composer audit --locked` and `npm audit` both returned zero advisories a
 
 ## Current automated verification
 
-- CVC package PHP: 53 tests, 398 assertions.
-- Rechi OS CVC integration: 15 tests, 220 assertions.
+- Codex Noctarium package PHP: 53 tests, 398 assertions.
+- Rechi OS Codex Noctarium integration: 15 tests, 220 assertions.
 - React/Vitest: 14 files, 49 tests.
 - Configured frontend coverage: 78.48% statements and 78.15% lines.
 - TypeScript, ESLint, Prettier, and Pint: passed.
