@@ -12,7 +12,7 @@ final class ReindexVaultCommand extends Command
 {
     protected $signature = 'cvc:reindex {--chunk=100}';
 
-    protected $description = 'Queue a rebuild of the authorized CVC search index';
+    protected $description = 'Queue a rebuild of the authorized Codex Noctarium search index';
 
     public function handle(): int
     {

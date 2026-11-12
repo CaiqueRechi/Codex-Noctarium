@@ -150,7 +150,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -234,7 +234,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -320,7 +320,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -427,7 +427,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     breadcrumbs: [
                         { id: 'universe-1', name: 'Meu Universo' },
                         { id: 'context-1', name: 'Primeiro Contexto' },
@@ -490,7 +490,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -538,7 +538,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -586,7 +586,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -656,7 +656,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     breadcrumbs: [
                         { id: 'universe-1', name: 'Meu Universo' },
                         { id: 'context-1', name: 'Primeiro Contexto' },
@@ -738,7 +738,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     breadcrumbs: [
                         { id: 'universe-1', name: 'Meu Universo' },
                         { id: 'context-1', name: 'Primeiro Contexto' },
@@ -807,7 +807,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -902,7 +902,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -1008,7 +1008,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -1112,7 +1112,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',
@@ -1214,7 +1214,7 @@ describe('RF-02 vault canvas', () => {
             <VaultPage
                 vault={{
                     id: 'vault-1',
-                    name: 'CVC',
+                    name: 'Codex Noctarium',
                     universes: [
                         {
                             id: 'universe-1',

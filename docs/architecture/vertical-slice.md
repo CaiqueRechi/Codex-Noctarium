@@ -4,7 +4,7 @@ This document preserves the original file-backed vertical-slice design. The curr
 
 ## Boundary
 
-Crow Vault Canvas is a package, not a second Laravel application. Rechi OS is the runtime host and owns infrastructure concerns. The package exposes product behavior through service-provider registration, reversible migrations, routes, application services, domain models, private storage, and React source.
+Codex Noctarium is a package, not a second Laravel application. Rechi OS is the runtime host and owns infrastructure concerns. The package exposes product behavior through service-provider registration, reversible migrations, routes, application services, domain models, private storage, and React source.
 
 ```text
 Authenticated browser
@@ -13,7 +13,7 @@ Authenticated browser
 Rechi OS middleware and permissions
         |
         v
-CVC routes and application services
+Codex Noctarium routes and application services
        / \
       v   v
  MySQL   private Markdown root

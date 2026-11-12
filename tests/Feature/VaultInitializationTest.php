@@ -25,7 +25,7 @@ final class VaultInitializationTest extends TestCase
         $this->assertDatabaseCount('cvc_perspectives', 1);
         $this->assertDatabaseHas('cvc_vaults', [
             'id' => config('crow-vault-canvas.vault.id'),
-            'name' => 'Crow Vault Canvas',
+            'name' => 'Codex Noctarium',
         ]);
         $this->assertDatabaseHas('cvc_contexts', [
             'kind' => 'universe',
