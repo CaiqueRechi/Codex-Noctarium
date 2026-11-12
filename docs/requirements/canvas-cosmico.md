@@ -139,7 +139,17 @@ Requisitos da seeder:
 - Não inventar métricas reais de uso: contadores começam sem histórico fictício. Fixtures especiais para testar ranking, se necessárias, devem estar identificadas como dados sintéticos de teste.
 - Disponibilizar instruções do comando de execução local e um resumo do que foi criado ou já existia. Não executar automaticamente em produção nem embutir a carga em migrações.
 
-Este item é uma inclusão de escopo documental: a seeder ainda não foi implementada nem executada.
+Em um host local com o pacote habilitado, aplique as migrações e inicialize o vault antes de carregar os exemplos.
+
+```bash
+php artisan migrate
+php artisan cvc:initialize
+php artisan cvc:seed-projects
+```
+
+O comando aceita os ambientes Laravel `local` e `testing` e informa as quantidades de notas e ligações criadas e de itens preservados ou ignorados. Cada item recebe um identificador persistente por vault. Reexecutar o comando preserva as edições e as exclusões. A carga não oferece reposição automática. Para recuperar os exemplos completos, use um vault local novo e isolado. A tabela de identificadores deve acompanhar os dados em backups e restaurações. Reverter sua migração remove os identificadores e preserva as notas já criadas, então reaplicá-la e executar a carga novamente pode duplicar exemplos.
+
+As notas do Noctarium e do Rechi OS usam o README, os manifests e o levantamento do Canvas Cósmico como fontes. O fluxograma ilustra a política RF-06/D-08. A documentação técnica de E.R.I.S. e Memorial Salem fica pendente.
 
 ## 6. Requisitos não funcionais
 

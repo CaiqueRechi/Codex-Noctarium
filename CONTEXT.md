@@ -87,8 +87,7 @@ Read this before trusting any of the above.
 
 ## What is left
 
-1. **RF-11, the "Meus Projetos" seeder** — last in the delivery order, not
-   started. Section 5.1 of the specification lists its rules.
+1. **RF-11, the "Meus Projetos" seeder** — implemented. Local execution and suite verification are pending. See section 5.1 of the specification.
 2. **Encryption (D-14)** — blocked: key derivation, password change and the
    administrator's copy are still open. When built, the content measure
    moves to the browser and parts of phases 6 to 8 change.
