@@ -36,6 +36,25 @@ export async function renameEntity(
     return payload.entity;
 }
 
+// D-09: a note chosen among the compass results counts as searched.
+export async function countNoteSearch(
+    entitiesEndpoint: string,
+    entityId: string,
+): Promise<void> {
+    const response = await fetch(
+        `${entitiesEndpoint}/${encodeURIComponent(entityId)}/searches`,
+        {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json', ...xsrfHeaders() },
+        },
+    );
+
+    if (!response.ok) {
+        throw new Error('Não foi possível contar a pesquisa.');
+    }
+}
+
 export async function paintEntity(
     entitiesEndpoint: string,
     entityId: string,

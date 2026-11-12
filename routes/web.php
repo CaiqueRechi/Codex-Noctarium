@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use CrowVaultCanvas\Http\Controllers\AttachEntityToContextController;
+use CrowVaultCanvas\Http\Controllers\CountNoteSearchController;
 use CrowVaultCanvas\Http\Controllers\DestroyEntityController;
 use CrowVaultCanvas\Http\Controllers\DestroyRelationController;
 use CrowVaultCanvas\Http\Controllers\FindLinkTargetsController;
@@ -72,6 +73,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
                 Route::patch('/entities/{entity}/title', RenameEntityController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
                     ->name('entities.title.update');
+                Route::post('/entities/{entity}/searches', CountNoteSearchController::class)
+                    ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
+                    ->name('entities.searches.store');
                 Route::patch('/entities/{entity}/color', PaintEntityController::class)
                     ->middleware(config('crow-vault-canvas.route.entity_write_middleware'))
                     ->name('entities.color.update');

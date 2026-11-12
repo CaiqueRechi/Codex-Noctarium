@@ -57,6 +57,7 @@ import { DocumentEditor } from '../documents/document-editor';
 import type { DocumentSummary, OpenedDocument } from '../documents/types';
 import { useDocumentAutosave } from '../documents/use-document-autosave';
 import {
+    countNoteSearch,
     paintEntity,
     renameEntity,
     updateEntityProperties,
@@ -1394,6 +1395,11 @@ export default function VaultPage({
                 trail: breadcrumbs,
                 viewport: { ...viewport.current },
             });
+            // The count only ranks /link suggestions; a failure to count
+            // must not stop the user from reaching the note.
+            void countNoteSearch(endpoints.entities, result.id).catch(
+                () => undefined,
+            );
             const half = prefersReducedMotion() ? 0 : fadeHalfDuration;
 
             try {
@@ -1422,7 +1428,14 @@ export default function VaultPage({
                 );
             }
         },
-        [activeContextId, breadcrumbs, flow, handleOpenContext, openNote],
+        [
+            activeContextId,
+            breadcrumbs,
+            endpoints.entities,
+            flow,
+            handleOpenContext,
+            openNote,
+        ],
     );
 
     // "Voltar" restores the place left for a result, with its zoom and
