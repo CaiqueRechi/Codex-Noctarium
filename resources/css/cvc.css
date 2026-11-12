@@ -879,6 +879,80 @@
     -webkit-line-clamp: 2;
 }
 
+/* RF-09: indications of links leaving the space, discreet and pinned to the
+   corners, kept clear of the path, the tools, the compass and the zoom. */
+.cvc-external {
+    position: absolute;
+    z-index: 7;
+    display: grid;
+    gap: 0.3rem;
+    max-width: min(14rem, 40vw);
+    opacity: 0.6;
+    transition: opacity 150ms ease;
+}
+
+.cvc-external:hover,
+.cvc-external:focus-within {
+    opacity: 1;
+}
+
+.cvc-external[data-corner^='top'] {
+    top: 4.5rem;
+}
+
+.cvc-external[data-corner^='bottom'] {
+    bottom: 4.5rem;
+}
+
+.cvc-external[data-corner$='left'] {
+    left: 0.75rem;
+    justify-items: start;
+}
+
+.cvc-external[data-corner$='right'] {
+    right: 0.75rem;
+    justify-items: end;
+}
+
+.cvc-external__link,
+.cvc-external__more {
+    overflow: hidden;
+    max-width: 100%;
+    min-height: 2.25rem;
+    border: 1px dashed var(--cvc-accent);
+    border-radius: 999px;
+    background: var(--cvc-surface);
+    padding: 0.25rem 0.75rem;
+    color: var(--cvc-text-muted);
+    font: inherit;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.cvc-external__link:hover,
+.cvc-external__link:focus-visible,
+.cvc-external__more:focus-visible {
+    border-style: solid;
+    outline: 2px solid var(--cvc-focus);
+    color: var(--cvc-text);
+}
+
+.cvc-external__list {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-external {
+        transition: none;
+    }
+}
+
 /* D-11: a far result is reached through a short fade to the dark of the
    theme and back. */
 .cvc-fade {

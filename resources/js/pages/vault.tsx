@@ -42,6 +42,11 @@ import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
 import type { SimulationBody } from '../canvas/physics/simulation-body';
 import { describeSpaceScene } from '../canvas/physics/space-scene';
 import { useCosmicSimulation } from '../canvas/physics/use-cosmic-simulation';
+import { ExternalConnectionsOverlay } from '../canvas/external-connections-overlay';
+import {
+    findExternalConnections,
+    travelThroughCommonAncestor,
+} from '../canvas/external-connections';
 import { useLongPress } from '../canvas/use-long-press';
 import type { LongPressPoint } from '../canvas/use-long-press';
 import { decideZoomNavigation } from '../canvas/zoom-navigation';
@@ -58,6 +63,7 @@ import type { DocumentSummary, OpenedDocument } from '../documents/types';
 import { useDocumentAutosave } from '../documents/use-document-autosave';
 import {
     countNoteSearch,
+    fetchEntityPath,
     paintEntity,
     renameEntity,
     updateEntityProperties,
@@ -182,6 +188,9 @@ type CompassReturn = {
 };
 
 const fadeHalfDuration = 150;
+// How long each level of a travel stays on screen (D-10); the timing of
+// zoom animations is still open in D-12.
+const travelStepDuration = 400;
 
 function prefersReducedMotion(): boolean {
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -1472,6 +1481,67 @@ export default function VaultPage({
         }
     }, [activeContextId, compassReturn, flow, handleOpenContext, session]);
 
+    // RF-09: notes of the open space linked to notes elsewhere.
+    const externalConnections = useMemo(() => {
+        const insideNotes = new Map(
+            nodes.flatMap((node) =>
+                node.data.kind === 'document' && node.data.entityId
+                    ? [[node.data.entityId, node.position] as const]
+                    : [],
+            ),
+        );
+        const center =
+            enclosingCircle(spaceCircles.current.all)?.center ?? { x: 0, y: 0 };
+
+        return findExternalConnections(insideNotes, center, relations);
+    }, [nodes, relations]);
+
+    // D-10: up to the nearest common ancestor, then down to the target's
+    // space, one level at a time so the way is seen; then the camera
+    // approaches the target.
+    const travelToNote = useCallback(
+        async (targetId: string) => {
+            try {
+                const path = await fetchEntityPath(endpoints.entities, targetId);
+                const trail = breadcrumbs.map((crumb) => crumb.id);
+                const steps = travelThroughCommonAncestor(
+                    trail,
+                    path.map((step) => step.id),
+                );
+                const stepPause = prefersReducedMotion() ? 0 : travelStepDuration;
+
+                for (const step of steps) {
+                    // A step not on the trail goes down; the ancestor is on it.
+                    await handleOpenContext(
+                        step,
+                        step !== null && !trail.includes(step),
+                    );
+                    await pause(stepPause);
+                }
+
+                setBreadcrumbs(path);
+                setFocusEntityId(targetId);
+                const targetSpace = path.at(-1)?.id;
+
+                if (flow && targetSpace) {
+                    await flow.fitView({
+                        nodes: [{ id: entityNodeId(targetSpace, targetId) }],
+                        padding: 0.6,
+                        duration: stepPause,
+                    });
+                    viewport.current = flow.getViewport();
+                }
+            } catch (exception) {
+                setError(
+                    exception instanceof Error
+                        ? exception.message
+                        : 'Não foi possível chegar à nota.',
+                );
+            }
+        },
+        [breadcrumbs, endpoints.entities, flow, handleOpenContext],
+    );
+
     const handleLocate = useCallback(
         async (target: ExplorerTarget) => {
             setFocusEntityId(target.entityId);
@@ -2014,6 +2084,11 @@ export default function VaultPage({
                     />
                 )}
                 <div className="cvc-fade" data-state={fade} aria-hidden="true" />
+
+                <ExternalConnectionsOverlay
+                    connections={externalConnections}
+                    onTravel={(targetId) => void travelToNote(targetId)}
+                />
 
                 {pinMenu && pinMenuNode && (
                     <div

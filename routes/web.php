@@ -17,6 +17,7 @@ use CrowVaultCanvas\Http\Controllers\SearchVaultController;
 use CrowVaultCanvas\Http\Controllers\ShowAttachmentController;
 use CrowVaultCanvas\Http\Controllers\ShowContextController;
 use CrowVaultCanvas\Http\Controllers\ShowDocumentController;
+use CrowVaultCanvas\Http\Controllers\ShowEntityPathController;
 use CrowVaultCanvas\Http\Controllers\StoreAttachmentController;
 use CrowVaultCanvas\Http\Controllers\StoreContextController;
 use CrowVaultCanvas\Http\Controllers\StoreContextDocumentController;
@@ -43,6 +44,9 @@ Route::middleware(config('crow-vault-canvas.route.middleware'))
         Route::get('/search', SearchVaultController::class)
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('search');
+        Route::get('/entities/{entity}/path', ShowEntityPathController::class)
+            ->middleware(config('crow-vault-canvas.route.search_middleware'))
+            ->name('entities.path');
         Route::get('/link-targets', FindLinkTargetsController::class)
             ->middleware(config('crow-vault-canvas.route.search_middleware'))
             ->name('link-targets');
