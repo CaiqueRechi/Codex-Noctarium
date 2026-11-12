@@ -93,8 +93,8 @@ Read this before trusting any of the above.
    moves to the browser and parts of phases 6 to 8 change.
 3. Open decisions: zoom animation timings (D-12), migration of existing
    layout and data (D-13), environments and operation (D-15).
-4. The editor still opens over the whole screen instead of expanding on the
-   canvas (RF-02).
+4. The note editor opens as an inset panel over the canvas (RF-02).
+   Expansion from the selected note and browser verification are pending.
 5. Merge the rename branches, and decide whether technical identifiers
    follow the new name.
 
