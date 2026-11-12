@@ -610,13 +610,108 @@ Security review: no endpoint, storage or dependency was added, and nothing
 that was reachable stopped requiring authorization. The panels moved; their
 requests are the same. No issue found in the changed paths.
 
+## Browser check — 2026-11-12
+
+First look at phases 9 and 10 with the page visible (119.7 frames per
+second), on the local Docker environment rebuilt from new sibling checkouts
+in `Documents\CrowVaultCanvas`, with a local test user.
+
+Seen working: the root drawn as a cosmic space; entering a universe by
+double click; a space of two bodies at rest, as D-04 predicts at that
+distance (1.27 logical units: the attraction stays under the rest
+threshold); a free drop saved with `200`, the centre of the circle and
+`isPinned: false`, the note drifting freely afterwards; creation by double
+click, with "Criando nota…", the note born at the clicked point (670, 425
+→ 670, 426 px) and every circle shrinking from 577.7 to 516.7 px as the
+fixed budget redistributed among three bodies (D-02).
+
+Found:
+
+- The workspace endpoint refused any zoom below 0.25 with 422 since phase
+  10 widened the canvas zoom; fixed in phase 11.
+- Holding Ctrl for the whole drag pans the camera instead of moving the
+  note, so the Ctrl drop never pinned. Pressing Ctrl only at the drop could
+  not be produced by the tool and was not checked. Open.
+- A free drag moved the note about 64 % of the pointer's path; it may be
+  the synthetic drag. Twice, every body shifted together by exactly
+  (−0.135, −0.135) px. A nested context cannot be dragged. None of these
+  was investigated.
+
+Environment: every request took 5 s to over a minute and the page often
+did not open. `artisan serve` handles one request at a time, the code is
+read from Windows over a 9p share, and OPcache was off for the built-in
+server (`opcache.enable_cli = 0`), so each request recompiled Laravel from
+that share; the Compose health check alone kept the single worker busy.
+`PHP_CLI_SERVER_WORKERS=4` in `.env` and an OPcache file inside the
+container (`opcache.enable_cli=1`, `validate_timestamps=0`) brought `/up`
+from 4–10 s to 0.6 s and opening `/vault` to about 10 s. Both are local:
+the file inside the container is lost when the container is recreated,
+and with timestamps off a PHP change needs `docker compose restart
+laravel.test` to take effect.
+
+## Phase 11 — zoom navigation, subnotes and a canvas without header
+
+Branch: `cm-navegacao-zoom-canvas`, 2026-11-12, based on
+`cm-canvas-cosmico-cena-visivel`. Rechi tried phase 10 and found the
+navigation broken, the zoom not behaving as documented, no way to create
+subnotes, and the header in the way.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Zoom bounds accepted by the workspace endpoint | `UpdateWorkspaceStateRequest`, 0.01 to 100 like `zoomLimits` | `WorkspaceStateTest` (5 cases), not run |
+| Enter at 60 %, leave at 30 % (D-12) | `decideZoomNavigation` in `resources/js/canvas/zoom-navigation.ts`; `enclosingCircle`, `circleOnScreen`, `viewportPlacingCircle` in `geometry.ts`; `navigateByZoom` and `placeArrivingSpace` in `vault.tsx` | none yet |
+| A note's subnotes reached by zoom | `openNoteSpace` in `contexts/api.ts` over `POST /vault/documents/{entity}/space`; `handleOpenNoteSpace` in `vault.tsx` | none yet |
+| Trail kept across note spaces | `continueTrail` in `explorer/navigation-trail.ts` | none yet |
+| One workspace save per space opened | `handleOpenContext` no longer saves; the framing does | none yet |
+| No header | path, status and tools button float over the canvas (`.cvc-overlay`); "Voltar ao Rechi OS" in the tools panel | none yet; page tests still expect the header |
+
+How the zoom navigates: only a move made by the user is examined. The
+circle entered is a context or a note whose screen circle covers 60 % of
+the smaller side of the canvas and contains its middle; the nearest to the
+middle wins. The open space is left when the circle enclosing all its
+bodies (or its whole budget, X = 1, when it is empty) shrinks to 30 %. The
+arriving space is placed so that what was entered fills the circle it was
+entered through, or so that the space just left sits where it was; the
+placement reads that circle when the slice arrives, not when the threshold
+was crossed. Entering therefore starts at 60 % or more and leaving at 30 %
+or less, away from the other threshold. The switch is instant, because
+D-12 left the animation timings open. Double click and the path still
+navigate too.
+
+Implementation defaults, not product decisions: the middle of the screen
+chooses the circle; an empty space is measured by its whole budget; the
+first zoom into a note creates its space of subnotes (an empty context
+named "Subnotas"), once per note.
+
+Subnotes: the space of a note has no parent context, because a note may sit
+in several spaces, so the server's breadcrumbs start at it. The page keeps
+the trail it walked and appends the note's space to it, so leaving goes back
+to where the note was entered from. Reaching a note's space from the
+explorer or the search starts the trail at that space, since the page did
+not walk to it. A double click inside the space creates a subnote through
+the existing document endpoint, which already accepts a note space whose
+owner is not in the trash.
+
+Observed: TypeScript passed through the host's `npx tsc --noEmit`, also on
+the intermediate state between the two feature commits, and the host
+build compiled. Rechi tried it by hand and found it on the right path but
+not fluid. No automated suite was run, at his request; the new code has no
+tests yet and the page tests that look for the header will fail.
+
+Security review: the only new request is the existing note-space endpoint,
+behind the same session, authorization, CSRF and throttles; it is sent by a
+zoom gesture, so a user zooming in and out repeatedly sends at most one
+request per crossing. The zoom bounds widened a validated range and stay
+finite. No storage, cache or rendered user text was added beyond titles
+already shown as escaped React text. No issue found in the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | partial | The vault root and every context are drawn as cosmic spaces and a space is framed when entered (phase 10). Creation at the touched point, the sibling dot, zoom navigation at 60% / 30% and touch gestures remain; zoom animation timings still open |
+| RF-01 | partial | The vault root and every context are drawn as cosmic spaces, a space is framed when entered (phase 10) and zoom navigates at 60 % / 30 %, into notes as well (phase 11). The sibling dot and touch gestures remain; zoom animation timings still open; the result is not yet fluid |
 | RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI, camera integration and the connection list with "Conectar a…" (D-12) remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free and pinned drops saved (phase 9, not seen in a browser); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | ready | Persistence decided: JSON in the document itself, versioned with the note; not implemented |
 | RF-05 | ready | D-07 decided: `mermaid` block with position comments, more than one block refuses the conversion, the block leaves the description once rebuilt; not implemented |
 | RF-07 | ready | D-11 decided: near is the open space, 300 ms fade, single list with paths at the galaxy view; not implemented |
