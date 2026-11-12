@@ -1,5 +1,9 @@
 import { xsrfHeaders } from '../http/csrf';
-import type { EntityDeletion, EntityRestoration } from './types';
+import type {
+    DeletionOutcome,
+    EntityDeletion,
+    EntityRestoration,
+} from './types';
 
 async function mutation<T>(url: string, method: 'DELETE' | 'POST'): Promise<T> {
     const response = await fetch(url, {
@@ -21,14 +25,34 @@ async function mutation<T>(url: string, method: 'DELETE' | 'POST'): Promise<T> {
     return payload;
 }
 
-export function deleteEntity(
+export async function deleteEntity(
     entitiesEndpoint: string,
     entityId: string,
-): Promise<EntityDeletion> {
-    return mutation(
-        `${entitiesEndpoint}/${encodeURIComponent(entityId)}`,
-        'DELETE',
-    );
+    withSubnotes = false,
+): Promise<DeletionOutcome> {
+    const url = `${entitiesEndpoint}/${encodeURIComponent(entityId)}${withSubnotes ? '?with_subnotes=1' : ''}`;
+    const response = await fetch(url, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', ...xsrfHeaders() },
+    });
+    const payload = (await response.json()) as EntityDeletion & {
+        code?: string;
+        subnotes?: number;
+        message?: string;
+    };
+
+    if (response.status === 409 && payload.code === 'has_subnotes') {
+        return { kind: 'has-subnotes', subnotes: payload.subnotes ?? 0 };
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            payload.message ?? 'Não foi possível concluir a operação.',
+        );
+    }
+
+    return { kind: 'deleted', deletion: payload };
 }
 
 export function restoreEntity(

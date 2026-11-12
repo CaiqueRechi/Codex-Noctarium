@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Tests\Feature;
 
+use CrowVaultCanvas\Application\Contexts\EnsureNoteSpace;
 use CrowVaultCanvas\Application\Documents\CreateDocument;
 use CrowVaultCanvas\Application\Relations\CreateRelation;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
@@ -74,6 +75,19 @@ final class LinkTargetsTest extends TestCase
         self::assertSame(
             [$this->context->parent?->name, $this->context->name],
             $targets->first()['path'],
+        );
+    }
+
+    public function testRf10ShowsTheWholePathOfASubnote(): void
+    {
+        $note = $this->note('Planeta');
+        $space = $this->app->make(EnsureNoteSpace::class)->handle($note->id);
+        $subnote = $this->app->make(CreateDocument::class)->handle((string) $space->getKey());
+        KnowledgeEntity::query()->whereKey($subnote->id)->update(['title' => 'Lua']);
+
+        self::assertSame(
+            [$this->context->parent?->name, $this->context->name, 'Planeta'],
+            $this->targets('lua')->first()['path'],
         );
     }
 

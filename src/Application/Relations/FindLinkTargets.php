@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Relations;
 
-use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
+use CrowVaultCanvas\Application\Contexts\ContextPath;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeEntity;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeRelation;
 use Illuminate\Contracts\Config\Repository;
@@ -21,9 +21,7 @@ final readonly class FindLinkTargets
 {
     public const LIMIT = 5;
 
-    private const MAXIMUM_PATH_DEPTH = 64;
-
-    public function __construct(private Repository $config) {}
+    public function __construct(private Repository $config, private ContextPath $contextPath) {}
 
     /** @return list<array{id: string, title: string, path: list<string>, score: int}> */
     public function handle(string $prefix, ?string $exceptEntityId): array
@@ -39,12 +37,12 @@ final readonly class FindLinkTargets
             ->where('kind', KnowledgeEntity::KIND_DOCUMENT)
             ->whereNotNull('title')
             ->when($exceptEntityId !== null, fn ($query) => $query->whereKeyNot($exceptEntityId))
-            ->get(['id', 'title'])
+            ->get(['id', 'title', 'access_count', 'search_count'])
             ->filter(fn (KnowledgeEntity $entity): bool => str_starts_with(
                 $this->normalize((string) $entity->title),
                 $wanted,
             ));
-        $scores = $this->scores($candidates->map(fn (KnowledgeEntity $entity): string => (string) $entity->getKey()));
+        $scores = $this->scores($candidates);
 
         return $candidates
             ->sort(fn (KnowledgeEntity $a, KnowledgeEntity $b): int => [
@@ -58,7 +56,7 @@ final readonly class FindLinkTargets
             ->map(fn (KnowledgeEntity $entity): array => [
                 'id' => (string) $entity->getKey(),
                 'title' => (string) $entity->title,
-                'path' => $this->path($entity),
+                'path' => array_column($this->contextPath->toEntity($entity), 'name'),
                 'score' => $scores[(string) $entity->getKey()] ?? 0,
             ])
             ->values()
@@ -71,19 +69,23 @@ final readonly class FindLinkTargets
     }
 
     /**
-     * S = accesses + searches + links (D-09). Accesses and searches are not
-     * counted yet, so today the score is the number of active connections.
+     * S = accesses + searches + links (D-09), each with weight one.
      *
-     * @param  Collection<int, string>  $entityIds
+     * @param  Collection<int, KnowledgeEntity>  $candidates
      * @return array<string, int>
      */
-    private function scores(Collection $entityIds): array
+    private function scores(Collection $candidates): array
     {
-        if ($entityIds->isEmpty()) {
+        if ($candidates->isEmpty()) {
             return [];
         }
 
-        $scores = [];
+        $entityIds = $candidates->map(fn (KnowledgeEntity $entity): string => (string) $entity->getKey());
+        $scores = $candidates
+            ->mapWithKeys(fn (KnowledgeEntity $entity): array => [
+                (string) $entity->getKey() => (int) $entity->access_count + (int) $entity->search_count,
+            ])
+            ->all();
         $relations = KnowledgeRelation::query()
             ->where('vault_id', $this->vaultId())
             ->where(fn ($query) => $query
@@ -98,28 +100,6 @@ final readonly class FindLinkTargets
         }
 
         return $scores;
-    }
-
-    /**
-     * Where the note sits, from its universe down, so two notes with the
-     * same title can be told apart. A note in several spaces shows the
-     * first one it was placed in.
-     *
-     * @return list<string>
-     */
-    private function path(KnowledgeEntity $entity): array
-    {
-        $context = $entity->contexts()->orderBy('cvc_context_entity.created_at')->first();
-        $names = [];
-
-        for ($depth = 0; $context !== null && $depth < self::MAXIMUM_PATH_DEPTH; $depth++) {
-            array_unshift($names, $context->noteSpace?->entity?->title ?? $context->name);
-            $context = $context->parent_id === null
-                ? null
-                : KnowledgeContext::query()->with('noteSpace.entity')->find($context->parent_id);
-        }
-
-        return $names;
     }
 
     private function vaultId(): string

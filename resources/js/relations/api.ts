@@ -85,6 +85,35 @@ export async function deleteRelation(endpoint: string, relationId: string) {
     });
 }
 
+// RF-08 "Mover para…": the note leaves one space for another; its
+// subnotes come along in its own space.
+export async function moveEntity(
+    entitiesEndpoint: string,
+    entityId: string,
+    fromContextId: string,
+    toContextId: string,
+) {
+    await mutation(`${entitiesEndpoint}/${encodeURIComponent(entityId)}/move`, {
+        method: 'POST',
+        body: JSON.stringify({
+            from_context_id: fromContextId,
+            to_context_id: toContextId,
+        }),
+    });
+}
+
+// D-13 "só daqui": the note leaves this space and lives on in the others.
+export async function detachEntityFromContext(
+    contextsEndpoint: string,
+    contextId: string,
+    entityId: string,
+) {
+    await mutation(
+        `${contextsEndpoint}/${encodeURIComponent(contextId)}/entities/${encodeURIComponent(entityId)}`,
+        { method: 'DELETE' },
+    );
+}
+
 export async function attachEntityToContext(
     contextsEndpoint: string,
     contextId: string,

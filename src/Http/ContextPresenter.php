@@ -89,6 +89,9 @@ final class ContextPresenter
                 ],
             'isPinned' => (bool) ($entity->pivot?->is_pinned ?? false),
             'spaceId' => $spaceId,
+            // D-13: a note in several spaces asks "só daqui" or "de todos os
+            // lugares" before it is taken out of one.
+            'placeCount' => $entity->contexts_count === null ? null : (int) $entity->contexts_count,
         ];
     }
 

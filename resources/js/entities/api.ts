@@ -36,6 +36,46 @@ export async function renameEntity(
     return payload.entity;
 }
 
+// RF-09: where a note sits, from its universe down.
+export async function fetchEntityPath(
+    entitiesEndpoint: string,
+    entityId: string,
+): Promise<{ id: string; name: string }[]> {
+    const response = await fetch(
+        `${entitiesEndpoint}/${encodeURIComponent(entityId)}/path`,
+        { credentials: 'same-origin', headers: { Accept: 'application/json' } },
+    );
+    const payload = (await response.json()) as {
+        path?: { id: string; name: string }[];
+        message?: string;
+    };
+
+    if (!response.ok || !payload.path) {
+        throw new Error(payload.message ?? 'Não foi possível achar a nota.');
+    }
+
+    return payload.path;
+}
+
+// D-09: a note chosen among the compass results counts as searched.
+export async function countNoteSearch(
+    entitiesEndpoint: string,
+    entityId: string,
+): Promise<void> {
+    const response = await fetch(
+        `${entitiesEndpoint}/${encodeURIComponent(entityId)}/searches`,
+        {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json', ...xsrfHeaders() },
+        },
+    );
+
+    if (!response.ok) {
+        throw new Error('Não foi possível contar a pesquisa.');
+    }
+}
+
 export async function paintEntity(
     entitiesEndpoint: string,
     entityId: string,
