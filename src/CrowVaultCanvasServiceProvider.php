@@ -48,11 +48,16 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
         }
 
         $documentUpdatePath = trim((string) config('crow-vault-canvas.route.prefix'), '/').'/documents/*';
+        $colorUpdatePath = trim((string) config('crow-vault-canvas.route.prefix'), '/').'/entities/*/color';
         $preservesMarkdown = static fn (Request $request): bool => $request->isMethod('PATCH')
             && $request->is($documentUpdatePath);
+        $preservesColorInput = static fn (Request $request): bool => $request->isMethod('PATCH')
+            && $request->is($colorUpdatePath);
 
         TrimStrings::skipWhen($preservesMarkdown);
-        ConvertEmptyStringsToNull::skipWhen($preservesMarkdown);
+        ConvertEmptyStringsToNull::skipWhen(
+            static fn (Request $request): bool => $preservesMarkdown($request) || $preservesColorInput($request),
+        );
         $this->loadRoutesFrom($this->packagePath('routes/web.php'));
     }
 
