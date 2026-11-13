@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace CrowVaultCanvas\Application\Search;
 
+use CrowVaultCanvas\Application\Contexts\ContextPath;
+use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\NoteSpace;
 use CrowVaultCanvas\Domain\Knowledge\Models\SearchDocument;
 use Illuminate\Support\Facades\DB;
 
 final class SearchVault
 {
-    /** @return list<array{id: string, contextId: string, title: string|null, snippet: string, entityType: string|null, tags: list<string>}> */
+    public function __construct(private readonly ContextPath $contextPath) {}
+
+    /** @return list<array{id: string, contextId: string, path: list<array{id: string, name: string}>, title: string|null, snippet: string, entityType: string|null, tags: list<string>}> */
     public function handle(
         string $query,
         ?string $contextId,
@@ -60,14 +64,29 @@ final class SearchVault
             ->limit(50)
             ->get();
 
+        $contexts = KnowledgeContext::query()
+            ->with('noteSpace.entity')
+            ->whereKey($results->map(fn (SearchDocument $result): ?string => $this->containingContextId($result))->filter()->unique()->all())
+            ->get()
+            ->keyBy(fn (KnowledgeContext $context): string => (string) $context->getKey());
+
         return $results->map(fn (SearchDocument $result): array => [
             'id' => (string) $result->getKey(),
-            'contextId' => (string) ($result->getAttribute('context_id') ?? $result->getAttribute('owner_context_id')),
+            'contextId' => (string) $this->containingContextId($result),
+            // RF-07 groups results by universe and shows where each sits.
+            'path' => $this->contextPath->to($contexts->get((string) $this->containingContextId($result))),
             'title' => $result->title,
             'snippet' => $this->snippet($result->content, $query),
             'entityType' => $result->entity_type,
             'tags' => array_values($result->tags ?? []),
         ])->values()->all();
+    }
+
+    private function containingContextId(SearchDocument $result): ?string
+    {
+        $contextId = $result->getAttribute('context_id') ?? $result->getAttribute('owner_context_id');
+
+        return $contextId === null ? null : (string) $contextId;
     }
 
     private function snippet(string $content, string $query): string

@@ -1,11 +1,32 @@
+import { ContentTypeSwitch } from '../flowchart/content-type-switch';
+import { isFlowchartContent } from '../flowchart/flowchart';
+import { FlowchartNote } from '../flowchart/flowchart-note';
+import type { RelationSummary } from '../relations/types';
+import { LinkingTextarea } from './linking-textarea';
+import { NoteActions } from './note-actions';
+import type { NoteActionsProps } from './note-actions';
+import { NoteColorPicker } from './note-color-picker';
+import type { NoteColorName } from './note-color-picker';
+import { NoteConnections } from './note-connections';
+import { NoteTitleField } from './note-title-field';
 import type { OpenedDocument, SaveState } from './types';
 
 type DocumentEditorProps = {
+    linking?: {
+        targetsEndpoint: string;
+        relations: readonly RelationSummary[];
+        onLink: (targetEntityId: string) => Promise<void>;
+        onRemove: (relationId: string) => Promise<void>;
+    };
     document: OpenedDocument;
     draft: string;
     saveState: SaveState;
     error: string | null;
     onChange: (content: string) => void;
+    onRename: (title: string) => Promise<void>;
+    color: string | null;
+    onPaint: (color: NoteColorName | null) => Promise<void>;
+    actions?: NoteActionsProps;
     onSave: () => void;
     onBack: () => void;
 };
@@ -18,11 +39,16 @@ const statusLabels: Record<SaveState, string> = {
 };
 
 export function DocumentEditor({
+    linking,
     document,
     draft,
     saveState,
     error,
     onChange,
+    onRename,
+    color,
+    onPaint,
+    actions,
     onSave,
     onBack,
 }: DocumentEditorProps) {
@@ -33,10 +59,14 @@ export function DocumentEditor({
     return (
         <section className="cvc-editor" aria-label="Editor Markdown">
             <header className="cvc-editor__header">
-                <div>
-                    <span className="cvc-eyebrow">Documento</span>
-                    <h2>{document.title ?? 'Sem título'}</h2>
-                </div>
+                <NoteTitleField
+                    key={`${document.id}:${document.title ?? ''}`}
+                    title={document.title}
+                    onRename={onRename}
+                />
+                <NoteColorPicker color={color} onPaint={onPaint} />
+                <ContentTypeSwitch content={draft} onChange={onChange} />
+                {actions && <NoteActions {...actions} />}
                 <div className="cvc-editor__actions">
                     <output
                         className="cvc-save-state"
@@ -77,14 +107,36 @@ export function DocumentEditor({
                 </p>
             )}
 
-            <textarea
-                className="cvc-editor__textarea"
-                aria-label="Conteúdo Markdown"
-                autoFocus
-                spellCheck
-                value={draft}
-                onChange={(event) => onChange(event.target.value)}
-            />
+            {linking && (
+                <NoteConnections
+                    noteId={document.id}
+                    relations={linking.relations}
+                    targetsEndpoint={linking.targetsEndpoint}
+                    onLink={linking.onLink}
+                    onRemove={linking.onRemove}
+                />
+            )}
+
+            {isFlowchartContent(draft) ? (
+                <FlowchartNote content={draft} onChange={onChange} />
+            ) : linking ? (
+                <LinkingTextarea
+                    value={draft}
+                    entityId={document.id}
+                    linkTargetsEndpoint={linking.targetsEndpoint}
+                    onChange={onChange}
+                    onLink={linking.onLink}
+                />
+            ) : (
+                <textarea
+                    className="cvc-editor__textarea"
+                    aria-label="Conteúdo Markdown"
+                    autoFocus
+                    spellCheck
+                    value={draft}
+                    onChange={(event) => onChange(event.target.value)}
+                />
+            )}
         </section>
     );
 }

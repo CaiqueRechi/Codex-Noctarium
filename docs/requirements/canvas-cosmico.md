@@ -5,8 +5,8 @@
 | Data | 2026-11-07 |
 | Solicitante e aprovador | Rechi |
 | Status | Levantamento encerrado a pedido do usuário |
-| Cobertura | Parcial; não declarar 100%. Decisões não discutidas estão na seção 15 |
-| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados em 2026-11-08. Em 2026-11-10: regressão de ciclo na restauração de versões corrigida; medida de conteúdo das notas calculada e enviada pelo servidor; cena do simulador montada a partir dela. Tudo validado apenas por testes locais; a parte visível do RF-03 e os demais itens seguem pendentes conforme a [rastreabilidade](canvas-cosmico-traceability.md) |
+| Cobertura | Parcial; não declarar 100%. Decisões ainda abertas estão na seção 15; as fechadas em 2026-11-11, na seção 15.3 |
+| Implementação deste redesenho | RF-06 e limite de nomes RN-08 implementados em 2026-11-08. Em 2026-11-10: regressão de ciclo na restauração de versões corrigida; medida de conteúdo das notas calculada e enviada pelo servidor; cena do simulador montada a partir dela. Em 2026-11-11: o espaço aberto de um contexto passou a ser desenhado e movido pela física, com soltura livre e fixação por Ctrl. Na mesma data a tela passou a ter só o canvas: raiz do vault como espaço, caminho no cabeçalho e ferramentas num painel flutuante (seção 15.4). Validado por testes locais e por uma conferência no navegador com uma única nota; arrasto, várias notas, gestos de toque e os demais itens seguem pendentes conforme a [rastreabilidade](canvas-cosmico-traceability.md) |
 | Referência matemática | [Fórmulas e regras detalhadas](canvas-cosmico-formulas.md) |
 
 ## 1. Resumo
@@ -48,7 +48,7 @@ Responsável por todas as regras abaixo: Rechi. Fórmulas, definições e exempl
 | --- | --- | --- | --- |
 | RN-01 | Hierarquia cósmica navegada por zoom | Universo → constelação → planeta → continente | Nomes e aparência dos níveis posteriores não detalhados |
 | RN-02 | Duplo clique vazio cria nota normal no nível atual; ponto circular cria uma nota irmã conectada | Dentro de um planeta, criar um continente | Tipo de conteúdo só muda ao editar; gestos por toque aprovados na seção 15.2 |
-| RN-03 | Clique abre o conteúdo com expansão/aproximação; zoom manual navega pela hierarquia | Abrir o conteúdo de um planeta sem confundir com seus filhos | Limiar e prevenção de gestos acidentais ainda abertos |
+| RN-03 | Clique abre o conteúdo com expansão/aproximação; zoom manual navega pela hierarquia | Abrir o conteúdo de um planeta sem confundir com seus filhos | D-12: entra com 60% do menor lado da tela e sai com 30%; tempos de animação ainda abertos |
 | RN-04 | Tamanho segue conteúdo e subnotas, dentro de orçamento fixo por nível | Adicionar planeta redistribui o espaço disponível | D-02/D-05: orçamento de tamanhos, grafo com pan/zoom e alvo de toque mínimo separado |
 | RN-05 | Gravidade universal entre notas do mesmo espaço e Hooke nas conexões | Notas conectadas se mantêm mais próximas | Blocos internos do fluxograma não recebem essa física |
 | RN-06 | Contato suave e amortecimento até estabilizar | Duas notas encostam e se empurram | Calibração inicial D-04 aprovada na seção 15.2 |
@@ -58,10 +58,10 @@ Responsável por todas as regras abaixo: Rechi. Fórmulas, definições e exempl
 | RN-10 | Autosave após 1,5 segundo sem alterações; sair inicia salvamento imediato | Nova edição reinicia o prazo | Terceira falha cancela o ciclo, informa erro e oferece nova tentativa |
 | RN-11 | Rascunho de reenvio fica apenas na memória da aba | Reenvio não perde conteúdo durante a sessão | Não recuperar após recarga; avisar sobre alterações pendentes ao fechar/recarregar |
 | RN-12 | Pesquisa separa “Neste universo” de “Outros universos” | Resultado próximo aproxima; distante usa fade curto | Voltar restaura local, zoom e câmera anteriores |
-| RN-13 | Mover pai leva subnotas e preserva relações externas | Conexões antigas continuam existindo | D-01/D-14: identidade e subespaço compartilhados; rejeitar ciclos; política de retirada de uma participação ainda requer definição |
+| RN-13 | Mover pai leva subnotas e preserva relações externas | Conexões antigas continuam existindo | D-01/D-14: identidade e subespaço compartilhados; rejeitar ciclos; D-13: retirar uma participação sempre pergunta “só daqui” ou “de todos os lugares” |
 | RN-14 | Notas externas aparecem discretamente nos cantos relativos; clique percorre o ancestral comum | Entre universos, recuar à visão inicial das galáxias e entrar no destino | Não usar a regra de fade da pesquisa para esse percurso |
 | RN-15 | Comando de conexão oferece até cinco títulos que começam pelo texto digitado | `pla` encontra Planta, Planeta e similares | Sem correspondência de prefixo, não completar com títulos populares de outro início |
-| RN-16 | Ordenação dos candidatos: pontuação decrescente, depois alfabética | Pontuação = acessos + pesquisas + links | Eventos exatos de contagem ainda abertos; títulos iguais mostram o caminho |
+| RN-16 | Ordenação dos candidatos: pontuação decrescente, depois alfabética | Pontuação = acessos + pesquisas + links | D-09: eventos de contagem definidos na seção 15.3; títulos iguais mostram o caminho |
 | RN-17 | Seeder de exemplos baseada nos projetos de Rechi | Universo “Meus Projetos” com projetos, documentação e tecnologias relacionadas | Execução local explícita, idempotente, sem sobrescrever edições ou semear produção |
 
 ### 4.1 Fórmulas de extrema importância
@@ -110,7 +110,7 @@ Todos os RF pertencem ao escopo solicitado; o usuário não definiu uma ordem de
 | RF-07 | Pesquisa pela rosa dos ventos | RN-12 | Ícone pequeno no canto inferior abre painel lateral flutuante inspirado em offcanvas |
 | RF-08 | Movimentação hierárquica | RN-13 | Menu “Mover para…” seleciona destino e leva todas as subnotas |
 | RF-09 | Conexões externas navegáveis | RN-14 | Exibir nos cantos com menor opacidade e navegar pelo ancestral comum |
-| RF-10 | Conectar por comando | RN-15, RN-16 | `/link`, `/l` e `$l` oferecem seleção de até cinco títulos por prefixo e criam a conexão escolhida |
+| RF-10 | Conectar por comando | RN-15, RN-16 | `/link` e `/l` (D-09: `$l` foi retirado) oferecem seleção de até cinco títulos por prefixo e criam a conexão escolhida |
 | RF-11 | Seeder do universo pessoal de projetos | RN-17 | Criar uma hierarquia navegável com exemplos de notas, documentação, tecnologias, fluxogramas e conexões; reexecutar sem duplicar nem sobrescrever conteúdo editado |
 
 ### 5.1 Seeder “Meus Projetos”
@@ -176,7 +176,7 @@ Pai possui subnotas; mover o pai leva o conjunto. Relações conectam notas incl
 
 ### 7.3 Histórico, retenção e migração
 
-Posições e fixações precisam ser restauradas. A reconstrução de fluxograma depende do bloco textual restante; recuperação de bloco apagado pelo histórico não foi aprovada nesta conversa. Retenção de revisões, lixeira, migração do layout atual e conversão dos dados existentes permanecem abertas. O pedido anterior de banco com criptografia continua válido, mas seu esquema final não foi decidido nesta entrevista.
+Posições e fixações precisam ser restauradas. A reconstrução de fluxograma depende do bloco textual restante; recuperação de bloco apagado pelo histórico não foi aprovada nesta conversa. Retenção de revisões, lixeira e alcance da criptografia foram decididos em 2026-11-11 (seção 15.3). Migração do layout atual, conversão dos dados existentes e o desenho de chaves permanecem abertos.
 
 ## 8. Arquitetura
 
@@ -253,18 +253,14 @@ Para a seeder, verificar em banco local isolado: primeira execução cria o univ
 
 ## 15. Decisões em aberto
 
-Encerradas as perguntas a pedido do usuário. Os pontos abaixo estão **não discutidos ou parcialmente discutidos**, não aprovados por suposição. Responsável: Rechi; prazo: não definido. Devem ser resolvidos quando bloquearem a fase correspondente.
+Em 2026-11-11 Rechi fechou D-07, D-09, D-10 e D-11 e a maior parte de D-12 a D-15; as decisões estão na seção 15.3. Os pontos abaixo continuam **não discutidos ou parcialmente discutidos**, não aprovados por suposição. Responsável: Rechi; prazo: não definido. Devem ser resolvidos quando bloquearem a fase correspondente.
 
 | # | Decisão | Área | Impacto |
 | --- | --- | --- | --- |
-| D-07 | Formato do bloco textual e múltiplos blocos | Fluxograma | Conversão confiável |
-| D-09 | Contagem de acessos/pesquisas/links, normalização de prefixos e alias longo com $ | Autocomplete | Métrica consistente e sintaxe inequívoca |
-| D-10 | Direção, agrupamento e física das indicações externas | Conexões | Evitar cantos congestionados |
-| D-11 | Limiar perto/longe, duração do fade, busca sem universo aberto | Navegação | Completar comportamento visual |
-| D-12 (parte restante) | Limiares do zoom hierárquico e detalhes de seleção/conexão no editor | Interação | Gestos de criação por toque aprovados em 15.2; completar transições |
-| D-13 | Exclusão/lixeira, retenção, histórico e migração | Dados | A pergunta de exclusão não foi respondida; não aprovar cascata por inferência |
-| D-14 (parte restante) | Integração final Rechi OS, esquema detalhado e criptografia completa | Integração | Modelo nota/espaço aprovado em 15.2; implementação aditiva ainda precisa ser validada sem produção |
-| D-15 | Prioridades, carga, metas, ambientes, operação, custos e critérios herdados | Entrega | Planejamento de desenvolvimento ainda necessário |
+| D-12 (parte restante) | Tempos de animação do zoom e cancelamento durante a movimentação | Interação | Completar transições |
+| D-13 (parte restante) | Migração do layout atual e conversão dos dados existentes | Dados | Necessária antes de mudar o esquema dos dados atuais |
+| D-14 (parte restante) | Integração final com o Rechi OS; desenho de chaves: derivação, troca de senha e guarda da cópia do administrador | Integração | Bloqueia a implementação da criptografia e qualquer hospedagem remota |
+| D-15 (parte restante) | Ambientes, operação e custos | Entrega | Planejamento de implantação ainda necessário |
 
 As demais áreas do checklist não redefinidas nesta entrevista conservam referências anteriores como contexto a verificar; não contam automaticamente como novas confirmações. Não declarar 100% de cobertura nem testes de produto concluídos.
 
@@ -297,6 +293,105 @@ A implementação usa o endpoint existente `PATCH /vault/documents/{id}`, envian
 - **D-12 (gestos):** no celular, toque prolongado no vazio abre “Nova nota” naquele ponto; toque simples numa nota abre o conteúdo; toque no ponto circular cria uma irmã conectada; toque prolongado na nota abre “Fixar / Liberar”. No desktop, manter duplo clique vazio para criar, clique para editar e Ctrl ao soltar para fixar. A aprovação define comportamento; a integração visual ainda está pendente.
 
 Estas aprovações definem contratos; não são evidência de que a simulação, as migrações ou a interface já estejam implementadas. Consulte os estados e resultados na rastreabilidade.
+
+### 15.3 Decisões aprovadas em 2026-11-11
+
+Rechi respondeu a cada ponto nesta data. Três itens foram propostos por quem registrou e confirmados por ele na mesma data: o destino das subnotas compartilhadas, o das versões na exclusão definitiva e a ausência de cache na soma de descendentes. Nada desta seção está implementado.
+
+**D-07 — Bloco textual do fluxograma (RF-04, RF-05)**
+
+- Formato: bloco de código `mermaid` com um subconjunto de flowchart (início/fim, processo, decisão, entrada/saída e setas com texto), mais linhas de comentário que guardam a posição manual de cada bloco.
+- Mais de um bloco de fluxograma na nota: a conversão é bloqueada e o erro pede que reste apenas um.
+- Depois de reconstruir o diagrama, o bloco sai da descrição; o restante do texto é preservado.
+- Persistência: nós, ligações, textos e posições em JSON no próprio documento, salvos e versionados junto com a nota. Não há tabelas próprias de blocos.
+
+**D-09 — Autocomplete de conexão (RF-10)**
+
+- Acesso = cada abertura do conteúdo da nota.
+- Pesquisa = cada vez que a nota é escolhida num resultado da rosa dos ventos. Aparecer na lista sem ser escolhida não conta.
+- Links = quantidade de conexões que a nota tem no momento; diminui quando uma conexão é removida.
+- O prefixo é comparado sem diferenciar maiúsculas e acentos; espaços iniciais são descartados.
+- Comandos aceitos: somente `/link` e `/l`. O `$l`, aceito no exemplo visual da entrevista, foi retirado, e `$link` não existe.
+
+**D-10 — Conexões externas (RF-09)**
+
+- Cada conexão externa vai para o canto mais próximo da direção do destino.
+- Um canto mostra até 3 indicações; acima disso, um contador “+N” abre a lista.
+- As indicações ficam presas à tela e não participam da física.
+
+**D-11 — Pesquisa (RF-07)**
+
+- Perto = resultado no espaço aberto no momento: a câmera se aproxima.
+- Longe = qualquer outro lugar: fade de 300 ms, 150 ms para escurecer e 150 ms para clarear.
+- Na visão das galáxias, sem universo aberto: lista única com o caminho de cada resultado, sem o grupo “Neste universo”; a seleção sempre usa fade.
+
+**D-12 — Zoom hierárquico e conexões no editor (RF-01, RF-02)**
+
+- O zoom entra no espaço de uma nota quando ela ocupa 60% do menor lado da tela e sai quando o espaço atual encolhe para 30%. A folga entre os limiares evita alternar de nível com o zoom parado.
+- O editor mostra a lista de conexões da nota, com remover em cada uma e um campo “Conectar a…” que usa o mesmo autocomplete por prefixo. O comando no texto continua valendo.
+
+**D-13 — Exclusão, lixeira e histórico (RF-08)**
+
+- Excluir uma nota com subnotas pergunta se as subnotas também devem ser excluídas. Se sim, o conjunto vai para a lixeira. Se não, a exclusão não acontece: o usuário retira as subnotas antes.
+- Retirar uma nota que aparece em mais de um espaço sempre pergunta: “só daqui” ou “de todos os lugares”.
+- Lixeira: exclusão definitiva automática após 7 dias.
+- Histórico: todas as versões são mantidas.
+- Subnotas que também aparecem em outro espaço continuam vivas lá quando o conjunto vai para a lixeira.
+- As versões de uma nota são apagadas junto com ela na exclusão definitiva.
+
+**D-14 — Criptografia**
+
+- Ponta a ponta, com chave do usuário, cifrando só o conteúdo: corpo, versões e fluxograma são cifrados no navegador.
+- Títulos e a medida numérica de conteúdo ficam legíveis no servidor. Pesquisa e `/link` por título continuam no servidor; pesquisa dentro do conteúdo deixa de existir no servidor.
+- Recuperação: o código de recuperação é oferecido no início da configuração; se for perdido, é solicitado ao administrador (Rechi).
+
+Consequências sobre o que já está implementado:
+
+- A medida de conteúdo passa a ser calculada no navegador e enviada como número; o servidor não consegue mais conferi-la contra o texto. Isso substitui a decisão da fase 7 da rastreabilidade.
+- `cvc:measure-documents` e a medição na restauração de versão não funcionam sobre conteúdo cifrado; cada versão precisa guardar a própria medida.
+- O conteúdo que já existe em claro precisa de uma conversão feita pelo navegador.
+- Para o administrador reemitir o código, o servidor precisa guardar uma cópia recuperável da chave. O administrador, portanto, tem como ler o conteúdo: a proteção vale contra vazamento do banco, não contra o administrador.
+
+**D-15 — Volume, limites e ordem de entrega**
+
+- Volume-alvo: até 5.000 notas por vault.
+- Limite do conteúdo no salvamento: 5 MB por nota; acima disso o servidor recusa. Com todas as versões mantidas, o banco não tem teto de crescimento.
+- A soma de descendentes segue sem cache; ele só entra se a medição nesse volume mostrar lentidão.
+- Ordem de entrega depois da parte visível do RF-03:
+  1. RF-01 criação e zoom, RF-02 editor.
+  2. RF-07 pesquisa, RF-10 `/link`, RF-09 conexões externas.
+  3. RF-08 mover e exclusão/lixeira.
+  4. RF-04 e RF-05 fluxograma.
+  5. Criptografia.
+  6. RF-11 seeder.
+
+### 15.4 Decisões de interface aprovadas em 2026-11-11
+
+Rechi viu a primeira etapa no navegador e decidiu:
+
+- Sai da tela tudo o que não é o canvas: os cartões, o explorador da esquerda e a coluna da direita. A raiz do vault também é um espaço cósmico, com os universos como círculos.
+- As funções das duas colunas (explorador e criação de contexto, estado operacional, busca, lixeira, perspectivas e versões, propriedades, anexos e relações) continuam no produto, num painel lateral flutuante aberto por um ícone. Nenhuma foi removida do backend.
+- O canvas não tem fundo pontilhado.
+- Não há botão de criar nota. A nota é criada com duplo clique num ponto vazio do espaço, como já dizia a RN-02, e nasce nesse ponto. Na raiz do vault o duplo clique não cria nada, porque a raiz só contém universos.
+- O zoom do canvas não tem limite perceptível. A biblioteca exige limites finitos; ficaram em 1% e 10000%, fora do alcance de qualquer espaço do orçamento.
+
+Decisão de implementação, não de produto: ao entrar num espaço a câmera o enquadra inteiro, sem passar de 200% de zoom. Isso não substitui a navegação por zoom da D-12, que continua por fazer.
+
+### 15.5 Estilo e paleta aprovados em 2026-11-12
+
+Rechi pediu uma identidade visual própria do vault, independente da do Rechi OS, e escolheu entre seis direções a **F, Rapinante cósmico**, inspirada na skin Cosmic Reaver Kassadin (as fontes divergem entre roxo e dourado e azul, branco e dourado; a paleta é uma interpretação, não uma cópia).
+
+| Nome | Valor | Papel |
+| --- | --- | --- |
+| Fenda | `#090714` | Fundo |
+| Manto | `#130F2C` / `#1E1747` | Superfícies |
+| Vazio | `#7B5CFF` | Linhas, ligações, destaque |
+| Energia | `#CFE3FF` | Foco e seleção |
+| Champanhe | `#EBCB86` | Acabamento: borda das notas, caminho, rótulos |
+
+- Tipografia: Cinzel no caminho e nos rótulos, Manrope na interface e nas notas, JetBrains Mono no editor e nos estados. Fontes servidas pelo pacote, porque a CSP do Rechi OS só aceita fontes da própria origem.
+- Assinatura: toda nota tem borda fina champanhe; a nota em foco ganha a energia branco-azulada com halo violeta.
+- Separação do Rechi OS: fundo azul-preto em vez de ameixa, violeta vivo em vez de roxo apagado, champanhe claro em vez de mostarda, nenhum laranja.
 
 ## 16. Glossário
 

@@ -27,6 +27,7 @@ final class KnowledgeEntity extends Model
         'kind',
         'entity_type',
         'title',
+        'color',
         'properties',
         'tags',
         'search_version',
@@ -38,6 +39,8 @@ final class KnowledgeEntity extends Model
             'properties' => 'array',
             'tags' => 'array',
             'search_version' => 'integer',
+            'access_count' => 'integer',
+            'search_count' => 'integer',
         ];
     }
 

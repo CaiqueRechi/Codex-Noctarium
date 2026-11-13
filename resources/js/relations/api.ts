@@ -48,10 +48,70 @@ export async function createRelation(
     return payload.relation;
 }
 
+export type LinkTarget = {
+    id: string;
+    title: string;
+    path: string[];
+    score: number;
+};
+
+export async function findLinkTargets(
+    endpoint: string,
+    prefix: string,
+    exceptEntityId: string,
+    signal?: AbortSignal,
+): Promise<LinkTarget[]> {
+    const query = new URLSearchParams({ prefix, except: exceptEntityId });
+    const response = await fetch(`${endpoint}?${query.toString()}`, {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+        signal,
+    });
+    const payload = (await response.json()) as {
+        targets?: LinkTarget[];
+        message?: string;
+    };
+
+    if (!response.ok || !payload.targets) {
+        throw new Error(payload.message ?? 'Não foi possível buscar as notas.');
+    }
+
+    return payload.targets;
+}
+
 export async function deleteRelation(endpoint: string, relationId: string) {
     await mutation(`${endpoint}/${encodeURIComponent(relationId)}`, {
         method: 'DELETE',
     });
+}
+
+// RF-08 "Mover para…": the note leaves one space for another; its
+// subnotes come along in its own space.
+export async function moveEntity(
+    entitiesEndpoint: string,
+    entityId: string,
+    fromContextId: string,
+    toContextId: string,
+) {
+    await mutation(`${entitiesEndpoint}/${encodeURIComponent(entityId)}/move`, {
+        method: 'POST',
+        body: JSON.stringify({
+            from_context_id: fromContextId,
+            to_context_id: toContextId,
+        }),
+    });
+}
+
+// D-13 "só daqui": the note leaves this space and lives on in the others.
+export async function detachEntityFromContext(
+    contextsEndpoint: string,
+    contextId: string,
+    entityId: string,
+) {
+    await mutation(
+        `${contextsEndpoint}/${encodeURIComponent(contextId)}/entities/${encodeURIComponent(entityId)}`,
+        { method: 'DELETE' },
+    );
 }
 
 export async function attachEntityToContext(
@@ -73,12 +133,13 @@ export async function saveEntityLayout(
     contextId: string,
     entityId: string,
     position: { x: number; y: number },
+    isPinned = true,
 ) {
     await mutation(
         `${contextsEndpoint}/${encodeURIComponent(contextId)}/entities/${encodeURIComponent(entityId)}/layout`,
         {
             method: 'PATCH',
-            body: JSON.stringify({ position, pinned: true }),
+            body: JSON.stringify({ position, pinned: isPinned }),
         },
     );
 }

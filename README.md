@@ -10,12 +10,15 @@ Codex Noctarium is a Laravel and React package that adds a private knowledge can
 
 - One fixed physical vault prepared for multiple vaults later.
 - Arbitrarily deep universe/context hierarchies inside the vault, loaded one navigation slice at a time.
-- Semantic zoom rendered with React Flow.
+- A screen that is only the canvas: the vault root and every context drawn as a cosmic space with React Flow, the current path and the tools button floating over its corners, and every other tool in one floating panel. A note is created by double-clicking an empty point of a space.
+- Zoom navigation (D-12): zooming into a context or a note until it covers 60 % of the smaller side of the screen enters it, a note through the space of its subnotes; zooming out until the open space shrinks to 30 % returns to where it was entered from. Subnotes are created by double click inside a note's space.
+- Links between notes: drag the dot on a note's edge onto another note, click the dot to create a linked sibling, or type `/link` or `/l` and the start of a title in the editor to choose among at most five notes whose title starts with it.
 - Canvas labels limited to 20 visible characters plus an ellipsis, preserving complete note names and composed characters.
-- Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`; the complete physical renderer is still in development.
-- Tested headless cosmic simulation under `resources/js/canvas/physics`, with fixed steps, gravity, springs, soft contact, damping, pinned-body influence, and sleep/wake behavior; visual integration is still in development.
+- Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`, used by the visible React Flow renderer.
+- Tested headless cosmic simulation under `resources/js/canvas/physics`, with fixed steps, gravity, springs, soft contact, damping, pinned-body influence, and sleep/wake behavior.
 - Content measure of every normal note kept by the server and sent with each navigation slice as `ownContent` and `descendantContent`, with no note body; the same rules exist in PHP and TypeScript and are pinned by shared test cases.
-- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`); nothing renders it yet.
+- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`). Inside an open context the canvas draws notes and nested contexts as circles moved by the simulation; free notes keep moving, pinned notes remain fixed, and a space is framed when entered.
+- Single-click note editing, long-press and pin actions, note titles and theme colors, compass search, external-connection navigation, move/remove/trash flows, seven-day purge, and editable flowchart notes.
 - Stable UUID document entities.
 - Private immutable Markdown revision files with relational metadata.
 - Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.
@@ -138,6 +141,7 @@ On Windows PowerShell, set `$env:WAYFINDER_GENERATE='false'` before the build co
 
 ## Documentation
 
+- [Working context: where the work stands and how to resume it](CONTEXT.md)
 - [Product requirements](docs/requirements/crow-vault-canvas.md)
 - [Vertical-slice architecture](docs/architecture/vertical-slice.md)
 - [MVP architecture](docs/architecture/mvp.md)
@@ -182,6 +186,10 @@ The product was called Crow Vault Canvas (CVC) until 2026-11-12, when Caique ren
 Technical identifiers keep the old name, because renaming them changes contracts with the host, the database and existing installations: the repository `crow-vault-canvas`, the Composer package `caiquerechi/crow-vault-canvas`, the PHP namespace `CrowVaultCanvas`, the configuration key `crow-vault-canvas`, the `cvc_*` tables, the `CVC_*` environment variables, the `cvc:*` commands, the `cvc.*` route names and the `cvc-*` CSS classes. Renaming any of them is a separate, explicit decision.
 
 A vault initialized before the rename keeps the name stored in its row; the new default only applies to new vaults or to `CVC_VAULT_NAME`.
+
+## Visual style
+
+The vault uses the "Rapinante cósmico" palette and type chosen on 2026-11-12, described in section 15.5 of `docs/requirements/canvas-cosmico.md`. Colors live only in `resources/css/presets.css`, as `--cvc-*` tokens, and a test fails if `cvc.css` writes a color of its own. Cinzel, Manrope and JetBrains Mono are served from `resources/fonts/` under the SIL OFL 1.1 because the host allows fonts only from its own origin; replacing a font means replacing its file, its licence and its `@font-face` in `resources/css/fonts.css`.
 
 ## Brand assets
 

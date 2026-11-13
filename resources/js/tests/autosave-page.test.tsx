@@ -13,17 +13,15 @@ vi.mock('@inertiajs/react', () => ({
     router: { visit, reload },
 }));
 vi.mock('@xyflow/react', () => ({
-    Background: () => null,
-    BackgroundVariant: { Dots: 'dots' },
     Controls: () => null,
     Handle: () => null,
     Position: { Left: 'left', Right: 'right' },
     ReactFlow: ({
         onInit,
-        onNodeDoubleClick,
+        onNodeClick,
     }: {
         onInit: (flow: unknown) => void;
-        onNodeDoubleClick: (event: null, node: unknown) => void;
+        onNodeClick: (event: MouseEvent, node: unknown) => void;
     }) => {
         useEffect(() => {
             onInit({ setViewport });
@@ -31,8 +29,8 @@ vi.mock('@xyflow/react', () => ({
 
         return (
             <button
-                onClick={() =>
-                    onNodeDoubleClick(null, {
+                onClick={(event) =>
+                    onNodeClick(event.nativeEvent, {
                         data: { kind: 'document', entityId: 'note' },
                     })
                 }
@@ -114,6 +112,7 @@ async function openEditor(saveResponse: () => Promise<Response>) {
             <VaultPage {...props} />
         </StrictMode>,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir ferramentas' }));
     fireEvent.click(screen.getByRole('button', { name: 'Abrir documento' }));
     await tick();
 

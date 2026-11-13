@@ -9,7 +9,9 @@ use CrowVaultCanvas\Application\Workspace\SaveWorkspaceState;
 use CrowVaultCanvas\Domain\Knowledge\Models\KnowledgeContext;
 use CrowVaultCanvas\Domain\Knowledge\Models\Perspective;
 use CrowVaultCanvas\Tests\TestCase;
+use Illuminate\Auth\GenericUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class WorkspaceStateTest extends TestCase
 {
@@ -58,6 +60,52 @@ final class WorkspaceStateTest extends TestCase
         self::assertNull($snapshot->focusEntityId);
         self::assertNotNull($snapshot->perspectiveId);
         self::assertNull($snapshot->focusContextId);
+        $this->assertDatabaseCount('cvc_workspace_states', 0);
+    }
+
+    /** @return array<string, array{float}> */
+    public static function zoomsTheCanvasAllows(): array
+    {
+        return [
+            'smallest zoom of the canvas' => [0.01],
+            'zoom a framed space reached in the browser' => [0.17],
+            'largest zoom of the canvas' => [100.0],
+        ];
+    }
+
+    #[DataProvider('zoomsTheCanvasAllows')]
+    public function testRf04SavesEveryZoomTheCanvasAllows(float $zoom): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $this->actingAs(new GenericUser(['id' => 42]));
+
+        $response = $this->patchJson(route('cvc.workspace.update'), [
+            'viewport' => ['x' => 10, 'y' => 20, 'zoom' => $zoom],
+        ])->assertOk();
+
+        self::assertSame($zoom, (float) $response->json('workspace.viewport.zoom'));
+        self::assertSame($zoom, $this->app->make(OpenWorkspaceState::class)->handle('42')->zoom);
+    }
+
+    /** @return array<string, array{float}> */
+    public static function zoomsOutsideTheCanvas(): array
+    {
+        return [
+            'below the smallest zoom' => [0.009],
+            'above the largest zoom' => [100.5],
+        ];
+    }
+
+    #[DataProvider('zoomsOutsideTheCanvas')]
+    public function testRf04RejectsAZoomOutsideTheCanvasLimits(float $zoom): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $this->actingAs(new GenericUser(['id' => 42]));
+
+        $this->patchJson(route('cvc.workspace.update'), [
+            'viewport' => ['x' => 10, 'y' => 20, 'zoom' => $zoom],
+        ])->assertUnprocessable()->assertJsonValidationErrors('viewport.zoom');
+
         $this->assertDatabaseCount('cvc_workspace_states', 0);
     }
 }

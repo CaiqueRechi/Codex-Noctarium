@@ -301,7 +301,7 @@ Além das outras interações, oferecer a criação de conexão por comando:
 - `/link x`
 - `/l x` como abreviação.
 
-Na validação visual, o usuário também empregou `$l x`, aceito no exemplo aprovado. O produto deve contemplar essa forma; a necessidade de um alias longo `$link` não foi discutida.
+Na validação visual, o usuário também empregou `$l x`, aceito no exemplo aprovado. Em 2026-11-11 (D-09) Rechi retirou essa forma: o produto aceita somente `/link` e `/l`, e `$link` não existe.
 
 `x` é o título alvo ou o texto usado para procurá-lo. A busca é simples, pelo valor do título, e abrange todos os tipos e locais. Oferecer autocomplete para escolher o destino da conexão.
 
@@ -338,12 +338,12 @@ Exemplo: um destino com 10 acessos, 3 pesquisas e 2 links tem pontuação `10 + 
 
 Quando houver títulos iguais, mostrar o caminho hierárquico abaixo do nome, como “Universo → Constelação → Planeta”, permitindo distinguir os destinos. Essa apresentação foi confirmada pelo usuário.
 
-Ainda precisam ser definidos: eventos exatos de contagem dos três componentes e correspondência de maiúsculas/acentos.
+Definido em 2026-11-11 (D-09): acesso conta a cada abertura do conteúdo da nota; pesquisa, a cada vez que a nota é escolhida num resultado da rosa dos ventos; links é a quantidade de conexões que a nota tem no momento. O prefixo é comparado sem diferenciar maiúsculas e acentos, descartando espaços iniciais.
 
 Critérios para futura verificação: comandos longo e abreviado encontram os mesmos destinos; busca considera título e todos os tipos; autocomplete apresenta no máximo cinco sugestões no total; todo resultado começa com o texto digitado; não completar vagas com títulos sem esse prefixo; entre os candidatos elegíveis, pontuação decrescente e ordem alfabética como desempate; pontuação corresponde exatamente à soma dos três contadores.
 
 ## 14. Decisões abertas no encerramento
 
-No encerramento original, estes temas permaneciam abertos. Em 2026-11-08, Rechi aprovou D-01 a D-06 e a conciliação nota/espaço da D-14, registradas na seção 15.2 da especificação e incorporadas acima. Continuam abertos o formato do bloco textual, múltiplos blocos, outros gestos/transições, contadores e detalhes restantes de persistência/criptografia. Aprovação de modelo não comprova implementação; consultar a rastreabilidade.
+No encerramento original, estes temas permaneciam abertos. Em 2026-11-08, Rechi aprovou D-01 a D-06 e a conciliação nota/espaço da D-14, registradas na seção 15.2 da especificação e incorporadas acima. Em 2026-11-11, aprovou o formato do bloco textual, o tratamento de múltiplos blocos, os contadores, os limiares do zoom e o alcance da criptografia, registrados na seção 15.3 da especificação. Continuam abertos os tempos de animação, a migração dos dados existentes e o desenho de chaves. Aprovação de modelo não comprova implementação; consultar a rastreabilidade.
 
 Este registro complementa `crow-vault-canvas.md` para o redesenho em discussão. Não declara que o comportamento atual já segue estas regras.

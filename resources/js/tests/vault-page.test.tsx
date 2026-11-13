@@ -6,10 +6,11 @@ import {
     within,
 } from '@testing-library/react';
 import { useEffect } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const setViewportMock = vi.fn();
+let cameraZoom = 1;
 const fitViewMock = vi.fn().mockResolvedValue(true);
 const getViewportMock = vi.fn(() => ({ x: -40, y: 25, zoom: 1.4 }));
 const { routerReloadMock } = vi.hoisted(() => ({
@@ -22,8 +23,6 @@ vi.mock('@inertiajs/react', () => ({
 }));
 
 vi.mock('@xyflow/react', () => ({
-    Background: () => null,
-    BackgroundVariant: { Dots: 'dots' },
     Controls: () => null,
     Handle: () => null,
     Position: { Left: 'left', Right: 'right' },
@@ -33,6 +32,7 @@ vi.mock('@xyflow/react', () => ({
         onMove,
         onMoveEnd,
         onInit,
+        onNodeClick,
         onNodeDoubleClick,
     }: {
         children: ReactNode;
@@ -61,6 +61,13 @@ vi.mock('@xyflow/react', () => ({
                 data: { label: string; kind: string };
             },
         ) => void;
+        onNodeClick?: (
+            event: MouseEvent,
+            node: {
+                id: string;
+                data: { label: string; kind: string };
+            },
+        ) => void;
     }) => {
         useEffect(() => {
             onInit?.({
@@ -77,6 +84,9 @@ vi.mock('@xyflow/react', () => ({
                     .map((node) => (
                         <span
                             key={node.id}
+                            onClick={(event) =>
+                                onNodeClick?.(event.nativeEvent, node)
+                            }
                             onDoubleClick={(event) =>
                                 onNodeDoubleClick?.(event.nativeEvent, node)
                             }
@@ -90,11 +100,37 @@ vi.mock('@xyflow/react', () => ({
                 >
                     aproximar
                 </button>
+                <div className="react-flow__pane" data-testid="pane" />
                 <button
                     type="button"
                     onClick={() => onMoveEnd?.(null, { x: 0, y: 0, zoom: 1 })}
                 >
                     enquadramento programático
+                </button>
+                <button
+                    type="button"
+                    onClick={(event) =>
+                        onMoveEnd?.(event.nativeEvent, {
+                            x: 30,
+                            y: 40,
+                            zoom: 1.5,
+                        })
+                    }
+                >
+                    soltar a câmera
+                </button>
+                <button
+                    type="button"
+                    onClick={(event) => {
+                        cameraZoom += 0.1;
+                        onMoveEnd?.(event.nativeEvent, {
+                            x: 0,
+                            y: 0,
+                            zoom: cameraZoom,
+                        });
+                    }}
+                >
+                    aproximar a câmera
                 </button>
                 {children}
             </div>
@@ -104,6 +140,14 @@ vi.mock('@xyflow/react', () => ({
 
 import VaultPage from '../pages/vault';
 
+// The panels live in a floating tools panel that starts closed.
+function renderWithTools(page: ReactElement) {
+    const view = render(page);
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir ferramentas' }));
+
+    return view;
+}
+
 describe('RF-02 vault canvas', () => {
     beforeEach(() => {
         setViewportMock.mockReset();
@@ -112,8 +156,8 @@ describe('RF-02 vault canvas', () => {
         routerReloadMock.mockReset();
     });
 
-    it('reveals context detail through zoom without entering edit mode', () => {
-        render(
+    it('shows the universes of the vault as its outermost space', () => {
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -151,11 +195,9 @@ describe('RF-02 vault canvas', () => {
             within(canvas).queryByText('Primeiro Contexto'),
         ).not.toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: 'aproximar' }));
-
         expect(
-            within(canvas).getByText('Primeiro Contexto'),
-        ).toBeInTheDocument();
+            screen.queryByRole('button', { name: 'Nova nota' }),
+        ).not.toBeInTheDocument();
         expect(
             screen.queryByRole('textbox', { name: 'Conteúdo Markdown' }),
         ).not.toBeInTheDocument();
@@ -199,7 +241,7 @@ describe('RF-02 vault canvas', () => {
             .mockResolvedValueOnce({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -241,6 +283,99 @@ describe('RF-02 vault canvas', () => {
             expect.objectContaining({ credentials: 'same-origin' }),
         );
 
+        vi.unstubAllGlobals();
+    });
+
+    it('frames the whole space after entering it', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const width = vi
+            .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+            .mockReturnValue(1000);
+        const height = vi
+            .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+            .mockReturnValue(500);
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                slice: {
+                    contexts: [
+                        {
+                            id: 'universe-1',
+                            parentId: null,
+                            kind: 'universe',
+                            name: 'Meu Universo',
+                            hasChildren: false,
+                            documents: [
+                                {
+                                    id: 'entity-1',
+                                    title: 'Nota',
+                                    revision: 1,
+                                    entityType: null,
+                                    properties: {},
+                                    ownContent: 0,
+                                    descendantContent: 0,
+                                    position: { x: 2048, y: 1024 },
+                                    isPinned: true,
+                                },
+                            ],
+                            contexts: [],
+                        },
+                    ],
+                    breadcrumbs: [{ id: 'universe-1', name: 'Meu Universo' }],
+                },
+            }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        renderWithTools(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    contexts: '/vault/contexts',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        expect(setViewportMock).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+        await waitFor(() => expect(setViewportMock).toHaveBeenCalledTimes(1));
+
+        const [framed] = setViewportMock.mock.calls[0];
+        // One empty note takes a third of the budget: X = 1, w = 1 and
+        // the reserved empty area is 2 / (2 + 1).
+        const diameter = 2 * Math.sqrt(1 / 3 / Math.PI) * 1024;
+
+        expect(framed.zoom).toBeCloseTo(400 / diameter, 10);
+        expect(framed.x).toBeCloseTo(500 - 2048 * framed.zoom, 8);
+        expect(framed.y).toBeCloseTo(250 - 1024 * framed.zoom, 8);
+        await waitFor(() =>
+            expect(fetchMock).toHaveBeenLastCalledWith(
+                '/vault/workspace',
+                expect.objectContaining({ method: 'PATCH' }),
+            ),
+        );
+
+        width.mockRestore();
+        height.mockRestore();
         vi.unstubAllGlobals();
     });
 
@@ -299,7 +434,7 @@ describe('RF-02 vault canvas', () => {
             });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -336,7 +471,11 @@ describe('RF-02 vault canvas', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
 
         await waitFor(() =>
-            expect(screen.getByText('Subassunto')).toBeInTheDocument(),
+            expect(
+                within(
+                    screen.getByRole('main', { name: 'Canvas do vault' }),
+                ).getByText('Subassunto'),
+            ).toBeInTheDocument(),
         );
         expect(fetchMock).toHaveBeenNthCalledWith(
             1,
@@ -358,7 +497,7 @@ describe('RF-02 vault canvas', () => {
         const fetchMock = vi.fn().mockResolvedValue({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -401,6 +540,104 @@ describe('RF-02 vault canvas', () => {
         vi.unstubAllGlobals();
     });
 
+    it('saves the viewport once when the camera stops where it already was', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+
+        renderWithTools(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        const stopCamera = screen.getByRole('button', {
+            name: 'soltar a câmera',
+        });
+        fireEvent.click(stopCamera);
+        fireEvent.click(stopCamera);
+        fireEvent.click(stopCamera);
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+        expect(fetchMock).toHaveBeenCalledWith(
+            '/vault/workspace',
+            expect.objectContaining({ method: 'PATCH' }),
+        );
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
+
+    it('saves only the viewport the camera rests on after a burst of moves', async () => {
+        document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', fetchMock);
+        cameraZoom = 1;
+
+        renderWithTools(
+            <VaultPage
+                vault={{
+                    id: 'vault-1',
+                    name: 'CVC',
+                    universes: [
+                        {
+                            id: 'universe-1',
+                            name: 'Meu Universo',
+                            contexts: [],
+                        },
+                    ],
+                }}
+                endpoints={{
+                    documents: '/vault/documents',
+                    entities: '/vault/entities',
+                    workspace: '/vault/workspace',
+                }}
+                workspace={{
+                    viewport: { x: 120, y: 120, zoom: 0.65 },
+                    focusEntityId: null,
+                }}
+            />,
+        );
+
+        const zoomIn = screen.getByRole('button', {
+            name: 'aproximar a câmera',
+        });
+        fireEvent.click(zoomIn);
+        fireEvent.click(zoomIn);
+        fireEvent.click(zoomIn);
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+        expect(
+            JSON.parse(fetchMock.mock.calls[0][1].body as string).viewport.zoom,
+        ).toBeCloseTo(1.3, 10);
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        document.cookie =
+            'XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        vi.unstubAllGlobals();
+    });
+
     it('keeps the draft visible and reports failure when saving is rejected', async () => {
         document.cookie = 'XSRF-TOKEN=test-token; path=/';
         const fetchMock = vi
@@ -426,11 +663,15 @@ describe('RF-02 vault canvas', () => {
             });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
                     name: 'Codex Noctarium',
+                    breadcrumbs: [
+                        { id: 'universe-1', name: 'Meu Universo' },
+                        { id: 'context-1', name: 'Primeiro Contexto' },
+                    ],
                     universes: [
                         {
                             id: 'universe-1',
@@ -457,7 +698,7 @@ describe('RF-02 vault canvas', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Nova nota' }));
+        fireEvent.doubleClick(screen.getByTestId('pane'));
         const editor = await screen.findByRole('textbox', {
             name: 'Conteúdo Markdown',
         });
@@ -504,11 +745,15 @@ describe('RF-02 vault canvas', () => {
         vi.stubGlobal('fetch', fetchMock);
         const persistedViewport = { x: -180.75, y: 41.5, zoom: 1.6 };
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
                     name: 'Codex Noctarium',
+                    breadcrumbs: [
+                        { id: 'universe-1', name: 'Meu Universo' },
+                        { id: 'context-1', name: 'Primeiro Contexto' },
+                    ],
                     universes: [
                         {
                             id: 'universe-1',
@@ -543,7 +788,7 @@ describe('RF-02 vault canvas', () => {
             />,
         );
 
-        fireEvent.doubleClick(
+        fireEvent.click(
             within(
                 screen.getByRole('main', { name: 'Canvas do vault' }),
             ).getByText('Sem título'),
@@ -569,7 +814,7 @@ describe('RF-02 vault canvas', () => {
         const fetchMock = vi.fn().mockResolvedValue({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -664,7 +909,7 @@ describe('RF-02 vault canvas', () => {
         });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -770,7 +1015,7 @@ describe('RF-02 vault canvas', () => {
             properties: {},
         });
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -874,7 +1119,7 @@ describe('RF-02 vault canvas', () => {
         });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -976,7 +1221,7 @@ describe('RF-02 vault canvas', () => {
             });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -1079,7 +1324,7 @@ describe('RF-02 vault canvas', () => {
             .mockResolvedValue({ ok: true });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -1191,7 +1436,7 @@ describe('RF-02 vault canvas', () => {
         vi.stubGlobal('fetch', fetchMock);
         vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
@@ -1289,7 +1534,7 @@ describe('RF-02 vault canvas', () => {
         });
         vi.stubGlobal('fetch', fetchMock);
 
-        render(
+        renderWithTools(
             <VaultPage
                 vault={{
                     id: 'vault-1',
