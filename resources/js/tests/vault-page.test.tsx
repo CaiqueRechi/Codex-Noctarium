@@ -32,6 +32,7 @@ vi.mock('@xyflow/react', () => ({
         onMove,
         onMoveEnd,
         onInit,
+        onNodeClick,
         onNodeDoubleClick,
     }: {
         children: ReactNode;
@@ -60,6 +61,13 @@ vi.mock('@xyflow/react', () => ({
                 data: { label: string; kind: string };
             },
         ) => void;
+        onNodeClick?: (
+            event: MouseEvent,
+            node: {
+                id: string;
+                data: { label: string; kind: string };
+            },
+        ) => void;
     }) => {
         useEffect(() => {
             onInit?.({
@@ -76,6 +84,9 @@ vi.mock('@xyflow/react', () => ({
                     .map((node) => (
                         <span
                             key={node.id}
+                            onClick={(event) =>
+                                onNodeClick?.(event.nativeEvent, node)
+                            }
                             onDoubleClick={(event) =>
                                 onNodeDoubleClick?.(event.nativeEvent, node)
                             }
@@ -777,7 +788,7 @@ describe('RF-02 vault canvas', () => {
             />,
         );
 
-        fireEvent.doubleClick(
+        fireEvent.click(
             within(
                 screen.getByRole('main', { name: 'Canvas do vault' }),
             ).getByText('Sem título'),
