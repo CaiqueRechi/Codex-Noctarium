@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 import type { LinkTarget } from '../relations/api';
@@ -32,16 +32,16 @@ export function LinkingTextarea({
         entityId,
     );
 
-    useEffect(() => setActiveIndex(0), [targets]);
-
     const readCommand = (element: HTMLTextAreaElement) => {
         const found = findLinkCommand(element.value, element.selectionStart);
 
-        setCommand((current) =>
-            current?.query === found?.query && current?.start === found?.start
-                ? current
-                : found,
-        );
+        if (
+            command?.query !== found?.query ||
+            command?.start !== found?.start
+        ) {
+            setCommand(found);
+            setActiveIndex(0);
+        }
 
         if (!found) {
             setMessage(null);
@@ -82,13 +82,14 @@ export function LinkingTextarea({
             );
         } else if (event.key === 'Enter' || event.key === 'Tab') {
             event.preventDefault();
-            void choose(targets[activeIndex]);
+            void choose(targets[selectedIndex]);
         } else if (event.key === 'Escape') {
             event.preventDefault();
             setCommand(null);
         }
     };
 
+    const selectedIndex = Math.min(activeIndex, Math.max(0, targets.length - 1));
     const isOpen = command !== null && targets.length > 0;
     const repeatedTitles = new Set(
         targets
@@ -106,7 +107,7 @@ export function LinkingTextarea({
                 aria-controls={isOpen ? listId : undefined}
                 aria-expanded={isOpen}
                 aria-activedescendant={
-                    isOpen ? `${listId}-${activeIndex}` : undefined
+                    isOpen ? `${listId}-${selectedIndex}` : undefined
                 }
                 autoFocus
                 spellCheck
@@ -130,7 +131,7 @@ export function LinkingTextarea({
                             key={target.id}
                             id={`${listId}-${index}`}
                             role="option"
-                            aria-selected={index === activeIndex}
+                            aria-selected={index === selectedIndex}
                             className="cvc-linking__option"
                             onMouseDown={(event) => {
                                 event.preventDefault();

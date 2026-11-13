@@ -26,6 +26,11 @@ import type {
     CosmicNoteData,
 } from '../canvas/cosmic-note-node';
 import {
+    findExternalConnections,
+    travelThroughCommonAncestor,
+} from '../canvas/external-connections';
+import { ExternalConnectionsOverlay } from '../canvas/external-connections-overlay';
+import {
     canvasUnitsPerLogicalUnit,
     circleOnScreen,
     enclosingCircle,
@@ -42,11 +47,6 @@ import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
 import type { SimulationBody } from '../canvas/physics/simulation-body';
 import { describeSpaceScene } from '../canvas/physics/space-scene';
 import { useCosmicSimulation } from '../canvas/physics/use-cosmic-simulation';
-import { ExternalConnectionsOverlay } from '../canvas/external-connections-overlay';
-import {
-    findExternalConnections,
-    travelThroughCommonAncestor,
-} from '../canvas/external-connections';
 import { useLongPress } from '../canvas/use-long-press';
 import type { LongPressPoint } from '../canvas/use-long-press';
 import { decideZoomNavigation } from '../canvas/zoom-navigation';
@@ -1492,8 +1492,12 @@ export default function VaultPage({
                     : [],
             ),
         );
-        const center =
-            enclosingCircle(spaceCircles.current.all)?.center ?? { x: 0, y: 0 };
+        const center = enclosingCircle(
+            nodes.map((node) => ({
+                center: node.position,
+                radius: node.data.diameter / 2,
+            })),
+        )?.center ?? { x: 0, y: 0 };
 
         return findExternalConnections(insideNotes, center, relations);
     }, [nodes, relations]);
