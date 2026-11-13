@@ -82,6 +82,53 @@ final class PerspectivesTest extends TestCase
         self::assertFalse($derived->layouts->firstOrFail()->is_pinned);
     }
 
+    public function testRf03SavesThePerspectiveLayoutOfANoteThatSitsDirectlyInAUniverse(): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $universe = KnowledgeContext::query()
+            ->where('kind', KnowledgeContext::KIND_UNIVERSE)
+            ->firstOrFail();
+        $document = $this->app->make(CreateDocument::class)->handle((string) $universe->getKey());
+        $perspective = Perspective::query()->firstOrFail();
+
+        $this->patchJson(route('cvc.perspectives.layouts.update', [
+            'perspective' => $perspective->getKey(),
+            'context' => $universe->getKey(),
+            'entity' => $document->id,
+        ]), [
+            'position' => ['x' => 512, 'y' => -256],
+            'pinned' => false,
+        ])
+            ->assertOk()
+            ->assertJsonPath('layout.isPinned', false);
+
+        $layout = $perspective->layouts()->firstOrFail();
+        self::assertSame((string) $universe->getKey(), (string) $layout->context_id);
+        self::assertSame(512.0, $layout->position_x);
+        self::assertFalse($layout->is_pinned);
+    }
+
+    public function testRf03RejectsAPerspectiveLayoutForANoteThatIsNotInTheContext(): void
+    {
+        $this->artisan('cvc:initialize')->assertSuccessful();
+        $universe = KnowledgeContext::query()
+            ->where('kind', KnowledgeContext::KIND_UNIVERSE)
+            ->firstOrFail();
+        $context = KnowledgeContext::query()
+            ->where('kind', KnowledgeContext::KIND_CONTEXT)
+            ->firstOrFail();
+        $document = $this->app->make(CreateDocument::class)->handle((string) $context->getKey());
+
+        $this->patchJson(route('cvc.perspectives.layouts.update', [
+            'perspective' => Perspective::query()->firstOrFail()->getKey(),
+            'context' => $universe->getKey(),
+            'entity' => $document->id,
+        ]), [
+            'position' => ['x' => 0, 'y' => 0],
+            'pinned' => true,
+        ])->assertNotFound();
+    }
+
     public function test_rf_09_rejects_filters_outside_the_open_vault(): void
     {
         $this->artisan('cvc:initialize')->assertSuccessful();

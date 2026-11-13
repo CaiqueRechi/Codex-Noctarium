@@ -1,26 +1,45 @@
+/* The canvas is the whole screen; everything else floats over it. */
 .cvc-shell {
     display: grid;
-    min-height: 100vh;
-    grid-template-rows: auto 1fr;
+    height: 100vh;
+    grid-template-rows: minmax(0, 1fr);
     background: var(--cvc-background);
     color: var(--cvc-text);
+    font-family: var(--cvc-font-body);
 }
 
-.cvc-header {
-    z-index: 10;
+.cvc-visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    white-space: nowrap;
+}
+
+.cvc-overlay {
+    position: absolute;
+    z-index: 9;
+    top: 0.75rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    border-bottom: 1px solid var(--cvc-border);
-    background: var(--cvc-surface);
-    padding: 1rem 1.5rem;
-    box-shadow: 0 0.75rem 2rem var(--cvc-shadow);
+    gap: 0.5rem;
+    pointer-events: none;
 }
 
-.cvc-header h1 {
-    margin: 0.2rem 0 0;
-    font-size: clamp(1.2rem, 2vw, 1.75rem);
+.cvc-overlay > * {
+    pointer-events: auto;
+}
+
+.cvc-overlay--start {
+    left: 0.75rem;
+    right: 4.5rem;
+    flex-wrap: wrap;
+}
+
+.cvc-overlay--end {
+    right: 0.75rem;
 }
 
 .cvc-brand {
@@ -40,7 +59,6 @@
     filter: grayscale(1) brightness(0) invert(1);
 }
 
-.cvc-header__actions,
 .cvc-editor__actions {
     display: flex;
     align-items: center;
@@ -75,42 +93,70 @@
     opacity: 0.55;
 }
 
-.cvc-eyebrow,
-.cvc-knowledge-node__kind {
-    color: var(--cvc-text-muted);
+.cvc-eyebrow {
+    color: var(--cvc-gilt);
+    font-family: var(--cvc-font-display);
     font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
+    font-weight: 500;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-}
-
-.cvc-zoom-state {
-    border: 1px solid var(--cvc-border);
-    border-radius: 999px;
-    background: var(--cvc-surface-raised);
-    padding: 0.55rem 0.9rem;
-    color: var(--cvc-text);
-    font-size: 0.8rem;
 }
 
 .cvc-canvas {
     min-height: 0;
 }
 
+.cvc-canvas[aria-busy='true'] {
+    cursor: progress;
+}
+
 .cvc-workspace {
+    position: relative;
+    grid-row: 1;
     display: grid;
     min-height: 0;
-    grid-template-columns:
-        minmax(14rem, 18rem) minmax(0, 1fr)
-        minmax(16rem, 20rem);
+}
+
+/* The tools float over the canvas instead of taking a column from it. */
+.cvc-tools {
+    position: absolute;
+    z-index: 8;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    width: min(24rem, 100%);
+    border-left: 1px solid var(--cvc-border);
+    background: var(--cvc-surface);
+    /* Room for the floating button that closes the panel. */
+    padding: 4.25rem 1rem 1rem;
+    box-shadow: -1rem 0 2.5rem var(--cvc-shadow);
+}
+
+.cvc-tools__home {
+    margin-bottom: 1rem;
+}
+
+.cvc-tools[hidden] {
+    display: none;
+}
+
+.cvc-status {
+    color: var(--cvc-text-muted);
+    font-family: var(--cvc-font-mono);
+    font-size: 0.8rem;
+}
+
+.cvc-tools-toggle {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    font-size: 1.1rem;
+    line-height: 1;
 }
 
 .cvc-explorer {
-    z-index: 5;
-    overflow: auto;
-    border-right: 1px solid var(--cvc-border);
-    background: var(--cvc-surface);
-    padding: 1rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--cvc-border);
 }
 
 .cvc-explorer__header {
@@ -125,8 +171,9 @@
 .cvc-breadcrumbs {
     display: flex;
     overflow-x: auto;
+    min-width: 0;
+    flex: 1 1 auto;
     gap: 0.3rem;
-    margin-bottom: 0.8rem;
 }
 
 .cvc-breadcrumbs button,
@@ -138,6 +185,21 @@
     color: var(--cvc-text-muted);
     cursor: pointer;
     white-space: nowrap;
+}
+
+/* The path reads like an engraved inscription; the space you are in is the
+   one written in champagne. */
+.cvc-breadcrumbs button {
+    min-height: 2.75rem;
+    padding-inline: 0.85rem;
+    font-family: var(--cvc-font-display);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+}
+
+.cvc-breadcrumbs button:last-child {
+    border-color: var(--cvc-gilt);
+    color: var(--cvc-gilt);
 }
 
 .cvc-breadcrumbs button:hover,
@@ -234,14 +296,6 @@
     outline: 3px solid var(--cvc-focus);
     outline-offset: 1px;
     background: var(--cvc-surface-raised);
-}
-
-.cvc-properties {
-    z-index: 5;
-    overflow: auto;
-    border-left: 1px solid var(--cvc-border);
-    background: var(--cvc-surface);
-    padding: 1rem;
 }
 
 .cvc-properties__header {
@@ -701,6 +755,254 @@
     cursor: pointer;
 }
 
+/* RF-07: the compass sits in the lower left corner; the zoom controls hold
+   the right one. */
+.cvc-overlay--compass {
+    top: auto;
+    bottom: 0.75rem;
+    left: 0.75rem;
+}
+
+.cvc-compass__toggle {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border-color: var(--cvc-gilt);
+    border-radius: 50%;
+}
+
+.cvc-compass__toggle svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: var(--cvc-gilt);
+    stroke-width: 1.2;
+}
+
+.cvc-compass__toggle svg path {
+    fill: var(--cvc-gilt);
+}
+
+.cvc-compass__return {
+    min-height: 2.75rem;
+}
+
+.cvc-compass {
+    position: absolute;
+    z-index: 8;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    align-content: start;
+    gap: 0.6rem;
+    overflow: auto;
+    width: min(24rem, 100%);
+    border-right: 1px solid var(--cvc-border);
+    background: var(--cvc-surface);
+    padding: 4.25rem 1rem 4.5rem;
+    box-shadow: 1rem 0 2.5rem var(--cvc-shadow);
+}
+
+.cvc-compass[hidden] {
+    display: none;
+}
+
+.cvc-compass .cvc-input {
+    min-height: 2.75rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.6rem;
+    background: var(--cvc-surface-raised);
+    padding: 0 0.75rem;
+    color: var(--cvc-text);
+    font: inherit;
+}
+
+.cvc-compass .cvc-input:focus-visible {
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 2px;
+}
+
+.cvc-compass h3 {
+    margin: 0.5rem 0 0.25rem;
+}
+
+.cvc-compass__status {
+    margin: 0;
+    color: var(--cvc-text-muted);
+    font-size: 0.85rem;
+}
+
+.cvc-compass__status:empty {
+    display: none;
+}
+
+.cvc-compass__results {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cvc-compass__result {
+    display: grid;
+    gap: 0.15rem;
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.6rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.5rem 0.7rem;
+    color: var(--cvc-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cvc-compass__result:hover,
+.cvc-compass__result:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 2px solid var(--cvc-focus);
+}
+
+.cvc-compass__result small {
+    color: var(--cvc-text-muted);
+}
+
+.cvc-compass__snippet {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+/* RF-09: indications of links leaving the space, discreet and pinned to the
+   corners, kept clear of the path, the tools, the compass and the zoom. */
+.cvc-external {
+    position: absolute;
+    z-index: 7;
+    display: grid;
+    gap: 0.3rem;
+    max-width: min(14rem, 40vw);
+    opacity: 0.6;
+    transition: opacity 150ms ease;
+}
+
+.cvc-external:hover,
+.cvc-external:focus-within {
+    opacity: 1;
+}
+
+.cvc-external[data-corner^='top'] {
+    top: 4.5rem;
+}
+
+.cvc-external[data-corner^='bottom'] {
+    bottom: 4.5rem;
+}
+
+.cvc-external[data-corner$='left'] {
+    left: 0.75rem;
+    justify-items: start;
+}
+
+.cvc-external[data-corner$='right'] {
+    right: 0.75rem;
+    justify-items: end;
+}
+
+.cvc-external__link,
+.cvc-external__more {
+    overflow: hidden;
+    max-width: 100%;
+    min-height: 2.25rem;
+    border: 1px dashed var(--cvc-accent);
+    border-radius: 999px;
+    background: var(--cvc-surface);
+    padding: 0.25rem 0.75rem;
+    color: var(--cvc-text-muted);
+    font: inherit;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.cvc-external__link:hover,
+.cvc-external__link:focus-visible,
+.cvc-external__more:focus-visible {
+    border-style: solid;
+    outline: 2px solid var(--cvc-focus);
+    color: var(--cvc-text);
+}
+
+.cvc-external__list {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-external {
+        transition: none;
+    }
+}
+
+/* D-11: a far result is reached through a short fade to the dark of the
+   theme and back. */
+.cvc-fade {
+    position: absolute;
+    z-index: 12;
+    inset: 0;
+    background: var(--cvc-background);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+}
+
+.cvc-fade[data-state='dark'] {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-fade {
+        transition: none;
+    }
+}
+
+.cvc-pin-menu {
+    position: absolute;
+    z-index: 10;
+    display: grid;
+    gap: 0.35rem;
+    min-width: 9rem;
+    border: 1px solid var(--cvc-gilt);
+    border-radius: 0.75rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.4rem;
+    box-shadow: 0 0.75rem 2rem var(--cvc-shadow);
+    transform: translate(-50%, calc(-100% - 0.75rem));
+}
+
+.cvc-pin-menu .cvc-button {
+    min-height: 44px;
+}
+
+.cvc-page-error {
+    position: absolute;
+    z-index: 9;
+    top: 4rem;
+    left: 50%;
+    max-width: min(36rem, calc(100% - 2rem));
+    transform: translateX(-50%);
+    border-radius: 0.65rem;
+}
+
 .cvc-page-error,
 .cvc-editor__error {
     margin: 0;
@@ -710,31 +1012,14 @@
     color: var(--cvc-text);
 }
 
-.cvc-knowledge-node {
-    display: grid;
-    min-width: 15rem;
-    gap: 0.35rem;
-    border: 1px solid var(--cvc-border);
-    border-radius: 1rem;
-    background: var(--cvc-surface-raised);
-    padding: 1rem 1.1rem;
-    box-shadow: 0 1rem 2.5rem var(--cvc-shadow);
-}
-
-.cvc-knowledge-node[data-kind='universe'] {
-    border-color: var(--cvc-accent);
-}
-
-.cvc-knowledge-node[data-kind='document'] {
-    border-color: var(--cvc-focus);
-}
-
 .cvc-editor {
     position: fixed;
     z-index: 20;
     inset: 0;
-    display: grid;
-    grid-template-rows: auto auto 1fr;
+    /* A column, not fixed rows: the error and the connections come and go,
+       and the text always takes what is left. */
+    display: flex;
+    flex-direction: column;
     background: var(--cvc-background);
     color: var(--cvc-text);
 }
@@ -749,14 +1034,409 @@
     padding: 1rem 1.5rem;
 }
 
-.cvc-editor__header h2 {
-    margin: 0.2rem 0 0;
+/* D-12: the note's connections, between its title and its text. */
+.cvc-connections {
+    display: grid;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--cvc-border);
+    padding: 0.75rem clamp(1.25rem, 4vw, 4rem);
+}
+
+.cvc-connections h3 {
+    margin: 0;
+}
+
+.cvc-connections__empty,
+.cvc-connections__status {
+    margin: 0;
+    color: var(--cvc-text-muted);
+    font-size: 0.85rem;
+}
+
+.cvc-connections__status:empty {
+    display: none;
+}
+
+.cvc-connections__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cvc-connections__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 999px;
+    background: var(--cvc-surface-raised);
+    padding: 0.1rem 0.15rem 0.1rem 0.75rem;
+}
+
+.cvc-connections__remove {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--cvc-text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+.cvc-connections__remove:hover,
+.cvc-connections__remove:focus-visible {
+    outline: 2px solid var(--cvc-focus);
+    color: var(--cvc-danger);
+}
+
+.cvc-connections__field {
+    position: relative;
+    max-width: 26rem;
+}
+
+.cvc-connections__field .cvc-input {
+    width: 100%;
+    min-height: 2.75rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.6rem;
+    background: var(--cvc-surface);
+    padding: 0 0.75rem;
+    color: var(--cvc-text);
+    font: inherit;
+}
+
+.cvc-connections__field .cvc-input:focus-visible {
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 2px;
+}
+
+.cvc-connections__field .cvc-linking__list {
+    top: calc(100% + 0.25rem);
+    left: 0;
+    width: 100%;
+}
+
+/* The suggestions float over the top of the text, so the list never pushes
+   the line being typed out of view. */
+.cvc-linking {
+    position: relative;
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-height: 0;
+}
+
+.cvc-linking__list {
+    position: absolute;
+    z-index: 2;
+    top: 1rem;
+    left: clamp(1.25rem, 4vw, 4rem);
+    width: min(26rem, calc(100% - 2rem));
+    margin: 0;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.65rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.35rem;
+    box-shadow: 0 0.75rem 2rem var(--cvc-shadow);
+    list-style: none;
+}
+
+.cvc-linking__option {
+    display: grid;
+    gap: 0.1rem;
+    min-height: 44px;
+    align-content: center;
+    border-radius: 0.45rem;
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+}
+
+.cvc-linking__option[aria-selected='true'] {
+    background: var(--cvc-surface);
+    outline: 2px solid var(--cvc-accent);
+}
+
+.cvc-linking__option small {
+    color: var(--cvc-text-muted);
+}
+
+.cvc-linking__status {
+    min-height: 1.4rem;
+    margin: 0;
+    padding: 0 clamp(1.25rem, 4vw, 4rem) 0.5rem;
+    color: var(--cvc-text-muted);
+    font-size: 0.85rem;
+}
+
+/* RF-04: the body of a flowchart note. */
+.cvc-content-type__options {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.cvc-content-type__options [aria-checked='true'] {
+    border-color: var(--cvc-energy);
+    color: var(--cvc-energy);
+}
+
+.cvc-flowchart-note {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+}
+
+.cvc-flowchart-note__description {
+    min-height: 5rem;
+    resize: vertical;
+    border: 0;
+    border-bottom: 1px solid var(--cvc-border);
+    background: var(--cvc-background);
+    padding: 0.75rem clamp(1.25rem, 4vw, 4rem);
+    color: var(--cvc-text);
+    font-family: var(--cvc-font-mono);
+}
+
+.cvc-flowchart {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 0;
+}
+
+.cvc-flowchart__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.4rem;
+    padding: 0.5rem clamp(1.25rem, 4vw, 4rem);
+}
+
+.cvc-flowchart__text {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.cvc-flowchart__text .cvc-input {
+    min-height: 2.5rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.5rem;
+    background: var(--cvc-surface);
+    padding: 0 0.6rem;
+    color: var(--cvc-text);
+    font: inherit;
+}
+
+.cvc-flowchart__canvas {
+    min-height: 18rem;
+}
+
+.cvc-flow-block {
+    display: grid;
+    place-items: center;
+    min-width: 8rem;
+    min-height: 3rem;
+    border: 1.5px solid var(--cvc-gilt);
+    background: var(--cvc-surface-raised);
+    padding: 0.5rem 1rem;
+    color: var(--cvc-text);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.cvc-flow-block[data-kind='start'] {
+    border-radius: 999px;
+}
+
+.cvc-flow-block[data-kind='process'] {
+    border-radius: 0.3rem;
+}
+
+.cvc-flow-block[data-kind='decision'] {
+    min-width: 7rem;
+    min-height: 7rem;
+    border-color: var(--cvc-accent);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.cvc-flow-block[data-kind='io'] {
+    transform: skewX(-12deg);
+}
+
+.cvc-flow-block[data-kind='io'] span {
+    display: inline-block;
+    transform: skewX(12deg);
+}
+
+.cvc-flow-block[data-selected='true'] {
+    border-color: var(--cvc-energy);
+    outline: 2px solid var(--cvc-energy);
+    outline-offset: 2px;
+}
+
+.cvc-button--danger {
+    border-color: var(--cvc-danger);
+    color: var(--cvc-danger);
+}
+
+/* RF-08: what can be done with the note, asked in place before anything
+   is lost. */
+.cvc-note-actions {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.cvc-note-actions__question,
+.cvc-move-picker {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 30rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.75rem;
+    background: var(--cvc-surface-raised);
+    padding: 0.75rem;
+}
+
+.cvc-note-actions__question p {
+    margin: 0;
+}
+
+.cvc-move-picker__list {
+    display: grid;
+    gap: 0.3rem;
+    max-height: 16rem;
+    overflow: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cvc-move-picker__open {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--cvc-border);
+    border-radius: 0.5rem;
+    background: var(--cvc-surface);
+    padding: 0.4rem 0.7rem;
+    color: var(--cvc-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cvc-move-picker__open:hover,
+.cvc-move-picker__open:focus-visible {
+    border-color: var(--cvc-accent);
+    outline: 2px solid var(--cvc-focus);
+}
+
+.cvc-note-color__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.cvc-note-color__swatch {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid var(--cvc-border);
+    border-radius: 50%;
+    background: var(--cvc-surface-raised);
+    cursor: pointer;
+}
+
+.cvc-note-color__swatch[data-color='none'] {
+    background: linear-gradient(
+        135deg,
+        transparent 45%,
+        var(--cvc-text-muted) 45% 55%,
+        transparent 55%
+    );
+}
+
+.cvc-note-color__swatch[aria-checked='true'] {
+    border-color: var(--cvc-energy);
+    outline: 2px solid var(--cvc-energy);
+    outline-offset: 2px;
+}
+
+.cvc-note-color__swatch:focus-visible {
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 2px;
+}
+
+.cvc-note-color__swatch[data-color='vazio'] {
+    background: var(--cvc-note-vazio);
+}
+
+.cvc-note-color__swatch[data-color='energia'] {
+    background: var(--cvc-note-energia);
+}
+
+.cvc-note-color__swatch[data-color='champanhe'] {
+    background: var(--cvc-note-champanhe);
+}
+
+.cvc-note-color__swatch[data-color='nebulosa'] {
+    background: var(--cvc-note-nebulosa);
+}
+
+.cvc-note-color__swatch[data-color='aurora'] {
+    background: var(--cvc-note-aurora);
+}
+
+.cvc-note-color__swatch[data-color='brasa'] {
+    background: var(--cvc-note-brasa);
+}
+
+.cvc-note-title {
+    display: grid;
+    flex: 1 1 18rem;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.cvc-note-title__input {
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: transparent;
+    padding: 0.2rem 0.4rem;
+    margin-left: -0.4rem;
+    color: var(--cvc-text);
+    font: inherit;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.cvc-note-title__input:hover {
+    border-color: var(--cvc-border);
+}
+
+.cvc-note-title__input:focus-visible {
+    outline: 3px solid var(--cvc-focus);
+    outline-offset: 2px;
+    border-color: var(--cvc-border);
+    background: var(--cvc-surface-raised);
+}
+
+.cvc-note-title__input[aria-invalid='true'] {
+    border-color: var(--cvc-danger);
+}
+
+.cvc-note-title__error {
+    margin: 0;
+    color: var(--cvc-danger);
+    font-size: 0.85rem;
 }
 
 .cvc-save-state {
     color: var(--cvc-text-muted);
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-family: var(--cvc-font-mono);
+    font-size: 0.8rem;
 }
 
 .cvc-save-state[data-state='saved'] {
@@ -782,6 +1462,7 @@
 }
 
 .cvc-editor__textarea {
+    flex: 1 1 auto;
     width: 100%;
     min-height: 0;
     resize: none;
@@ -790,76 +1471,177 @@
     background: var(--cvc-background);
     padding: clamp(1.25rem, 4vw, 4rem);
     color: var(--cvc-text);
-    font-family:
-        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        'Liberation Mono', monospace;
+    font-family: var(--cvc-font-mono);
     font-size: clamp(1rem, 1.4vw, 1.2rem);
     line-height: 1.7;
 }
 
-@media (max-width: 64rem) {
-    .cvc-workspace {
-        grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
-        grid-template-rows: minmax(20rem, 1fr) auto;
-    }
-
-    .cvc-properties {
-        max-height: 18rem;
-        grid-column: 1 / -1;
-        border-top: 1px solid var(--cvc-border);
-        border-left: 0;
-    }
-}
-
 @media (max-width: 48rem) {
-    .cvc-header,
     .cvc-editor__header {
         align-items: stretch;
         flex-direction: column;
     }
 
-    .cvc-header__actions,
     .cvc-editor__actions {
         flex-wrap: wrap;
     }
 
-    .cvc-workspace {
-        grid-template-columns: 1fr;
-        grid-template-rows:
-            minmax(9rem, 25vh) minmax(20rem, 1fr)
-            minmax(10rem, auto);
-    }
-
-    .cvc-explorer {
-        border-right: 0;
-        border-bottom: 1px solid var(--cvc-border);
-    }
-
-    .cvc-properties {
-        max-height: 35vh;
-        grid-column: 1;
+    .cvc-tools {
+        width: 100%;
+        border-left: 0;
     }
 }
 
-.cvc-knowledge-node[data-selected='true'] {
-    outline: 3px solid var(--cvc-focus);
-    outline-offset: 3px;
+/* --cvc-zoom is written by the page on every viewport move, so the touch
+   target and the title keep their size on screen at any zoom (D-05). */
+/* The node box is exactly the circle. The note is centred on it and may be
+   larger than it, which is what keeps a tiny circle touchable. */
+.cvc-cosmic-note {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    transform: translate(-50%, -50%);
+    min-width: calc(44px / var(--cvc-zoom, 1));
+    min-height: calc(44px / var(--cvc-zoom, 1));
+    place-items: center;
+    border-radius: 50%;
+    cursor: grab;
 }
 
-.cvc-knowledge-node strong {
+.cvc-cosmic-note__body {
+    display: block;
+    grid-area: 1 / 1;
+    border: calc(1.5px / var(--cvc-zoom, 1)) solid var(--cvc-gilt);
+    border-radius: 50%;
+    background: var(--cvc-surface-raised);
+    box-shadow: 0 0 calc(24px / var(--cvc-zoom, 1)) var(--cvc-shadow);
+    transition:
+        border-color 200ms ease,
+        box-shadow 200ms ease;
+}
+
+.cvc-cosmic-note[data-kind='context'] .cvc-cosmic-note__body {
+    border-color: var(--cvc-accent);
+}
+
+.cvc-cosmic-note[data-pinned='true'] .cvc-cosmic-note__body {
+    border-style: double;
+    border-width: calc(6px / var(--cvc-zoom, 1));
+}
+
+.cvc-cosmic-note[data-unmeasured='true'] .cvc-cosmic-note__body {
+    border-style: dashed;
+}
+
+/* RF-02: a painted note keeps the dark of the theme under its tone, so its
+   light title stays readable on every color. */
+.cvc-cosmic-note[data-color='vazio'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-vazio) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='energia'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-energia) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='champanhe'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-champanhe) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='nebulosa'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-nebulosa) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='aurora'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-aurora) 30%, var(--cvc-surface-raised));
+}
+
+.cvc-cosmic-note[data-color='brasa'] .cvc-cosmic-note__body {
+    background: color-mix(in srgb, var(--cvc-note-brasa) 30%, var(--cvc-surface-raised));
+}
+
+/* Signature: the note in focus carries the blue-white energy on its edge;
+   the champagne stays as the thin trim of every other note. */
+.cvc-cosmic-note[data-selected='true'] .cvc-cosmic-note__body {
+    border-color: var(--cvc-energy);
+    border-width: calc(2px / var(--cvc-zoom, 1));
+    box-shadow:
+        0 0 calc(6px / var(--cvc-zoom, 1)) var(--cvc-energy),
+        0 0 calc(28px / var(--cvc-zoom, 1)) var(--cvc-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-cosmic-note__body {
+        transition: none;
+    }
+}
+
+.cvc-cosmic-note__title {
+    z-index: 1;
+    grid-area: 1 / 1;
     color: var(--cvc-text);
-    font-size: 1rem;
+    font-size: calc(0.9rem / var(--cvc-zoom, 1));
+    font-weight: 600;
+    pointer-events: none;
+    text-shadow: 0 0 calc(4px / var(--cvc-zoom, 1)) var(--cvc-background);
+    white-space: nowrap;
 }
 
-.cvc-knowledge-node small {
-    max-width: 15rem;
-    color: var(--cvc-text-muted);
-    line-height: 1.45;
+.cvc-shell .cvc-cosmic-note__anchor {
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    min-width: 0;
+    height: 1px;
+    min-height: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
+/* The link dot keeps its size on screen at any zoom, like the title, and a
+   44 px touch area around it (D-05). */
+.cvc-shell .cvc-cosmic-note__dot {
+    top: 50%;
+    width: calc(0.75rem / var(--cvc-zoom, 1));
+    min-width: 0;
+    height: calc(0.75rem / var(--cvc-zoom, 1));
+    min-height: 0;
+    border: calc(2px / var(--cvc-zoom, 1)) solid var(--cvc-background);
+    border-radius: 50%;
+    background: var(--cvc-energy);
+    cursor: crosshair;
+    opacity: 0.55;
+    transform: translate(-50%, -50%);
+    transition: opacity 150ms ease;
+}
+
+.cvc-shell .cvc-cosmic-note__dot::before {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: calc(44px / var(--cvc-zoom, 1));
+    height: calc(44px / var(--cvc-zoom, 1));
+    border-radius: 50%;
+    content: '';
+    transform: translate(-50%, -50%);
+}
+
+.cvc-shell .react-flow__node:hover .cvc-cosmic-note__dot,
+.cvc-shell .react-flow__node.selected .cvc-cosmic-note__dot,
+.cvc-shell .cvc-cosmic-note__dot:focus-visible {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-shell .cvc-cosmic-note__dot {
+        transition: none;
+    }
 }
 
 .cvc-shell .react-flow__edge-path {
     stroke: var(--cvc-accent);
-    stroke-width: 2;
+    stroke-width: 1.5;
 }
 
 .cvc-shell .react-flow__handle {

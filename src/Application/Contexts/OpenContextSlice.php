@@ -53,13 +53,20 @@ final class OpenContextSlice
             ->where('vault_id', $this->vaultId())
             ->withCount('children')
             ->with([
+                'entities' => fn ($query) => $query->withCount('contexts'),
                 'entities.document',
                 'entities.attachments',
                 'entities.noteSpace',
                 'noteSpace.entity.document',
                 'children' => fn ($query) => $query
                     ->withCount('children')
-                    ->with(['entities.document', 'entities.attachments', 'entities.noteSpace', 'noteSpace.entity.document']),
+                    ->with([
+                        'entities' => fn ($query) => $query->withCount('contexts'),
+                        'entities.document',
+                        'entities.attachments',
+                        'entities.noteSpace',
+                        'noteSpace.entity.document',
+                    ]),
             ])
             ->orderBy('sort_order')
             ->orderBy('name');

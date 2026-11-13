@@ -13,8 +13,6 @@ vi.mock('@inertiajs/react', () => ({
     router: { visit, reload },
 }));
 vi.mock('@xyflow/react', () => ({
-    Background: () => null,
-    BackgroundVariant: { Dots: 'dots' },
     Controls: () => null,
     Handle: () => null,
     Position: { Left: 'left', Right: 'right' },
@@ -114,6 +112,7 @@ async function openEditor(saveResponse: () => Promise<Response>) {
             <VaultPage {...props} />
         </StrictMode>,
     );
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir ferramentas' }));
     fireEvent.click(screen.getByRole('button', { name: 'Abrir documento' }));
     await tick();
 

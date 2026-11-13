@@ -408,20 +408,610 @@ of a slice learns an aggregate of content beneath nodes that the same
 authorization already lets them open. No new endpoint, write path or storage.
 No issue found in the changed paths.
 
+## Phase 9 — RF-03 open space drawn and moved by the physics
+
+Branch: `cm-canvas-cosmico-cena-visivel`, 2026-11-11. First visible use of the
+simulator.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Simulation advanced on animation frames | `resources/js/canvas/physics/use-cosmic-simulation.ts` (`useCosmicSimulation`) | `cosmic-simulation-hook.test.tsx` (8 cases) |
+| One space of a slice as scene input | `resources/js/canvas/physics/space-scene.ts` (`describeSpaceScene`) | `cosmic-space-scene.test.ts` (4 cases) |
+| Note drawn as a circle | `resources/js/canvas/cosmic-note-node.tsx`, `.cvc-cosmic-note` in `resources/css/cvc.css` | `cosmic-note-node.test.tsx` (4 cases) |
+| Open space on the page, free and pinned drops | `resources/js/pages/vault.tsx`; pin flag in `relations/api.ts` and `perspectives/api.ts` | `vault-cosmic-space.test.tsx` (10 cases) |
+
+What the canvas shows now: at the root listing, the same cards as before. Inside
+an open context, only that space: its notes and its nested contexts as circles
+whose area comes from the budget of `buildCosmicScene`, moved by
+`CosmicSimulation`. The card of the open context and the notes of nested
+contexts are not drawn there; a nested context is entered to see its notes.
+Relations between two notes of the space are straight edges. A note whose
+measure is unknown is drawn with a dashed outline and says so on hover.
+
+Dragging and pinning (RN-07): while a note is dragged it stays under the
+pointer and the others react to it. Dropped freely it is saved with
+`pinned: false` and keeps moving with the others; dropped while Ctrl is held it
+is saved with `pinned: true` and stays. Before this phase every drop pinned.
+The position saved for a note in a space is the centre of its circle, in canvas
+units; D-06 converts to logical units only inside the physics.
+
+How to use the hook: give it a scene that keeps its identity between renders
+(memoize it) and read `bodies`. A new scene object restarts the simulation, so
+an unmemoized scene loops forever; the first version of one test did exactly
+that and ran out of memory. When a scene is rebuilt, a body whose stored
+position and pin did not change continues from its live position and velocity,
+otherwise any unrelated page update would throw the space back to its start.
+
+Implementation defaults taken here, not product decisions, easy to change:
+
+- The title keeps 0.9 rem on screen at any zoom, and the touch target keeps at
+  least 44 × 44 px (D-05), through a `--cvc-zoom` custom property the page
+  writes on every viewport move. No React render happens for a pan or a zoom.
+- Only the dragged note is saved. Notes that the physics moved are not written
+  back, so a reopened space settles again from the stored positions. It ends in
+  the same place because the simulation is deterministic, but it replays the
+  movement. Saving every settled note needs a batch layout endpoint.
+- A nested context has no stored position: it starts on the spiral every time
+  and a drag is not saved. Storing it needs a schema change.
+- With a perspective active, the drop is saved on the perspective, with the
+  same pin rule.
+
+Not done in this phase: the root listing as a cosmic space, the zoom thresholds
+of D-12, the touch gestures (long press, "Fixar / Liberar"), opening a note by
+a single click, and the flowchart metrics.
+
+Observed results on 2026-11-11: the frontend suite passed 232 tests in 17
+files, from 206 in 13; TypeScript passed; the PHP suite, untouched, was run
+before the change and passed 139 tests / 732 assertions. ESLint reports five
+errors in files this phase did not touch (`operational-status-panel.tsx`,
+`perspectives-panel.tsx`, `relations-panel.tsx`, `search-panel.tsx`); they are
+present on `main` with the host configuration used today, and none is in the
+new or changed files. Prettier was applied to the touched files with the host
+options minus its Tailwind plugin, which is not installed for this package.
+Not verified: any browser. Dragging relies on React Flow reporting the node
+position during `onNodeDrag`, and the circle sizes, title size and edge
+anchors have only been exercised with the library mocked. Frame cost was not
+measured: the page re-renders on every frame while a space is moving, and the
+simulation compares every pair of notes of the space twice per frame.
+
+Security review: no endpoint, storage or dependency was added. The pin flag
+was already validated as a boolean by the layout requests; the browser now
+sends `false` as well as `true`. Titles reach the page as React text and a
+`title` attribute, both escaped. The zoom written to the style is a number
+from the viewport. No issue found in the changed paths.
+
+## Phase 10 — only the canvas on screen
+
+Branch: `cm-canvas-cosmico-cena-visivel`, 2026-11-11. Rechi saw phase 9 in the
+browser and asked for the rest of the rejected screen to go. The decisions are
+in section 15.4 of `canvas-cosmico.md`. This phase supersedes what phase 9 says
+about the root listing keeping its cards.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Vault root drawn as the outermost space | `activeSpace` in `resources/js/pages/vault.tsx`; universes are bodies of that space | `vault-cosmic-space.test.tsx`, `vault-page.test.tsx` |
+| Explorer column and panel column removed from the layout | one floating panel, `.cvc-tools`, opened by a header button; `VaultPath` in `explorer/vault-explorer.tsx` puts the path in the header | `vault-cosmic-space.test.tsx` (3 cases) |
+| Card node and semantic zoom levels removed | `knowledge-node.tsx`, `semantic-zoom.ts` and their styles deleted | title cases moved to `canvas-title.test.tsx` against the circle |
+| Space framed when entered | `frameCircles` in `resources/js/canvas/math/geometry.ts` | `cosmic-framing.test.ts` (4 cases), one page case |
+| No background, wide zoom | dotted background removed; zoom bounds 0.01 to 100 | `vault-cosmic-space.test.tsx` (2 cases) |
+| Viewport saved only when it changed | `handleMoveEnd` in `vault.tsx` | one page case |
+
+What the screen is now: a header with the brand, the current path, "Nova
+nota" and a button for the tools; under it, the canvas and nothing else. At the
+vault root the canvas shows the universes as circles; inside a context, its
+notes and nested contexts. Double-clicking a circle of a context enters it and
+the path in the header goes back. "Nova nota" is disabled at the root, because
+a note has to belong to a context and the root would not show it.
+
+The tools panel holds everything the two columns held: explorer and context
+creation, operational status, search, trash, perspectives and versions,
+properties, attachments and relations. It floats over the right edge of the
+canvas, starts closed, and closes with its button or with Escape. Its panels
+stay mounted while it is closed, so the operational status keeps polling.
+
+Framing: entering a space sets the viewport so every circle is visible with a
+margin of a tenth of the smaller side of the canvas, never above 200 % zoom,
+and saves it as the workspace viewport. The first load keeps the stored
+viewport. The canvas library needs finite zoom bounds; 1 % and 10000 % are
+far outside what the space budget can produce, so they are not a limit a user
+meets.
+
+Two defects found by looking at the page, not by the tests, each fixed in a
+commit of its own:
+
+- Escape did not close the tools, because the key was listened for on the panel
+  and the focus stays on the header button.
+- A universe was drawn as unmeasured. A context that is not a note has no
+  document, and the missing own content was read as a missing measure; it is a
+  known zero.
+
+Observed on 2026-11-11, before the second look below: the frontend suite passed 239 tests in 17 files;
+TypeScript passed; ESLint reports the same five errors as phase 9, all in
+panel files this work did not touch. The PHP suite was not rerun, since no PHP
+changed after its 139 passing tests.
+
+Seen in a browser, on the local Docker environment of Rechi OS with a test
+user: the root and an entered space drawn as circles with no background, the
+title keeping its size from 1.3 % to 1300 % zoom, the touch target staying at
+44 px when the circle is smaller, entering a space by double click, the space
+framed after entering, the path in the header, the tools panel opening.
+Migrations `2026_11_08_000015` and `2026_11_10_000016` ran forward on MySQL
+there for the first time; their rollback was not run on MySQL.
+
+### Second look at the page, same day
+
+Rechi allowed the ownership of the local vault storage to be corrected (138 of
+147 entries under `/var/lib/cvc` belonged to root; all now belong to `sail`),
+which made creating a note work there and gave a space with two bodies. That
+look found four more defects, each fixed in its own commit:
+
+- After a drop every circle jumped by half its diameter. The canvas library
+  centres a node with the size it measured, and nodes rebuilt on every frame
+  lose that measurement. Each node now states its size.
+- A new note was born on the spiral for unplaced notes, usually off screen. It
+  is now created at the middle of the view and saved there unpinned.
+- With a perspective active, saving the layout of a note that sits directly in
+  a universe answered 404: `UpdatePerspectiveLayout` accepted only contexts of
+  kind `context`. It now accepts any available context of the vault that holds
+  the note, as `UpdateEntityLayout` already did.
+- The page error took the row of the canvas and pushed the canvas off screen.
+  It has a row of its own.
+
+Observed after these: the PHP suite passed 141 tests / 740 assertions on
+SQLite; the frontend suite passed 243 tests in 17 files; TypeScript passed;
+ESLint unchanged.
+
+Still not seen in a browser: notes moving under the physics, a drag following
+the pointer, a free drop and a Ctrl drop. The browser pane used for the check
+was hidden, and a hidden page gets no animation frames, so the simulation did
+not advance and the positions read during those attempts prove nothing either
+way. The jump after a drop and the 404 were read from the page and the
+network, which do not depend on frames. These four behaviours need a look with
+the page visible.
+
+### Creation by double click, same day
+
+Rechi pointed out that the header still had a "Nova nota" button, against his
+request to remove the old interface and against RN-02. This replaces what the
+text above says about that button and about a note born at the middle of the
+view.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Note created by double-clicking an empty point of the space | `handleCanvasDoubleClick` in `vault.tsx`; `screenToCanvasPoint` in `geometry.ts` | `vault-cosmic-space.test.tsx` (4 cases), `cosmic-framing.test.ts` (2 cases) |
+| Header button removed | header holds the brand, the path, "Voltar ao Rechi OS" and the tools button | same page tests |
+| Viewport saved once the camera rests | 400 ms after the last move, in `handleMoveEnd` | one page case |
+
+The note is created at the clicked point, saved there unpinned, and opened. A
+double click on a circle still enters a context or opens a note, and the
+canvas library no longer zooms on double click. At the vault root a double
+click creates nothing, because the root holds universes and a note needs a
+context; a universe is created from the tools panel. While the request runs
+the canvas is marked busy and the header says "Criando nota…".
+
+Why the button looked broken to him: in the local environment the server
+answers one request at a time and each takes 5 to 25 seconds. Every wheel
+notch ended a camera move and saved the viewport, so five saves were queued
+ahead of his creation request, which was answered about a minute later with no
+sign on screen. The log shows it succeeded. The viewport is now saved only
+400 ms after the camera stops, and creation shows a status.
+
+Observed: the frontend suite passed 246 tests in 17 files; TypeScript passed;
+ESLint unchanged. Not seen in a browser: the double click itself, the status
+text and the single viewport save.
+
+Still not done: saving the positions the physics settles, a stored position
+for nested contexts and universes, the 60 % / 30 % zoom navigation of D-12,
+touch gestures, opening a note by a single click, and the compass search of
+RF-07. The explorer inside the tools still lists two levels and asks the
+canvas to locate notes that may not be in the open space.
+
+Security review: no endpoint, storage or dependency was added, and nothing
+that was reachable stopped requiring authorization. The panels moved; their
+requests are the same. No issue found in the changed paths.
+
+## Browser check — 2026-11-12
+
+First look at phases 9 and 10 with the page visible (119.7 frames per
+second), on the local Docker environment rebuilt from new sibling checkouts
+in `Documents\CrowVaultCanvas`, with a local test user.
+
+Seen working: the root drawn as a cosmic space; entering a universe by
+double click; a space of two bodies at rest, as D-04 predicts at that
+distance (1.27 logical units: the attraction stays under the rest
+threshold); a free drop saved with `200`, the centre of the circle and
+`isPinned: false`, the note drifting freely afterwards; creation by double
+click, with "Criando nota…", the note born at the clicked point (670, 425
+→ 670, 426 px) and every circle shrinking from 577.7 to 516.7 px as the
+fixed budget redistributed among three bodies (D-02).
+
+Found:
+
+- The workspace endpoint refused any zoom below 0.25 with 422 since phase
+  10 widened the canvas zoom; fixed in phase 11.
+- Holding Ctrl for the whole drag pans the camera instead of moving the
+  note, so the Ctrl drop never pinned. Pressing Ctrl only at the drop could
+  not be produced by the tool and was not checked. Open.
+- A free drag moved the note about 64 % of the pointer's path; it may be
+  the synthetic drag. Twice, every body shifted together by exactly
+  (−0.135, −0.135) px. A nested context cannot be dragged. None of these
+  was investigated.
+
+Environment: every request took 5 s to over a minute and the page often
+did not open. `artisan serve` handles one request at a time, the code is
+read from Windows over a 9p share, and OPcache was off for the built-in
+server (`opcache.enable_cli = 0`), so each request recompiled Laravel from
+that share; the Compose health check alone kept the single worker busy.
+`PHP_CLI_SERVER_WORKERS=4` in `.env` and an OPcache file inside the
+container (`opcache.enable_cli=1`, `validate_timestamps=0`) brought `/up`
+from 4–10 s to 0.6 s and opening `/vault` to about 10 s. Both are local:
+the file inside the container is lost when the container is recreated,
+and with timestamps off a PHP change needs `docker compose restart
+laravel.test` to take effect.
+
+## Phase 11 — zoom navigation, subnotes and a canvas without header
+
+Branch: `cm-navegacao-zoom-canvas`, 2026-11-12, based on
+`cm-canvas-cosmico-cena-visivel`. Rechi tried phase 10 and found the
+navigation broken, the zoom not behaving as documented, no way to create
+subnotes, and the header in the way.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Zoom bounds accepted by the workspace endpoint | `UpdateWorkspaceStateRequest`, 0.01 to 100 like `zoomLimits` | `WorkspaceStateTest` (5 cases), not run |
+| Enter at 60 %, leave at 30 % (D-12) | `decideZoomNavigation` in `resources/js/canvas/zoom-navigation.ts`; `enclosingCircle`, `circleOnScreen`, `viewportPlacingCircle` in `geometry.ts`; `navigateByZoom` and `placeArrivingSpace` in `vault.tsx` | none yet |
+| A note's subnotes reached by zoom | `openNoteSpace` in `contexts/api.ts` over `POST /vault/documents/{entity}/space`; `handleOpenNoteSpace` in `vault.tsx` | none yet |
+| Trail kept across note spaces | `continueTrail` in `explorer/navigation-trail.ts` | none yet |
+| One workspace save per space opened | `handleOpenContext` no longer saves; the framing does | none yet |
+| No header | path, status and tools button float over the canvas (`.cvc-overlay`); "Voltar ao Rechi OS" in the tools panel | none yet; page tests still expect the header |
+
+How the zoom navigates: only a move made by the user is examined. The
+circle entered is a context or a note whose screen circle covers 60 % of
+the smaller side of the canvas and contains its middle; the nearest to the
+middle wins. The open space is left when the circle enclosing all its
+bodies (or its whole budget, X = 1, when it is empty) shrinks to 30 %. The
+arriving space is placed so that what was entered fills the circle it was
+entered through, or so that the space just left sits where it was; the
+placement reads that circle when the slice arrives, not when the threshold
+was crossed. Entering therefore starts at 60 % or more and leaving at 30 %
+or less, away from the other threshold. The switch is instant, because
+D-12 left the animation timings open. Double click and the path still
+navigate too.
+
+Implementation defaults, not product decisions: the middle of the screen
+chooses the circle; an empty space is measured by its whole budget; the
+first zoom into a note creates its space of subnotes (an empty context
+named "Subnotas"), once per note.
+
+Subnotes: the space of a note has no parent context, because a note may sit
+in several spaces, so the server's breadcrumbs start at it. The page keeps
+the trail it walked and appends the note's space to it, so leaving goes back
+to where the note was entered from. Reaching a note's space from the
+explorer or the search starts the trail at that space, since the page did
+not walk to it. A double click inside the space creates a subnote through
+the existing document endpoint, which already accepts a note space whose
+owner is not in the trash.
+
+Observed: TypeScript passed through the host's `npx tsc --noEmit`, also on
+the intermediate state between the two feature commits, and the host
+build compiled. Rechi tried it by hand and found it on the right path but
+not fluid. No automated suite was run, at his request; the new code has no
+tests yet and the page tests that look for the header will fail.
+
+Security review: the only new request is the existing note-space endpoint,
+behind the same session, authorization, CSRF and throttles; it is sent by a
+zoom gesture, so a user zooming in and out repeatedly sends at most one
+request per crossing. The zoom bounds widened a validated range and stay
+finite. No storage, cache or rendered user text was added beyond titles
+already shown as escaped React text. No issue found in the changed paths.
+
+## Phase 12 — links between notes
+
+Branch: `cm-ligacoes-entre-notas`, 2026-11-12, based on
+`cm-navegacao-zoom-canvas`. Rechi found no way to connect two notes: no dot
+on the circles and `/link` doing nothing. Both were specified (RN-02,
+RF-10) and never built.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Dot on the edge of a note | `linkDotHandleId`, `linkDotClassName` in `canvas/cosmic-note-node.tsx`; `.cvc-cosmic-note__dot` | `cosmic-note-node.test.tsx` (3 cases) |
+| Drag from the dot onto a note links them | `handleConnectEnd` and `linkNotes` in `vault.tsx` | none at page level |
+| Click on the dot creates a linked sibling | `createLinkedSibling` in `vault.tsx`; `handleCreate` returns the new id | none at page level |
+| `/link` and `/l` in the editor | `link-command.ts`, `linking-textarea.tsx`, `findLinkTargets` in `relations/api.ts` | `link-command.test.ts` (6 cases) |
+| Targets by prefix, score and path | `FindLinkTargets`, `GET /vault/link-targets` | `LinkTargetsTest` (5 cases) |
+
+How it behaves: Rechi chose that the dot does both things. Dragging it
+onto any point of another note's circle creates a global, undirected
+relation; the drop is resolved from the element under the pointer, so it
+does not have to hit a handle. A click creates a sibling 1.5 diameters to
+the right, in the same space, linked to the note, and opens it. Contexts
+have no dot, since relations connect notes.
+
+`/link` and `/l` followed by a space and the start of a title, right before
+the caret, list at most five notes of the vault. D-09 rules apply: prefix
+only, case, accents and leading spaces ignored, score then alphabetical,
+`$l` not accepted. A note does not offer itself. Equal titles show the path
+of each, from the universe down, using the first space the note was placed
+in. Choosing links the two notes and removes the command from the text.
+
+Implementation defaults, not product decisions: links made on the canvas or
+by command are global and undirected; the score counts only links, because
+accesses and searches are not counted yet (RF-10 counters remain); the
+endpoint filters titles in PHP for accent-free prefix matching that works
+the same on MySQL and SQLite, within the 5,000-note target; a sibling opens
+its editor like any new note.
+
+Not verified: the suites were written and not run, at Rechi's request,
+until every remaining item is built. The drag and the click were not seen
+in a browser.
+
+Security review: the new endpoint is a read behind the vault's session,
+authorization and search throttle, scoped to the configured vault; it
+returns titles and paths the same user can already open. Relations reuse
+the existing endpoint and its validation. Titles render as escaped React
+text. No issue found in the changed paths.
+
+## Phase 13 — renaming a note
+
+Branch: `cm-renomear-nota`, 2026-11-12, based on `cm-ligacoes-entre-notas`.
+Rechi could not change a note's title with the note open: titles were set
+only at creation, always empty, and the editor showed "Sem título" as text.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Title field in the editor | `documents/note-title-field.tsx`, used by `document-editor.tsx` | `note-title-field.test.tsx` (5 cases) |
+| Rename endpoint | `RenameEntity`, `RenameEntityRequest`, `PATCH /vault/entities/{entity}/title` | `RenameEntityTest` (5 cases) |
+| Every place follows the new name | `handleRenameNote` in `vault.tsx` | none at page level |
+
+The field saves when it is left or on Enter, Escape restores the saved
+title, and an empty title is refused both in the field and by the server.
+Titles are trimmed and limited to 120 characters, the limit of a context
+name. A note that stands for a legacy context keeps that context's name in
+step, the mirror of renaming the context; the space of subnotes of an
+ordinary note keeps its own name, since the page always shows the owner's
+title for it. The search version advances so the index follows.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser.
+
+Security review: the endpoint reuses the entity write authorization and
+throttle, scopes the entity to the configured vault (404 outside it),
+validates on the server and renders the title as escaped text. No issue
+found in the changed paths.
+
+## Phase 14 — the cosmic reaver palette
+
+Branch: `cm-paleta-rapinante-cosmico`, 2026-11-12, based on
+`cm-renomear-nota`. Decision recorded in section 15.5 of `canvas-cosmico.md`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Palette F as the theme tokens, plus `--cvc-energy` and `--cvc-gilt` | `resources/css/presets.css` | `theme-tokens.test.ts` (3 cases) |
+| Fonts served by the package | `resources/css/fonts.css`, `resources/fonts/*` with their OFL licences | same file |
+| Type and signature applied | `resources/css/cvc.css` | same file |
+
+Measured: every text or line pair used reaches 4.5:1 (from 4.58:1 for the
+violet lines on the background to 17:1 for text). The test keeps raw colors
+out of `cvc.css` (RN-20) and every token it uses defined in the preset.
+Seen in a browser on the local environment: the background, the path in
+Cinzel, the champagne trim and the note in focus; Cinzel and Manrope
+loaded. Not seen: the editor, the tools panel and the dot up close. The
+suites were not run, at Rechi's request.
+
+Security review: no request, endpoint or script added; the fonts are local
+static files, so the content security policy stays as strict as before.
+
+## Phase 15 — the editor and the gestures of D-12
+
+Branch: `cm-editor-e-gestos`, 2026-11-12, based on
+`cm-paleta-rapinante-cosmico`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| A click opens a note; a double click only enters contexts | `openNote` and `handleNodeClick` in `vault.tsx` | `vault-cosmic-space.test.tsx` (2 cases) |
+| Long press on a phone: create on empty, "Fixar / Liberar" on a note | `canvas/use-long-press.ts`; `handleLongPress`, `placeNote` and the pin menu in `vault.tsx` | `long-press.test.tsx` (4 cases) |
+| Connections listed in the editor, removable, with "Conectar a…" | `documents/note-connections.tsx`, `relations/use-link-targets.ts`; `RelationPresenter` sends the title of both ends | `note-connections.test.tsx` (4 cases), `RelationTitlesTest` |
+| Note color | `NoteColor`, `PaintEntity`, `PATCH /vault/entities/{entity}/color`, migration `2026_11_12_000017`; `documents/note-color-picker.tsx`; `--cvc-note-*` tokens | `PaintEntityTest` (5 cases, rollback included), `note-color-picker.test.tsx` (3), `cosmic-note-node.test.tsx` (2 more) |
+| Tests for the zoom navigation of phase 11 | — | `zoom-navigation.test.ts` (12 cases) |
+
+Gestures: only touch counts for the long press (500 ms, at most 10 px of
+slide), since the mouse has the double click and Ctrl. The tap reported
+when the finger lifts belongs to the long press and opens nothing; the
+canvas no longer shows the browser's menu on a long press. Pinning from
+the menu takes the same path as a drop with Ctrl.
+
+Color: a note stores the name of one of six tones, never a value, so a
+theme change repaints every note (RN-20). The tone is mixed at 30 % into
+the dark of the theme, keeping the title between 6.09:1 and 9.72:1.
+
+Refactors done on the way, each in its own commit: relations are written
+by one presenter instead of three copies, and the lookup of link targets
+became a hook shared by `/link` and "Conectar a…".
+
+Not verified: written and not run, at Rechi's request; none of it seen in
+a browser or on a phone.
+
+Security review: the color endpoint accepts only the six names or null,
+behind the entity write authorization and throttle, scoped to the vault.
+Relation titles are titles the same user can open, sent with the vault
+they already load. No new rendered HTML. No issue found in the changed
+paths.
+
+## Phase 16 — the compass search (RF-07)
+
+Branch: `cm-rosa-dos-ventos`, 2026-11-12, based on `cm-editor-e-gestos`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Compass in the lower left corner and its floating panel | `search/compass-search.tsx`, `.cvc-compass*` | `compass-search.test.tsx` (4 panel cases) |
+| Groups "Neste universo" / "Outros universos", one list at the galaxy view | `groupCompassResults` in `search/compass-groups.ts` | same file (2 cases) |
+| Near result approached, far result through a 300 ms fade, "Voltar" | `handleCompassChoose`, `handleCompassReturn`, `.cvc-fade` in `vault.tsx` | `isNearResult` (1 case); the page flow is not covered |
+| Path of every result, a subnote through its note | `ContextPath`, used by `SearchVault` and `FindLinkTargets` | `SearchPathTest`, `LinkTargetsTest` (subnote case) |
+
+D-11 rules: near is the space open now, and the camera fits the note and
+opens it; anything else goes dark in 150 ms, the space of the result opens,
+and the view clears in 150 ms before the note opens. With no universe open
+the results form one list with their paths. "Voltar" returns to the exact
+viewport and trail that were left, overriding the framing of the space.
+Reduced motion skips the fade and the camera travel.
+
+Implementation defaults: search starts at two characters and waits 250 ms;
+the compass sits bottom left because the zoom controls take bottom right;
+the fade uses the background of the theme.
+
+Found and fixed on the way: the path of a subnote among link targets
+stopped at its note, because a space of subnotes has no parent; it now
+goes on through the first space the note sits in.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser. Searches counted for RF-10 are the next item.
+
+Security review: no new endpoint; the existing search adds paths made of
+names the same user can open, behind the same authorization and throttle.
+Results render as escaped text. No issue found in the changed paths.
+
+## Phase 17 — the counters of the link score (RF-10)
+
+Branch: `cm-contadores-link`, 2026-11-12, based on `cm-rosa-dos-ventos`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Accesses counted on every opening of a note | `CountNoteUse::access`, called by `ShowDocumentController` | `UseCountersTest` |
+| Searches counted when a compass result is chosen | `POST /vault/entities/{entity}/searches`, `countNoteSearch` in `entities/api.ts` | `UseCountersTest` |
+| Score = accesses + searches + links | `FindLinkTargets::scores` | `UseCountersTest` (ordering and values) |
+| Counter columns | migration `2026_11_12_000018`, `access_count` and `search_count` | `UseCountersTest` (rollback) |
+
+D-09 is now complete: the counters are added in the database, so two
+openings at once never lose one, and existing notes start at zero, as the
+specification asks for no invented history. A search that fails to be
+counted does not stop the user from reaching the note.
+
+Implementation default: the document endpoint, a GET, now writes a counter;
+it serves only the vault's own pages, behind the same authorization.
+
+Not verified: written and not run, at Rechi's request.
+
+Security review: the new endpoint is a write behind the entity write
+authorization and throttle, scoped to the vault (404 outside it); it
+changes a number only. No issue found in the changed paths.
+
+## Phase 18 — external connections (RF-09)
+
+Branch: `cm-conexoes-externas`, 2026-11-12, based on `cm-contadores-link`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Links leaving the open space found and placed in a corner | `findExternalConnections`, `cornerFor` in `canvas/external-connections.ts` | `external-connections.test.tsx` |
+| Three per corner, then "+N" | `groupByCorner`, `canvas/external-connections-overlay.tsx`, `.cvc-external` | same file |
+| Travel through the nearest common ancestor | `travelThroughCommonAncestor`; `travelToNote` in `vault.tsx` | same file (4 cases); the page flow is not covered |
+| Where a note sits | `GET /vault/entities/{entity}/path`, `ShowEntityPathController` | `EntityPathTest` |
+
+D-10 rules applied: the corner nearest the direction, three per corner then
+"+N" opening the list, pinned to the screen and outside the physics. The
+travel goes up to the nearest common ancestor, through the galaxy view
+between universes, then down to the target's space, and the camera
+approaches the target, which is focused, not opened.
+
+Implementation defaults, open in D-10 and D-12 and easy to change: the
+direction is taken from the middle of the open space to the inside note,
+because the outside note has no position on this canvas; each level of a
+travel stays 400 ms on screen; indications sit at 60 % opacity and clear
+the other floating controls.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser.
+
+Security review: one new read endpoint behind the vault's read
+authorization and search throttle, scoped to the vault (404 outside it),
+returning names the same user can open. Titles render as escaped text. No
+issue found in the changed paths.
+
+## Phase 19 — moving, removing and the trash (RF-08, D-13)
+
+Branch: `cm-mover-e-lixeira`, 2026-11-12, based on `cm-conexoes-externas`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| "Mover para…", subnotes along, cycles refused | `MoveEntity`, `POST /vault/entities/{entity}/move`; `NoteActions` and its destination picker | `MoveAndTrashTest` (2), `note-actions.test.tsx` |
+| "Só daqui" / "De todos os lugares" | `DetachEntityFromContext`, `DELETE /vault/contexts/{context}/entities/{entity}`; `placeCount` in the slice | `MoveAndTrashTest`, `note-actions.test.tsx` |
+| Deleting a note with subnotes asks first | `SubnoteTree`, `TrashNoteWithSubnotes`; `DELETE /vault/entities/{entity}` answers 409 `has_subnotes` until `with_subnotes=1` | `MoveAndTrashTest` (2), `note-actions.test.tsx` |
+| Trash emptied after seven days | `PurgeTrash`, `cvc:purge-trash`, scheduled daily by the package | `PurgeTrashTest` |
+
+D-13 rules applied: subnotes that also appear in a space outside the
+deleted tree stay alive there; every version is kept while the note lives,
+and a note's revisions go with it when it is deleted for good. Taking a
+note out of its only space is refused, since that is a deletion.
+
+Consequences to know: the purge is permanent and deletes the note's private
+files; a named version that held a purged note can no longer be restored,
+because restoration verifies every file it points to and refuses as a
+whole. The purge runs only if the host's scheduler runs
+(`php artisan schedule:work` or a cron of `schedule:run`). The trash panel
+cannot ask about subnotes, so it sends the user to the note's editor.
+
+Implementation defaults: a space of subnotes holding a nested context is
+hidden instead of deleted at purge; the destination picker lists contexts
+and universes, not other notes' spaces.
+
+Not verified: written and not run, at Rechi's request; not seen in a
+browser. The purge was not run against real data.
+
+Security review: the new writes reuse the relation and trash middleware
+(authorization, CSRF, throttle) and scope every id to the vault. The purge
+deletes only a directory named by two UUIDs inside the private root. No
+issue found in the changed paths.
+
+## Phase 20 — flowchart notes and their conversion (RF-04, RF-05)
+
+Branch: `cm-fluxograma`, 2026-11-12, based on `cm-mover-e-lixeira`.
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| Flowchart stored as JSON in the note, self-describing | `Flowchart.php`, `resources/js/flowchart/flowchart.ts` | `FlowchartContentTest`, `flowchart.test.ts` |
+| Editor of blocks and arrows, placed by hand | `flowchart-editor.tsx`, `flowchart-note.tsx`, `.cvc-flow-block` | none at component level |
+| Type switch and D-07 conversions through a `mermaid` block | `content-type-switch.tsx`, `mermaid.ts` | `flowchart.test.ts` (7 cases) |
+| Refusal of a broken flowchart on save; measure by the formulas | `SaveDocument`, `NoteContent`, `NormalNoteContent::measureText` | `FlowchartSaveTest`, `FlowchartContentTest` |
+
+D-07 rules applied: the block is a `mermaid` code block with a flowchart
+subset (start/end `([…])`, process `[…]`, decision `{…}`, input/output
+`[/…/]`, arrows with optional `|text|`) and `%% cvc-pos id x y` comments;
+more than one block refuses the conversion, and once rebuilt the block
+leaves the description. Converting back asks to keep the diagram as text
+or to discard it. Text quotes are written as `#quot;`, as Mermaid does.
+
+Measure (section 1 of the formulas): description measured as a normal
+note, plus the text of blocks and arrows, plus 0.8 per block and 0.4 per
+arrow; the JSON is never counted. Two empty blocks and one arrow measure 2.
+
+Design decision taken here: the type lives in the content (`"format":
+"cvc-flowchart"`), not in a new column, so a restored version brings back
+the right type and every measuring path recognizes it unchanged. Known
+limit: the search index reads the stored content, so a flowchart is
+searchable by its texts but its JSON keys can match a search too.
+
+Not verified: written and not run, and this item was not even type
+checked, at Rechi's request to stop and push; not seen in a browser.
+
+Security review: the flowchart is validated on the server (known format
+and version, at most 500 blocks and 1000 arrows, 500 characters per text,
+identifiers limited to letters, digits, `_` and `-`, arrows only between
+existing blocks); texts render as escaped React text. No issue found in
+the changed paths.
+
 ## Remaining requirements
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | blocked | Cosmic creation/zoom and touch rules require D-05, D-06, D-12; existing contextual capture draft is preserved |
-| RF-02 | partial | Title limit and legacy-context document backend implemented; cosmic expansion, full properties/type UI and camera integration remain |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8); flowchart metrics and the visible part (renderer in `vault.tsx`, animation loop, hit testing, viewport, position/fixation persistence) remain |
-| RF-04 | blocked | Flowchart domain/UI and persistence contract require clarification before adding schema |
-| RF-05 | blocked | D-07 textual format and multiple-block behavior remain open |
-| RF-07 | blocked | D-11 proximity/fade and root search behavior remain open |
-| RF-08 | blocked | Shared subspace model approved under D-01/D-14; movement of a particular participation and D-13 policies remain |
-| RF-09 | blocked | D-10 directions/overlap/physics and transition parameters remain open |
-| RF-10 | blocked | D-09 counter events and prefix normalization remain open |
-| RF-11 | blocked | Fixture identity/tombstone handling, final persistence, and flowchart format must support examples without replacing edits |
+| RF-01 | partial | Cosmic spaces, framing, zoom navigation at 60 % / 30 % into notes as well, the linked-sibling dot and the touch gestures are built (phases 10 to 15). Zoom animation timings are still open in D-12; Rechi found the result not yet fluid |
+| RF-02 | partial | Title limit, rename, color, the connection list with "Conectar a…" and a single click opening a note are built (phases 13 and 15). The editor still opens over the whole screen instead of expanding on the canvas, and the content type belongs to RF-04 |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
+| RF-04 | built | Flowchart notes with hand-placed blocks and arrows with text (phase 20) |
+| RF-05 | built | Conversion through one `mermaid` block both ways (phase 20) |
+| RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
+| RF-08 | built | Move with subnotes, "só daqui", deletion asking about subnotes and the 7-day purge (phase 19); migration of existing data (D-13) still open |
+| RF-09 | built | Corner indications, "+N" and travel through the common ancestor (phase 18); travel timing open in D-12 |
+| RF-10 | built | `/link` and `/l` with prefix-only suggestions (phase 12) and the full score of D-09 (phase 17) |
+| RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
 
 Follow-up questions are asked only when their decisions block the next phase.
 No open physical constant, formula, migration policy, or content format has been
@@ -490,6 +1080,41 @@ Rechi OS to be checked in a browser; component tests alone do not show it.
 - The save request has no explicit size limit on `content` (phase 7).
 - Product decisions still blocking requirements: D-07, D-09, D-10, D-11, D-13,
   the rest of D-12 and D-14, and D-15. See the table of remaining requirements.
+
+### Decisions closed on 2026-11-11
+
+Rechi answered the open decisions point by point; they are recorded in section
+15.3 of `canvas-cosmico.md`. This was a documentation session: no code changed
+and no test was run. It supersedes the list under "Open points for Rechi"
+above, which is kept as the record of that day.
+
+- Closed: D-07, D-09, D-10, D-11, the zoom thresholds and editor connections of
+  D-12, the deletion, trash and history rules of D-13, the encryption scope of
+  D-14, and the volume, size limit and delivery order of D-15.
+- The save request now has a decided limit, 5 MB per note. It is not enforced
+  yet.
+- Delivery order after the visible part of RF-03: RF-01 and RF-02; RF-07,
+  RF-10 and RF-09; RF-08 with deletion and trash; RF-04 and RF-05; encryption;
+  RF-11.
+- `$l` is no longer a command. RF-10 accepts only `/link` and `/l`.
+
+Encryption is end to end for the content only, and it invalidates part of
+phases 6 to 8: the server can no longer read a body, so the measure has to be
+computed in the browser and sent as a number, `cvc:measure-documents` and the
+measurement on version restoration stop working, and existing plain content
+needs a conversion run by the browser. Because a lost recovery code is
+requested from the administrator, the server has to keep a recoverable copy of
+the key, so the administrator can read the content. Encryption is fifth in the
+delivery order, so phases 6 to 8 stay as they are until then.
+
+Still open: zoom animation timings and cancellation during a move (D-12),
+migration of the current layout and of existing data (D-13), key design and
+the final Rechi OS integration (D-14), environments, operation and costs
+(D-15). Three statements in section 15.3 were proposed by the writer and
+confirmed by Rechi the same day: shared subnotes survive in their other
+spaces, versions are removed with the note on permanent deletion, and the
+descendant sum stays uncached until a measurement at 5,000 notes says
+otherwise.
 
 ### Running the checks without a sibling `../rechi-os`
 

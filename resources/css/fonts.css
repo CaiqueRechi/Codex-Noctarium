@@ -1,0 +1,27 @@
+/* Served from the package: the Rechi OS content security policy only
+   allows fonts from its own origin. Latin subsets, SIL OFL 1.1; the
+   licences sit next to each file. */
+@font-face {
+    font-family: 'Cinzel';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('../fonts/cinzel/cinzel-latin-500.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Manrope';
+    font-style: normal;
+    font-weight: 200 800;
+    font-display: swap;
+    src: url('../fonts/manrope/manrope-latin-variable.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/jetbrains-mono/jetbrains-mono-latin-400.woff2')
+        format('woff2');
+}
