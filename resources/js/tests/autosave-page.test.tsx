@@ -164,7 +164,7 @@ describe('RF-06 editor integration and navigation', () => {
         expect(saves).toHaveBeenCalledTimes(1);
         expect(
             within(
-                screen.getByRole('region', { name: 'Editor Markdown' }),
+                screen.getByRole('dialog', { name: 'Editor de nota' }),
             ).getByRole('status'),
         ).toHaveAttribute('data-state', 'saved');
         const saved = new Event('beforeunload', { cancelable: true });
