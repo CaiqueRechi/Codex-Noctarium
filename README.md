@@ -1,10 +1,10 @@
-# Crow Vault Canvas
+# Codex Noctarium
 
 <p align="center">
-  <img src="resources/images/brand/cvc-logo-official.png" alt="Crow Vault Canvas cosmic crow logo" width="720">
+  <img src="resources/images/brand/codex-noctarium-logo.png" alt="Codex Noctarium logo: a raven on a mountain under the phases of the moon and a star compass" width="480">
 </p>
 
-Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowledge canvas to Rechi OS. The current vertical slice supports an authenticated path from universe to context to Markdown document, synchronous durable saving, and restoration of the user's canvas viewport.
+Codex Noctarium is a Laravel and React package that adds a private knowledge canvas to Rechi OS. The current vertical slice supports an authenticated path from universe to context to Markdown document, synchronous durable saving, and restoration of the user's canvas viewport.
 
 ## Current scope
 
@@ -14,10 +14,11 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Zoom navigation (D-12): zooming into a context or a note until it covers 60 % of the smaller side of the screen enters it, a note through the space of its subnotes; zooming out until the open space shrinks to 30 % returns to where it was entered from. Subnotes are created by double click inside a note's space.
 - Links between notes: drag the dot on a note's edge onto another note, click the dot to create a linked sibling, or type `/link` or `/l` and the start of a title in the editor to choose among at most five notes whose title starts with it.
 - Canvas labels limited to 20 visible characters plus an ellipsis, preserving complete note names and composed characters.
-- Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`; the complete physical renderer is still in development.
+- Tested cosmic content, descendant-weight, area-allocation, force-law, and coordinate arithmetic under `resources/js/canvas/math`, used by the visible React Flow renderer.
 - Tested headless cosmic simulation under `resources/js/canvas/physics`, with fixed steps, gravity, springs, soft contact, damping, pinned-body influence, and sleep/wake behavior.
 - Content measure of every normal note kept by the server and sent with each navigation slice as `ownContent` and `descendantContent`, with no note body; the same rules exist in PHP and TypeScript and are pinned by shared test cases.
-- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`). Inside an open context the canvas draws that space with it: notes and nested contexts are circles moved by the simulation, a note dropped freely keeps moving, and one dropped while Ctrl is held is pinned. A space is framed whole when entered. A single-note space was checked in a browser; several notes moving and dragging were not.
+- Simulator scene built from those measures and the relations of a space (`buildCosmicScene`). Inside an open context the canvas draws notes and nested contexts as circles moved by the simulation; free notes keep moving, pinned notes remain fixed, and a space is framed when entered.
+- Single-click note editing, long-press and pin actions, note titles and theme colors, compass search, external-connection navigation, move/remove/trash flows, seven-day purge, and editable flowchart notes.
 - Stable UUID document entities.
 - Private immutable Markdown revision files with relational metadata.
 - Additive database revision schema (`LONGTEXT` content plus JSON metadata) prepared for a later controlled content migration.
@@ -35,7 +36,7 @@ Crow Vault Canvas (CVC) is a Laravel and React package that adds a private knowl
 - Recoverable entity trash that preserves UUIDs, revisions, memberships, and valid relations.
 - Private image and PDF attachments with strict validation, integrity checks, and authorized download.
 - In-app save and queue status with visible pending, running, completed, failed, and stalled work.
-- Versioned official cosmic-crow artwork, reduced UI mark, favicon, and monochrome presentation preset.
+- Versioned official Codex Noctarium artwork, reduced UI mark, favicon, and monochrome presentation preset.
 - Read/write authorization inherited from Rechi OS.
 - Soft-deleted vault, context, entity, document, and relation records.
 
@@ -43,7 +44,7 @@ Vault import/export, remote hosting, and encryption at rest are not implemented 
 
 ## Host integration
 
-CVC remains the source of truth for product code. Rechi OS installs it through a local Composer `path` repository and compiles its React source through host-owned Vite, TypeScript, ESLint, Vitest, and React Flow configuration.
+Codex Noctarium remains the source of truth for product code. Rechi OS installs it through a local Composer `path` repository and compiles its React source through host-owned Vite, TypeScript, ESLint, Vitest, and React Flow configuration.
 
 The expected sibling layout is:
 
@@ -53,7 +54,7 @@ work/
 └── rechi-os/
 ```
 
-Rechi OS owns authentication, verified-user enforcement, screen permissions, database configuration, queue configuration, and the production build. CVC owns `/vault`, the knowledge domain, package migrations, private Markdown and attachment storage, and the canvas UI.
+Rechi OS owns authentication, verified-user enforcement, screen permissions, database configuration, queue configuration, and the production build. Codex Noctarium owns `/vault`, the knowledge domain, package migrations, private Markdown and attachment storage, and the canvas UI.
 
 ## Local setup
 
@@ -61,7 +62,7 @@ In Rechi OS, configure the package and private storage:
 
 ```dotenv
 CVC_ENABLED=true
-CVC_VAULT_NAME="Crow Vault Canvas"
+CVC_VAULT_NAME="Codex Noctarium"
 # Optional; defaults to storage/app/private/cvc
 CVC_STORAGE_ROOT=
 # Optional fail-closed private-storage capacity controls
@@ -97,7 +98,7 @@ Private Markdown files remain the canonical content store in this release. `cvc_
 
 The trash panel moves the focused entity, its document, and active relations out of the normal canvas without erasing their records. Restoration returns the entity to every previous context with the same UUID, revision, and layout. Relations removed with the entity are restored only when both endpoints still exist; manually deleted relations never return automatically, and unresolved endpoints are reported in the panel.
 
-The attachment panel accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. CVC verifies the extension, detected MIME type, file signature, supported image structure or PDF envelope, and SHA-256 before storing the file outside the public web root. Downloads remain behind the vault read permission and are forced as non-cacheable attachments; duplicate bytes for the same entity are rejected.
+The attachment panel accepts PNG, JPEG, GIF, WebP, and PDF files up to 5 MB. Codex Noctarium verifies the extension, detected MIME type, file signature, supported image structure or PDF envelope, and SHA-256 before storing the file outside the public web root. Downloads remain behind the vault read permission and are forced as non-cacheable attachments; duplicate bytes for the same entity are rejected.
 
 The operational panel keeps save state and recent queue work inside the vault interface. It refreshes once after a successful document save and polls only while at least one task is pending or running; a slow request is never overlapped by another poll. Search-index tasks move from waiting to running and only report completion after the worker returns successfully. Terminal or dispatch failures use safe messages without exception details. Pending or running work without a recent confirmation is marked as requiring attention; no e-mail, push, or external notification is sent.
 
@@ -181,14 +182,22 @@ Closing or reloading can lose unconfirmed edits. Returning the draft to its old
 text after a failed request does not clear the warning because persistence may
 still be uncertain.
 
+## Name
+
+The product was called Crow Vault Canvas (CVC) until 2026-11-12, when Caique renamed it **Codex Noctarium** and replaced its logo. The rename covers what a person reads: this README, the documentation, the browser tab title, the default vault name and the brand artwork.
+
+Technical identifiers keep the old name, because renaming them changes contracts with the host, the database and existing installations: the repository `crow-vault-canvas`, the Composer package `caiquerechi/crow-vault-canvas`, the PHP namespace `CrowVaultCanvas`, the configuration key `crow-vault-canvas`, the `cvc_*` tables, the `CVC_*` environment variables, the `cvc:*` commands, the `cvc.*` route names and the `cvc-*` CSS classes. Renaming any of them is a separate, explicit decision.
+
+A vault initialized before the rename keeps the name stored in its row; the new default only applies to new vaults or to `CVC_VAULT_NAME`.
+
 ## Visual style
 
 The vault uses the "Rapinante cósmico" palette and type chosen on 2026-11-12, described in section 15.5 of `docs/requirements/canvas-cosmico.md`. Colors live only in `resources/css/presets.css`, as `--cvc-*` tokens, and a test fails if `cvc.css` writes a color of its own. Cinzel, Manrope and JetBrains Mono are served from `resources/fonts/` under the SIL OFL 1.1 because the host allows fonts only from its own origin; replacing a font means replacing its file, its licence and its `@font-face` in `resources/css/fonts.css`.
 
 ## Brand assets
 
-- `resources/images/brand/cvc-logo-official.png` preserves the definitive artwork supplied by Caique without modification.
-- `resources/images/brand/cvc-mark-reduced.png` is the transparent square derivative used in the vault header and favicon.
+- `resources/images/brand/codex-noctarium-logo.png` preserves the definitive artwork supplied by Caique without modification.
+- `resources/images/brand/codex-noctarium-mark.png` is the same artwork scaled to 256 px, used as the favicon.
 - `.cvc-brand-mark--monochrome` applies a one-color presentation to the same reduced mark without maintaining a divergent redraw.
 
 ## Security boundary
@@ -197,4 +206,4 @@ All vault routes require the Rechi OS web, authentication, verified-user, and sc
 
 Storage paths are generated from validated UUIDs, confined to the configured private root, and checked with SHA-256 when reopened. Markdown revisions are immutable, and a failed write never advances the database revision or reports a successful save. Attachment filenames never determine storage paths; files are created exclusively with restrictive permissions and are not served by the public filesystem.
 
-All private writes pass through one per-vault filesystem lock. Before opening the destination, CVC reserves the exact missing path entries and checks the configured document ceiling, cumulative vault bytes, cumulative entry count, and minimum host free-space reserve. Invalid or unsafe capacity configuration fails closed. Retention and physical purge remain a separate product decision required before final MVP acceptance.
+All private writes pass through one per-vault filesystem lock. Before opening the destination, Codex Noctarium reserves the exact missing path entries and checks the configured document ceiling, cumulative vault bytes, cumulative entry count, and minimum host free-space reserve. Invalid or unsafe capacity configuration fails closed. Retention and physical purge remain a separate product decision required before final MVP acceptance.

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SearchResult } from '../search/api';
@@ -109,9 +109,13 @@ describe('RF-07 compass search panel', () => {
     it('waits for two characters before searching', async () => {
         renderCompass();
 
-        fireEvent.change(screen.getByLabelText('Pesquisar no vault'), {
-            target: { value: 'l' },
-        });
+        fireEvent.click(screen.getByRole('button', { name: 'Pesquisar no vault' }));
+        fireEvent.change(
+            screen.getByRole('searchbox', { name: 'Pesquisar no vault' }),
+            {
+                target: { value: 'l' },
+            },
+        );
 
         await new Promise((resolve) => setTimeout(resolve, 300));
         expect(fetch).not.toHaveBeenCalled();

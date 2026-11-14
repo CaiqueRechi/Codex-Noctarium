@@ -1,6 +1,7 @@
 import { ContentTypeSwitch } from '../flowchart/content-type-switch';
 import { isFlowchartContent } from '../flowchart/flowchart';
 import { FlowchartNote } from '../flowchart/flowchart-note';
+import type { RelationSummary } from '../relations/types';
 import { LinkingTextarea } from './linking-textarea';
 import { NoteActions } from './note-actions';
 import type { NoteActionsProps } from './note-actions';
@@ -9,7 +10,6 @@ import type { NoteColorName } from './note-color-picker';
 import { NoteConnections } from './note-connections';
 import { NoteTitleField } from './note-title-field';
 import type { OpenedDocument, SaveState } from './types';
-import type { RelationSummary } from '../relations/types';
 
 type DocumentEditorProps = {
     linking?: {
@@ -65,7 +65,11 @@ export function DocumentEditor({
             aria-label="Editor de nota"
         >
             <header className="cvc-editor__header">
-                <NoteTitleField title={document.title} onRename={onRename} />
+                <NoteTitleField
+                    key={`${document.id}:${document.title ?? ''}`}
+                    title={document.title}
+                    onRename={onRename}
+                />
                 <NoteColorPicker color={color} onPaint={onPaint} />
                 <ContentTypeSwitch content={draft} onChange={onChange} />
                 {actions && <NoteActions {...actions} />}

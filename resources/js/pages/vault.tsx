@@ -16,7 +16,7 @@ import '@xyflow/react/dist/style.css';
 import '../../css/fonts.css';
 import '../../css/presets.css';
 import '../../css/cvc.css';
-import cvcMark from '../../images/brand/cvc-mark-reduced.png';
+import brandMark from '../../images/brand/codex-noctarium-mark.png';
 
 import { AttachmentsPanel } from '../attachments/attachments-panel';
 import type { AttachmentSummary } from '../attachments/types';
@@ -25,6 +25,11 @@ import type {
     CosmicNoteCanvasNode,
     CosmicNoteData,
 } from '../canvas/cosmic-note-node';
+import {
+    findExternalConnections,
+    travelThroughCommonAncestor,
+} from '../canvas/external-connections';
+import { ExternalConnectionsOverlay } from '../canvas/external-connections-overlay';
 import {
     canvasUnitsPerLogicalUnit,
     circleOnScreen,
@@ -42,11 +47,6 @@ import { buildCosmicScene } from '../canvas/physics/cosmic-scene';
 import type { SimulationBody } from '../canvas/physics/simulation-body';
 import { describeSpaceScene } from '../canvas/physics/space-scene';
 import { useCosmicSimulation } from '../canvas/physics/use-cosmic-simulation';
-import { ExternalConnectionsOverlay } from '../canvas/external-connections-overlay';
-import {
-    findExternalConnections,
-    travelThroughCommonAncestor,
-} from '../canvas/external-connections';
 import { useLongPress } from '../canvas/use-long-press';
 import type { LongPressPoint } from '../canvas/use-long-press';
 import { decideZoomNavigation } from '../canvas/zoom-navigation';
@@ -1492,8 +1492,12 @@ export default function VaultPage({
                     : [],
             ),
         );
-        const center =
-            enclosingCircle(spaceCircles.current.all)?.center ?? { x: 0, y: 0 };
+        const center = enclosingCircle(
+            nodes.map((node) => ({
+                center: node.position,
+                radius: node.data.diameter / 2,
+            })),
+        )?.center ?? { x: 0, y: 0 };
 
         return findExternalConnections(insideNotes, center, relations);
     }, [nodes, relations]);
@@ -2106,8 +2110,8 @@ export default function VaultPage({
 
     return (
         <div className="cvc-theme cvc-shell">
-            <Head title="CVC">
-                <link rel="icon" type="image/png" href={cvcMark} />
+            <Head title="Codex Noctarium">
+                <link rel="icon" type="image/png" href={brandMark} />
             </Head>
             <h1 className="cvc-visually-hidden">{vault.name}</h1>
 

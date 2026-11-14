@@ -79,10 +79,11 @@ final class WorkspaceStateTest extends TestCase
         $this->artisan('cvc:initialize')->assertSuccessful();
         $this->actingAs(new GenericUser(['id' => 42]));
 
-        $this->patchJson(route('cvc.workspace.update'), [
+        $response = $this->patchJson(route('cvc.workspace.update'), [
             'viewport' => ['x' => 10, 'y' => 20, 'zoom' => $zoom],
-        ])->assertOk()->assertJsonPath('workspace.viewport.zoom', $zoom);
+        ])->assertOk();
 
+        self::assertSame($zoom, (float) $response->json('workspace.viewport.zoom'));
         self::assertSame($zoom, $this->app->make(OpenWorkspaceState::class)->handle('42')->zoom);
     }
 

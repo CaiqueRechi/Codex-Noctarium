@@ -13,7 +13,7 @@ final class InitializeVaultCommand extends Command
 {
     protected $signature = 'cvc:initialize';
 
-    protected $description = 'Create the fixed CVC vault and its initial universe';
+    protected $description = 'Create the fixed Codex Noctarium vault and its initial universe';
 
     public function handle(): int
     {
@@ -57,7 +57,7 @@ final class InitializeVaultCommand extends Command
             );
         });
 
-        $this->components->info('CVC vault initialized.');
+        $this->components->info('Codex Noctarium vault initialized.');
 
         return self::SUCCESS;
     }

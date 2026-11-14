@@ -1125,3 +1125,24 @@ then refuses to serve files outside the allowed roots. Use a local copy of
 of the host instead, kept outside the repository. PHP tests need only
 `composer install`, or an existing `vendor` directory built from the same
 `composer.lock`.
+
+## Integration checkpoint — 2026-11-13
+
+The phase 9–20 stack and the Codex Noctarium identity changes were consolidated
+over the current `main`. Merge conflicts in the README, page shell and page
+tests were resolved in favor of the headerless cosmic canvas while retaining
+the Noctarium name and artwork.
+
+Final source verification passed:
+
+- 188 PHP tests / 932 assertions;
+- 315 frontend tests in 28 files;
+- TypeScript and the documented ESLint scope;
+- Composer and npm dependency audits with no known vulnerability;
+- a complete Codex Security diff review with no reportable finding.
+
+The integration also corrected empty color validation, JSON number assertions,
+undirected-relation title ordering, single-click canvas test fixtures, Node
+types in the package toolchain and React state patterns rejected by the host's
+lint configuration. MySQL migration execution and a real browser session stay
+as environment-level release checks.

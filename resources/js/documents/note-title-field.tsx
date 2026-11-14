@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 type NoteTitleFieldProps = {
@@ -14,10 +14,6 @@ export function NoteTitleField({ title, onRename }: NoteTitleFieldProps) {
     const [value, setValue] = useState(title ?? '');
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        setValue(title ?? '');
-    }, [title]);
 
     const commit = async () => {
         const next = value.trim();

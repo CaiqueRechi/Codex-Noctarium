@@ -18,10 +18,10 @@ vi.mock('@xyflow/react', () => ({
     Position: { Left: 'left', Right: 'right' },
     ReactFlow: ({
         onInit,
-        onNodeDoubleClick,
+        onNodeClick,
     }: {
         onInit: (flow: unknown) => void;
-        onNodeDoubleClick: (event: null, node: unknown) => void;
+        onNodeClick: (event: MouseEvent, node: unknown) => void;
     }) => {
         useEffect(() => {
             onInit({ setViewport });
@@ -29,8 +29,8 @@ vi.mock('@xyflow/react', () => ({
 
         return (
             <button
-                onClick={() =>
-                    onNodeDoubleClick(null, {
+                onClick={(event) =>
+                    onNodeClick(event.nativeEvent, {
                         data: { kind: 'document', entityId: 'note' },
                     })
                 }

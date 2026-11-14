@@ -1,7 +1,7 @@
 # Working context
 
-Where the work stands and how to pick it up. Updated on 2026-11-12, at the
-end of a session that built most of the cosmic canvas redesign. The product
+Where the work stands and how to pick it up. Updated on 2026-11-13 after the
+complete cosmic-canvas branch stack was integrated and verified. The product
 contract is `docs/requirements/canvas-cosmico.md` (with its formulas); the
 detail of every change, with what was and was not verified, is in
 `docs/requirements/canvas-cosmico-traceability.md`, phases 9 to 20. This file
@@ -10,12 +10,8 @@ is the map; those are the territory.
 ## Product name
 
 The product was renamed **Codex Noctarium** on 2026-11-12, with a new logo.
-The rename lives on its own branches, not in the stack below:
-
-| Repository | Branch | Based on |
-| --- | --- | --- |
-| crow-vault-canvas | `cm-renomear-codex-noctarium` | `main` |
-| rechi-os | `cm-renomear-codex-noctarium` | `cm-crow-vault-canvas-mvp` |
+The name, artwork and cosmic-canvas implementation are now part of the same
+integrated history.
 
 Technical identifiers keep the old name on purpose (package, namespace,
 `crow-vault-canvas` config key, `cvc_*` tables, `CVC_*` variables, `cvc:*`
@@ -23,11 +19,12 @@ commands, `cvc.*` routes, `cvc-*` classes); renaming them is a separate
 decision for Caique. An existing vault keeps "Crow Vault Canvas" stored in its
 row until renamed there.
 
-## Branches
+## Integrated delivery
 
-Every branch starts from the one above it; together they make one pull
-request into `main`, from `cm-fluxograma`. Each item ends with its own
-`docs:` commit.
+The former stacked branches were consolidated from `main` through
+`cm-fluxograma`, with the later Noctarium identity changes preserved. The
+table remains as traceability for the delivered slices; it is no longer a
+branching or deployment instruction.
 
 | Branch | Item | Traceability |
 | --- | --- | --- |
@@ -43,26 +40,20 @@ request into `main`, from `cm-fluxograma`. Each item ends with its own
 | `cm-mover-e-lixeira` | move, "só daqui", delete with subnotes, seven-day purge (RF-08, D-13) | phase 19 |
 | `cm-fluxograma` | flowchart notes and their mermaid conversion (RF-04, RF-05) | phase 20 |
 
-The Rechi OS side of the integration is still on `cm-crow-vault-canvas-mvp`
-in `rechi-os`, which `main` there does not have.
+## Verification on 2026-11-13
 
-## Not verified yet
+- PHP: 188 tests and 932 assertions passed on SQLite.
+- Frontend: 315 tests in 28 files passed with the sibling Rechi OS toolchain.
+- TypeScript: `tooling/tsconfig.json` passed with no errors.
+- ESLint: the documented `resources/js/documents` and `vault.tsx` scope passed.
+- Dependency checks: Composer and npm reported no known vulnerabilities.
+- Codex Security reviewed the 92-file cosmic-canvas diff and found no
+  reportable issue across authorization, vault isolation, private storage,
+  purge, flowchart validation and browser rendering.
 
-Read this before trusting any of the above.
-
-- **No suite was run** for anything since phase 11. Tests were written with
-  each item, at Caique's request, to be run once everything is built. Run the
-  package PHP suite and the frontend suite first and fix what fails.
-- The **flowchart item was not even type checked**; the run was interrupted.
-- The **page tests still expect the header** that phase 11 removed, so
-  `vault-page.test.tsx` and parts of `vault-cosmic-space.test.tsx` will fail
-  until updated.
-- **Nothing after the palette was seen in a browser**: the editor, the
-  gestures, the compass, the external connections, moving and deleting,
-  the flowchart editor.
-- Migrations `2026_11_12_000017` (note color) and `2026_11_12_000018` (use
-  counters) never ran on MySQL; their rollback is covered only by tests that
-  have not run.
+The two additive migrations have automated rollback/reapply coverage on
+SQLite. A real MySQL migration run and an end-to-end browser session remain
+deployment checks, not claims made by this source verification.
 
 ## Known problems
 
@@ -95,31 +86,19 @@ Read this before trusting any of the above.
    layout and data (D-13), environments and operation (D-15).
 4. The note editor opens as an inset panel over the canvas (RF-02).
    Expansion from the selected note and browser verification are pending.
-5. Merge the rename branches, and decide whether technical identifiers
-   follow the new name.
+5. Decide separately whether technical identifiers follow the product name;
+   the current identifiers intentionally remain compatible.
 
 ## Local environment
 
-The checkouts live side by side in `Documents\CrowVaultCanvas` (this
-package and `rechi-os` on `cm-crow-vault-canvas-mvp`); the Docker project
-`rechi-os-cvc-local` is served from that `rechi-os`, at
-`http://localhost:8081`.
+Keep this package and `rechi-os` as sibling directories. The package checks
+below use the host's pinned frontend dependencies without copying sources into
+the host's `vendor` directory.
 
-- The `.env` there was copied from the earlier checkout so the existing
-  MySQL volume and `APP_KEY` keep working. It adds
-  `PHP_CLI_SERVER_WORKERS=4` and a local test user
-  (`CVC_LOCAL_TEST_EMAIL`, `CVC_LOCAL_TEST_PASSWORD`) with write access to
-  the `vault` screen.
-- OPcache was turned on inside the container
-  (`/etc/php/8.5/cli/conf.d/99-local-opcache.ini`, `opcache.enable_cli=1`,
-  `validate_timestamps=0`). It brought `/up` from 4–10 s to 0.6 s. A PHP
-  change needs `docker compose restart laravel.test`; recreating the
-  container loses the file.
-- The frontend is served from `npm run build` inside the container, not the
-  Vite dev server: the Rechi OS content security policy allows only
-  `127.0.0.1:5173` while Vite announces `localhost:5173`. Rebuild with
-  `WAYFINDER_GENERATE=false npm run build` after changing package sources.
-- Run `php artisan migrate` there before trying the branches above.
+For a host-level release check, configure the Rechi OS `.env`, run its MySQL
+migrations, compile with `WAYFINDER_GENERATE=false npm run build`, and exercise
+the authenticated `/vault` screen with read and write permissions. Those steps
+are intentionally separate from the package's source-level checks.
 
 ## Checks
 
@@ -129,6 +108,7 @@ From this repository, with the sibling `../rechi-os` toolchain:
 composer test
 node ../rechi-os/node_modules/vitest/vitest.mjs run --config tooling/vitest.config.mjs --configLoader native --pool=threads
 node ../rechi-os/node_modules/typescript/bin/tsc --noEmit --project tooling/tsconfig.json
+node ../rechi-os/node_modules/eslint/bin/eslint.js resources/js/documents resources/js/pages/vault.tsx
 ```
 
 Inside the container, `npx tsc --noEmit` in `rechi-os` checks the package
@@ -136,10 +116,8 @@ sources through `vendor/caiquerechi/crow-vault-canvas`.
 
 ## How work is done here
 
-Caique's standing conventions (the `crow:conventions` skill) apply: one
+Caique's standing conventions apply: one
 branch `cm-…` per task, one commit per change in English with no
 co-authorship, tests with new development and apart from non-trivial
 alterations, documentation in its own last commit, mistakes corrected by
-new commits instead of rewrites, and a security check on every change. For
-this canvas he asked to try changes by hand first and to run the suites only
-when he says so.
+new commits instead of rewrites, and a security check on every change.

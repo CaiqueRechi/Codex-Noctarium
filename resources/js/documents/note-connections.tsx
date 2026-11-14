@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 import type { RelationSummary } from '../relations/types';
@@ -63,8 +63,6 @@ export function NoteConnections({
     );
     const connections = connectionsOf(noteId, relations);
 
-    useEffect(() => setActiveIndex(0), [targets]);
-
     const run = async (action: () => Promise<void>, failure: string) => {
         try {
             await action();
@@ -93,12 +91,13 @@ export function NoteConnections({
             );
         } else if (event.key === 'Enter') {
             event.preventDefault();
-            void connect(targets[activeIndex].id);
+            void connect(targets[selectedIndex].id);
         } else if (event.key === 'Escape') {
             setQuery('');
         }
     };
 
+    const selectedIndex = Math.min(activeIndex, Math.max(0, targets.length - 1));
     const isOpen = targets.length > 0;
 
     return (
@@ -142,10 +141,13 @@ export function NoteConnections({
                     aria-expanded={isOpen}
                     aria-controls={isOpen ? listId : undefined}
                     aria-activedescendant={
-                        isOpen ? `${listId}-${activeIndex}` : undefined
+                        isOpen ? `${listId}-${selectedIndex}` : undefined
                     }
                     value={query}
-                    onChange={(event) => setQuery(event.target.value)}
+                    onChange={(event) => {
+                        setQuery(event.target.value);
+                        setActiveIndex(0);
+                    }}
                     onKeyDown={handleKeyDown}
                 />
                 {isOpen && (
@@ -160,7 +162,7 @@ export function NoteConnections({
                                 key={target.id}
                                 id={`${listId}-${index}`}
                                 role="option"
-                                aria-selected={index === activeIndex}
+                                aria-selected={index === selectedIndex}
                                 className="cvc-linking__option"
                                 onMouseDown={(event) => {
                                     event.preventDefault();

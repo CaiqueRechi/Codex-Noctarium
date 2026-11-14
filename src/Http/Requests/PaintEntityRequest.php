@@ -19,7 +19,13 @@ final class PaintEntityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'color' => ['present', 'nullable', 'string', Rule::enum(NoteColor::class)],
+            'color' => [
+                'present',
+                Rule::requiredIf($this->input('color') !== null),
+                'nullable',
+                'string',
+                Rule::enum(NoteColor::class),
+            ],
         ];
     }
 }
