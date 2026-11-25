@@ -8,6 +8,7 @@ use CrowVaultCanvas\Console\Commands\InitializeVaultCommand;
 use CrowVaultCanvas\Console\Commands\MeasureDocumentsCommand;
 use CrowVaultCanvas\Console\Commands\PurgeTrashCommand;
 use CrowVaultCanvas\Console\Commands\ReindexVaultCommand;
+use CrowVaultCanvas\Console\Commands\SeedProjectExamplesCommand;
 use CrowVaultCanvas\Infrastructure\Storage\AttachmentStorage;
 use CrowVaultCanvas\Infrastructure\Storage\LocalAttachmentStorage;
 use CrowVaultCanvas\Infrastructure\Storage\LocalMarkdownStorage;
@@ -36,6 +37,7 @@ final class CrowVaultCanvasServiceProvider extends ServiceProvider
             MeasureDocumentsCommand::class,
             PurgeTrashCommand::class,
             ReindexVaultCommand::class,
+            SeedProjectExamplesCommand::class,
         ]);
         // D-13: the trash empties itself after seven days; the host's
         // scheduler has to be running for this to happen.

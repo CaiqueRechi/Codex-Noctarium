@@ -190,12 +190,15 @@ type CompassReturn = {
 };
 
 const fadeHalfDuration = 150;
-// How long each level of a travel stays on screen (D-10); the timing of
-// zoom animations is still open in D-12.
-const travelStepDuration = 400;
+// D-12: every camera transition takes 250 ms, and none with reduced motion.
+const cameraTransitionDuration = 250;
 
 function prefersReducedMotion(): boolean {
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+function cameraTransition(): number {
+    return prefersReducedMotion() ? 0 : cameraTransitionDuration;
 }
 
 function pause(milliseconds: number): Promise<void> {
@@ -369,10 +372,13 @@ function buildSpaceNodes(
                 // here because the canvas library centres a node with the
                 // size it knows, and a node rebuilt on every frame loses the
                 // size the library measured: after a drag every circle
-                // jumped by half its diameter.
+                // jumped by half its diameter. The drag reads the measured
+                // size to turn the corner it moves back into the centre, so
+                // without it the note jumped by its radius when grabbed.
                 origin: [0.5, 0.5],
                 width: diameter,
                 height: diameter,
+                measured: { width: diameter, height: diameter },
                 position: toCanvasPoint(body.position),
                 draggable: true,
                 selected:
@@ -473,6 +479,9 @@ export default function VaultPage({
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
     const [focusEntityId, setFocusEntityId] = useState(workspace.focusEntityId);
     const [isCreating, setIsCreating] = useState(false);
+    const [editorOrigin, setEditorOrigin] = useState<CanvasCircle | null>(
+        null,
+    );
     const [flow, setFlow] = useState<ReactFlowInstance<
         CosmicNoteCanvasNode,
         Edge
@@ -737,9 +746,38 @@ export default function VaultPage({
         [],
     );
 
+    // Where a circle of the open space is on the screen, in client
+    // coordinates, so the editor can grow out of it.
+    const clientCircle = useCallback(
+        (center: CanvasPoint, radius: number): CanvasCircle | null => {
+            const element = canvas.current;
+
+            if (!element) {
+                return null;
+            }
+
+            const box = element.getBoundingClientRect();
+            // The camera drawn now, not the one an animation is heading to.
+            const onCanvas = circleOnScreen(
+                flow?.getViewport() ?? viewport.current,
+                { center, radius },
+            );
+
+            return {
+                center: {
+                    x: box.left + onCanvas.center.x,
+                    y: box.top + onCanvas.center.y,
+                },
+                radius: onCanvas.radius,
+            };
+        },
+        [flow],
+    );
+
     const showDocument = useCallback(
-        (document: OpenedDocument) => {
+        (document: OpenedDocument, expandsFrom: CanvasCircle | null) => {
             returnViewport.current = { ...viewport.current };
+            setEditorOrigin(expandsFrom);
             session.open(document);
             setError(null);
         },
@@ -963,7 +1001,7 @@ export default function VaultPage({
                 }
 
                 setFocusEntityId(document.id);
-                showDocument(document);
+                showDocument(document, clientCircle(position, 0));
                 void persistWorkspace(viewport.current, document.id);
 
                 return document.id;
@@ -980,6 +1018,7 @@ export default function VaultPage({
             }
         },
         [
+            clientCircle,
             endpoints.contexts,
             endpoints.documents,
             documentContextId,
@@ -1013,7 +1052,7 @@ export default function VaultPage({
     );
 
     const openNote = useCallback(
-        async (entityId: string) => {
+        async (entityId: string, expandsFrom: CanvasCircle | null = null) => {
             if (!(await session.flush())) {
                 return;
             }
@@ -1026,7 +1065,7 @@ export default function VaultPage({
                     entityId,
                 );
                 setFocusEntityId(document.id);
-                showDocument(document);
+                showDocument(document, expandsFrom);
                 void persistWorkspace(viewport.current, document.id);
             } catch (exception) {
                 setError(
@@ -1150,9 +1189,12 @@ export default function VaultPage({
                 return;
             }
 
-            void openNote(node.data.entityId);
+            void openNote(
+                node.data.entityId,
+                clientCircle(node.position, node.data.diameter / 2),
+            );
         },
-        [createLinkedSibling, openNote, reportLinkFailure],
+        [clientCircle, createLinkedSibling, openNote, reportLinkFailure],
     );
 
     // A link dragged from the dot ends on whatever note is under the
@@ -1230,7 +1272,9 @@ export default function VaultPage({
         element.style.setProperty('--cvc-zoom', String(framed.zoom));
         // A zoom that crossed into another space continues without a jump;
         // only a space entered by a click is framed with a short animation.
-        void flow.setViewport(framed, { duration: placement ? 0 : 250 });
+        void flow.setViewport(framed, {
+            duration: placement ? 0 : cameraTransition(),
+        });
         void persistWorkspace(framed, null);
     }, [flow, persistWorkspace, scene]);
 
@@ -1418,7 +1462,7 @@ export default function VaultPage({
                     await flow.fitView({
                         nodes: [{ id: entityNodeId(result.contextId, result.id) }],
                         padding: 0.6,
-                        duration: half * 2,
+                        duration: cameraTransition(),
                     });
                     viewport.current = flow.getViewport();
                 } else {
@@ -1463,7 +1507,9 @@ export default function VaultPage({
 
         if (back.contextId === activeContextId) {
             viewport.current = back.viewport;
-            void flow?.setViewport(back.viewport);
+            void flow?.setViewport(back.viewport, {
+                duration: cameraTransition(),
+            });
 
             return;
         }
@@ -1514,7 +1560,7 @@ export default function VaultPage({
                     trail,
                     path.map((step) => step.id),
                 );
-                const stepPause = prefersReducedMotion() ? 0 : travelStepDuration;
+                const stepPause = cameraTransition();
 
                 for (const step of steps) {
                     // A step not on the trail goes down; the ancestor is on it.
@@ -1560,7 +1606,7 @@ export default function VaultPage({
                 nodes: [{ id: target.nodeId }],
                 includeHiddenNodes: true,
                 padding: 0.35,
-                duration: 250,
+                duration: cameraTransition(),
             });
             const nextViewport = flow.getViewport();
             viewport.current = nextViewport;
@@ -2088,7 +2134,9 @@ export default function VaultPage({
         setError(null);
 
         if (returnViewport.current) {
-            void flow?.setViewport(returnViewport.current);
+            void flow?.setViewport(returnViewport.current, {
+                duration: cameraTransition(),
+            });
         }
     }, [flow, session]);
 
@@ -2115,7 +2163,7 @@ export default function VaultPage({
             </Head>
             <h1 className="cvc-visually-hidden">{vault.name}</h1>
 
-            <div className="cvc-workspace">
+            <div className="cvc-workspace" inert={Boolean(activeDocument)}>
                 {/* Nothing takes a strip of the screen from the canvas: the
                     path, the status and the tools float over its corners. */}
                 <div className="cvc-overlay cvc-overlay--start">
@@ -2409,6 +2457,8 @@ export default function VaultPage({
 
             {activeDocument && (
                 <DocumentEditor
+                    key={activeDocument.id}
+                    expandsFrom={editorOrigin}
                     document={activeDocument}
                     draft={draft}
                     saveState={saveState}

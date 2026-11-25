@@ -2,6 +2,7 @@
     "extends": "../../rechi-os/tsconfig.json",
     "compilerOptions": {
         "baseUrl": "../../rechi-os",
+        "typeRoots": ["../../rechi-os/node_modules/@types"],
         "paths": {
             "react": ["node_modules/@types/react"],
             "react/*": ["node_modules/@types/react/*"],

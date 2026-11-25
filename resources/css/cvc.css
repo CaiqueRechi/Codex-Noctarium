@@ -1,5 +1,6 @@
 /* The canvas is the whole screen; everything else floats over it. */
 .cvc-shell {
+    position: relative;
     display: grid;
     height: 100vh;
     grid-template-rows: minmax(0, 1fr);
@@ -66,31 +67,59 @@
 }
 
 .cvc-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.5rem;
     border: 1px solid var(--cvc-border);
-    border-radius: 0.65rem;
-    background: var(--cvc-surface-raised);
-    padding: 0.6rem 0.9rem;
+    border-radius: 999px;
+    background: transparent;
+    padding: 0 1rem;
     color: var(--cvc-text);
     font: inherit;
     font-size: 0.85rem;
-    font-weight: 700;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
     cursor: pointer;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        color 150ms ease;
 }
 
-.cvc-button--primary {
+.cvc-button:hover:not(:disabled) {
     border-color: var(--cvc-accent);
-    background: var(--cvc-accent-strong);
+    background: var(--cvc-surface-raised);
 }
 
-.cvc-button:hover,
+/* The ring is for the keyboard only; the mouse gets the hover. */
 .cvc-button:focus-visible {
-    outline: 3px solid var(--cvc-focus);
+    outline: 2px solid var(--cvc-focus);
     outline-offset: 2px;
+}
+
+.cvc-button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+/* The champagne hairline is the same trim every note wears on the canvas. */
+.cvc-button--primary {
+    border-color: transparent;
+    background: var(--cvc-accent-strong);
+    box-shadow: inset 0 0 0 1px
+        color-mix(in srgb, var(--cvc-gilt) 45%, transparent);
+}
+
+.cvc-button--primary:hover:not(:disabled) {
+    border-color: transparent;
+    background: var(--cvc-accent);
 }
 
 .cvc-button:disabled {
     cursor: not-allowed;
-    opacity: 0.55;
+    opacity: 0.45;
 }
 
 .cvc-eyebrow {
@@ -601,7 +630,8 @@
 
 .cvc-button--compact {
     justify-self: start;
-    padding: 0.4rem 0.6rem;
+    min-height: 2rem;
+    padding: 0 0.75rem;
     font-size: 0.75rem;
 }
 
@@ -1013,25 +1043,96 @@
 }
 
 .cvc-editor {
-    position: fixed;
+    position: absolute;
     z-index: 20;
-    inset: 0;
+    /* The top leaves the path in view: it says where the note lives. */
+    inset: 4rem clamp(0.5rem, 4vw, 3rem) clamp(0.5rem, 4vw, 3rem);
     /* A column, not fixed rows: the error and the connections come and go,
        and the text always takes what is left. */
     display: flex;
     flex-direction: column;
+    /* Not clipped, so the questions of the header can overlap the text;
+       the text scrolls on its own. */
+    overflow: visible;
+    border: 1px solid var(--cvc-border);
+    border-radius: 1rem;
+    box-shadow:
+        0 1.5rem 4rem var(--cvc-shadow),
+        0 0 0 1px color-mix(in srgb, var(--cvc-gilt) 18%, transparent);
     background: var(--cvc-background);
     color: var(--cvc-text);
+    animation: cvc-editor-appear 250ms ease-out;
 }
 
+/* RF-02: an editor opened from a note grows out of the note's circle. */
+.cvc-editor[data-expansion='note'] {
+    animation: cvc-editor-expand 250ms ease-out;
+}
+
+@keyframes cvc-editor-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+@keyframes cvc-editor-expand {
+    from {
+        clip-path: circle(
+            var(--expansion-radius) at var(--expansion-x)
+                var(--expansion-y)
+        );
+    }
+
+    to {
+        clip-path: circle(
+            var(--expansion-reach) at var(--expansion-x)
+                var(--expansion-y)
+        );
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-editor,
+    .cvc-editor[data-expansion='note'] {
+        animation: none;
+    }
+}
+
+/* Two rows: what the note is and saving it above, how it looks and where
+   it goes below. */
 .cvc-editor__header {
-    display: flex;
+    display: grid;
+    grid-template-areas:
+        'title title title primary'
+        'color type . manage';
+    grid-template-columns: auto auto 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem 1.25rem;
     border-bottom: 1px solid var(--cvc-border);
+    border-radius: 1rem 1rem 0 0;
     background: var(--cvc-surface);
     padding: 1rem 1.5rem;
+}
+
+.cvc-editor__header > .cvc-note-title {
+    grid-area: title;
+}
+
+.cvc-editor__header > .cvc-note-color {
+    grid-area: color;
+}
+
+.cvc-editor__header > .cvc-content-type {
+    grid-area: type;
+}
+
+.cvc-editor__header > .cvc-note-actions {
+    grid-area: manage;
+}
+
+.cvc-editor__header > .cvc-editor__actions {
+    grid-area: primary;
 }
 
 /* D-12: the note's connections, between its title and its text. */
@@ -1039,7 +1140,7 @@
     display: grid;
     gap: 0.5rem;
     border-bottom: 1px solid var(--cvc-border);
-    padding: 0.75rem clamp(1.25rem, 4vw, 4rem);
+    padding: 0.75rem 1.5rem;
 }
 
 .cvc-connections h3 {
@@ -1174,12 +1275,22 @@
 
 /* RF-04: the body of a flowchart note. */
 .cvc-content-type__options {
-    display: flex;
-    gap: 0.35rem;
+    display: inline-flex;
+    gap: 0.2rem;
+    border: 1px solid var(--cvc-border);
+    border-radius: 999px;
+    padding: 0.2rem;
+}
+
+.cvc-content-type__options .cvc-button {
+    min-height: 2rem;
+    border-color: transparent;
+    padding: 0 0.85rem;
+    color: var(--cvc-text-muted);
 }
 
 .cvc-content-type__options [aria-checked='true'] {
-    border-color: var(--cvc-energy);
+    background: var(--cvc-surface-raised);
     color: var(--cvc-energy);
 }
 
@@ -1187,7 +1298,7 @@
     display: grid;
     flex: 1 1 auto;
     grid-template-rows: auto minmax(0, 1fr);
-    min-height: 0;
+    min-height: 12rem;
 }
 
 .cvc-flowchart-note__description {
@@ -1278,30 +1389,53 @@
 }
 
 .cvc-button--danger {
-    border-color: var(--cvc-danger);
+    border-color: color-mix(in srgb, var(--cvc-danger) 55%, transparent);
     color: var(--cvc-danger);
+}
+
+.cvc-button--danger:hover:not(:disabled) {
+    border-color: var(--cvc-danger);
+    background: var(--cvc-danger-surface);
 }
 
 /* RF-08: what can be done with the note, asked in place before anything
    is lost. */
 .cvc-note-actions {
+    position: relative;
     display: grid;
+    justify-items: end;
     gap: 0.5rem;
 }
 
+/* The question opens under the button that asked it, over the text, so
+   the header keeps its shape. */
 .cvc-note-actions__question,
 .cvc-move-picker {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 0.5rem);
+    right: 0;
     display: grid;
-    gap: 0.5rem;
-    max-width: 30rem;
+    gap: 0.75rem;
+    width: min(22rem, calc(100vw - 2rem));
     border: 1px solid var(--cvc-border);
+    border-top: 2px solid var(--cvc-gilt);
     border-radius: 0.75rem;
     background: var(--cvc-surface-raised);
-    padding: 0.75rem;
+    padding: 1rem;
+    box-shadow: 0 1rem 2.5rem var(--cvc-shadow);
 }
 
 .cvc-note-actions__question p {
     margin: 0;
+    line-height: 1.5;
+}
+
+.cvc-note-actions__question .cvc-editor__actions,
+.cvc-move-picker .cvc-editor__actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
 .cvc-move-picker__list {
@@ -1336,12 +1470,12 @@
 .cvc-note-color__options {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.4rem;
 }
 
 .cvc-note-color__swatch {
-    width: 2rem;
-    height: 2rem;
+    width: 1.6rem;
+    height: 1.6rem;
     border: 2px solid var(--cvc-border);
     border-radius: 50%;
     background: var(--cvc-surface-raised);
@@ -1464,22 +1598,50 @@
 .cvc-editor__textarea {
     flex: 1 1 auto;
     width: 100%;
-    min-height: 0;
+    min-height: 8rem;
     resize: none;
     border: 0;
+    border-radius: 0 0 1rem 1rem;
     outline: 0;
     background: var(--cvc-background);
-    padding: clamp(1.25rem, 4vw, 4rem);
+    /* A reading column of about 72 characters, centred in a wide editor. */
+    padding: clamp(1.25rem, 3vw, 2.5rem)
+        max(clamp(1.25rem, 4vw, 4rem), calc((100% - 72ch) / 2));
     color: var(--cvc-text);
     font-family: var(--cvc-font-mono);
     font-size: clamp(1rem, 1.4vw, 1.2rem);
     line-height: 1.7;
 }
 
+.cvc-editor__textarea::placeholder {
+    color: var(--cvc-text-muted);
+    opacity: 0.7;
+}
+
 @media (max-width: 48rem) {
     .cvc-editor__header {
+        grid-template-areas:
+            'title'
+            'primary'
+            'color'
+            'type'
+            'manage';
+        grid-template-columns: minmax(0, 1fr);
         align-items: stretch;
-        flex-direction: column;
+    }
+
+    .cvc-note-actions {
+        justify-items: start;
+    }
+
+    .cvc-editor {
+        overflow: auto;
+    }
+
+    .cvc-note-actions__question,
+    .cvc-move-picker {
+        position: static;
+        width: auto;
     }
 
     .cvc-editor__actions {

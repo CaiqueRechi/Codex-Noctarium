@@ -286,8 +286,18 @@ describe('RF-02 vault canvas', () => {
         vi.unstubAllGlobals();
     });
 
-    it('frames the whole space after entering it', async () => {
+    it.each([
+        { reducedMotion: false, duration: 250 },
+        { reducedMotion: true, duration: 0 },
+    ])('frames the whole space after entering it in $duration ms', async ({
+        reducedMotion,
+        duration,
+    }) => {
         document.cookie = 'XSRF-TOKEN=test-token; path=/';
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn().mockReturnValue({ matches: reducedMotion }),
+        );
         const width = vi
             .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
             .mockReturnValue(1000);
@@ -359,7 +369,8 @@ describe('RF-02 vault canvas', () => {
 
         await waitFor(() => expect(setViewportMock).toHaveBeenCalledTimes(1));
 
-        const [framed] = setViewportMock.mock.calls[0];
+        const [framed, options] = setViewportMock.mock.calls[0];
+        expect(options).toEqual({ duration });
         // One empty note takes a third of the budget: X = 1, w = 1 and
         // the reserved empty area is 2 / (2 + 1).
         const diameter = 2 * Math.sqrt(1 / 3 / Math.PI) * 1024;
@@ -801,7 +812,9 @@ describe('RF-02 vault canvas', () => {
         );
 
         await waitFor(() =>
-            expect(setViewportMock).toHaveBeenCalledWith(persistedViewport),
+            expect(setViewportMock).toHaveBeenCalledWith(persistedViewport, {
+                duration: 250,
+            }),
         );
 
         document.cookie =

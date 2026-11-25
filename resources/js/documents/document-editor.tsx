@@ -1,3 +1,4 @@
+import type { CanvasCircle } from '../canvas/math/geometry';
 import { ContentTypeSwitch } from '../flowchart/content-type-switch';
 import { isFlowchartContent } from '../flowchart/flowchart';
 import { FlowchartNote } from '../flowchart/flowchart-note';
@@ -10,6 +11,7 @@ import type { NoteColorName } from './note-color-picker';
 import { NoteConnections } from './note-connections';
 import { NoteTitleField } from './note-title-field';
 import type { OpenedDocument, SaveState } from './types';
+import { useExpansionOrigin } from './use-expansion-origin';
 
 type DocumentEditorProps = {
     linking?: {
@@ -29,6 +31,7 @@ type DocumentEditorProps = {
     actions?: NoteActionsProps;
     onSave: () => void;
     onBack: () => void;
+    expandsFrom?: CanvasCircle | null;
 };
 
 const statusLabels: Record<SaveState, string> = {
@@ -51,13 +54,22 @@ export function DocumentEditor({
     actions,
     onSave,
     onBack,
+    expandsFrom = null,
 }: DocumentEditorProps) {
+    const expansion = useExpansionOrigin<HTMLElement>(expandsFrom);
+    const isFlowchart = isFlowchartContent(draft);
     const isSaving = saveState === 'saving';
     const hasPendingChanges =
         draft !== document.content || saveState === 'failed';
 
     return (
-        <section className="cvc-editor" aria-label="Editor Markdown">
+        <section
+            ref={expansion}
+            className="cvc-editor"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Editor de nota"
+        >
             <header className="cvc-editor__header">
                 <NoteTitleField
                     key={`${document.id}:${document.title ?? ''}`}
@@ -93,6 +105,7 @@ export function DocumentEditor({
                     <button
                         type="button"
                         className="cvc-button"
+                        autoFocus={isFlowchart}
                         onClick={onBack}
                     >
                         Voltar ao canvas
@@ -117,7 +130,7 @@ export function DocumentEditor({
                 />
             )}
 
-            {isFlowchartContent(draft) ? (
+            {isFlowchart ? (
                 <FlowchartNote content={draft} onChange={onChange} />
             ) : linking ? (
                 <LinkingTextarea
