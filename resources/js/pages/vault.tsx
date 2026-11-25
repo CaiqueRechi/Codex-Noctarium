@@ -479,6 +479,9 @@ export default function VaultPage({
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
     const [focusEntityId, setFocusEntityId] = useState(workspace.focusEntityId);
     const [isCreating, setIsCreating] = useState(false);
+    const [editorOrigin, setEditorOrigin] = useState<CanvasCircle | null>(
+        null,
+    );
     const [flow, setFlow] = useState<ReactFlowInstance<
         CosmicNoteCanvasNode,
         Edge
@@ -743,9 +746,38 @@ export default function VaultPage({
         [],
     );
 
+    // Where a circle of the open space is on the screen, in client
+    // coordinates, so the editor can grow out of it.
+    const clientCircle = useCallback(
+        (center: CanvasPoint, radius: number): CanvasCircle | null => {
+            const element = canvas.current;
+
+            if (!element) {
+                return null;
+            }
+
+            const box = element.getBoundingClientRect();
+            // The camera drawn now, not the one an animation is heading to.
+            const onCanvas = circleOnScreen(
+                flow?.getViewport() ?? viewport.current,
+                { center, radius },
+            );
+
+            return {
+                center: {
+                    x: box.left + onCanvas.center.x,
+                    y: box.top + onCanvas.center.y,
+                },
+                radius: onCanvas.radius,
+            };
+        },
+        [flow],
+    );
+
     const showDocument = useCallback(
-        (document: OpenedDocument) => {
+        (document: OpenedDocument, expandsFrom: CanvasCircle | null) => {
             returnViewport.current = { ...viewport.current };
+            setEditorOrigin(expandsFrom);
             session.open(document);
             setError(null);
         },
@@ -969,7 +1001,7 @@ export default function VaultPage({
                 }
 
                 setFocusEntityId(document.id);
-                showDocument(document);
+                showDocument(document, clientCircle(position, 0));
                 void persistWorkspace(viewport.current, document.id);
 
                 return document.id;
@@ -986,6 +1018,7 @@ export default function VaultPage({
             }
         },
         [
+            clientCircle,
             endpoints.contexts,
             endpoints.documents,
             documentContextId,
@@ -1019,7 +1052,7 @@ export default function VaultPage({
     );
 
     const openNote = useCallback(
-        async (entityId: string) => {
+        async (entityId: string, expandsFrom: CanvasCircle | null = null) => {
             if (!(await session.flush())) {
                 return;
             }
@@ -1032,7 +1065,7 @@ export default function VaultPage({
                     entityId,
                 );
                 setFocusEntityId(document.id);
-                showDocument(document);
+                showDocument(document, expandsFrom);
                 void persistWorkspace(viewport.current, document.id);
             } catch (exception) {
                 setError(
@@ -1156,9 +1189,12 @@ export default function VaultPage({
                 return;
             }
 
-            void openNote(node.data.entityId);
+            void openNote(
+                node.data.entityId,
+                clientCircle(node.position, node.data.diameter / 2),
+            );
         },
-        [createLinkedSibling, openNote, reportLinkFailure],
+        [clientCircle, createLinkedSibling, openNote, reportLinkFailure],
     );
 
     // A link dragged from the dot ends on whatever note is under the
@@ -2421,6 +2457,8 @@ export default function VaultPage({
 
             {activeDocument && (
                 <DocumentEditor
+                    key={activeDocument.id}
+                    expandsFrom={editorOrigin}
                     document={activeDocument}
                     draft={draft}
                     saveState={saveState}

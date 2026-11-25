@@ -1027,6 +1027,42 @@
     box-shadow: 0 1rem 3rem var(--cvc-shadow);
     background: var(--cvc-background);
     color: var(--cvc-text);
+    animation: cvc-editor-appear 250ms ease-out;
+}
+
+/* RF-02: an editor opened from a note grows out of the note's circle. */
+.cvc-editor[data-expansion='note'] {
+    animation: cvc-editor-expand 250ms ease-out;
+}
+
+@keyframes cvc-editor-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+@keyframes cvc-editor-expand {
+    from {
+        clip-path: circle(
+            var(--cvc-expansion-radius) at var(--cvc-expansion-x)
+                var(--cvc-expansion-y)
+        );
+    }
+
+    to {
+        clip-path: circle(
+            var(--cvc-expansion-reach) at var(--cvc-expansion-x)
+                var(--cvc-expansion-y)
+        );
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cvc-editor,
+    .cvc-editor[data-expansion='note'] {
+        animation: none;
+    }
 }
 
 .cvc-editor__header {
