@@ -32,10 +32,10 @@ export function useExpansionOrigin<Element extends HTMLElement>(
             ].map(([cornerX, cornerY]) => Math.hypot(cornerX - x, cornerY - y)),
         );
 
-        node.style.setProperty('--cvc-expansion-x', `${x}px`);
-        node.style.setProperty('--cvc-expansion-y', `${y}px`);
-        node.style.setProperty('--cvc-expansion-radius', `${opening.radius}px`);
-        node.style.setProperty('--cvc-expansion-reach', `${reach}px`);
+        node.style.setProperty('--expansion-x', `${x}px`);
+        node.style.setProperty('--expansion-y', `${y}px`);
+        node.style.setProperty('--expansion-radius', `${opening.radius}px`);
+        node.style.setProperty('--expansion-reach', `${reach}px`);
         node.dataset.expansion = 'note';
     }, []);
 

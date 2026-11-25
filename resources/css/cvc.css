@@ -1045,15 +1045,15 @@
 @keyframes cvc-editor-expand {
     from {
         clip-path: circle(
-            var(--cvc-expansion-radius) at var(--cvc-expansion-x)
-                var(--cvc-expansion-y)
+            var(--expansion-radius) at var(--expansion-x)
+                var(--expansion-y)
         );
     }
 
     to {
         clip-path: circle(
-            var(--cvc-expansion-reach) at var(--cvc-expansion-x)
-                var(--cvc-expansion-y)
+            var(--expansion-reach) at var(--expansion-x)
+                var(--expansion-y)
         );
     }
 }

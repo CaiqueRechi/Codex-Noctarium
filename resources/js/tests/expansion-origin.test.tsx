@@ -26,14 +26,12 @@ describe('RF-02 editor growing out of the note', () => {
         const panel = screen.getByTestId('panel');
 
         expect(panel).toHaveAttribute('data-expansion', 'note');
-        expect(panel.style.getPropertyValue('--cvc-expansion-x')).toBe('30px');
-        expect(panel.style.getPropertyValue('--cvc-expansion-y')).toBe('40px');
-        expect(panel.style.getPropertyValue('--cvc-expansion-radius')).toBe(
-            '12px',
-        );
+        expect(panel.style.getPropertyValue('--expansion-x')).toBe('30px');
+        expect(panel.style.getPropertyValue('--expansion-y')).toBe('40px');
+        expect(panel.style.getPropertyValue('--expansion-radius')).toBe('12px');
         expect(
             Number.parseFloat(
-                panel.style.getPropertyValue('--cvc-expansion-reach'),
+                panel.style.getPropertyValue('--expansion-reach'),
             ),
         ).toBeCloseTo(Math.hypot(300 - 30, 400 - 40), 10);
     });
@@ -52,9 +50,7 @@ describe('RF-02 editor growing out of the note', () => {
         rerender(<Panel origin={{ center: { x: 200, y: 200 }, radius: 4 }} />);
 
         expect(
-            screen
-                .getByTestId('panel')
-                .style.getPropertyValue('--cvc-expansion-x'),
+            screen.getByTestId('panel').style.getPropertyValue('--expansion-x'),
         ).toBe('10px');
     });
 
