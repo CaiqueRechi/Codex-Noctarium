@@ -24,14 +24,22 @@ vi.mock('@xyflow/react', () => ({
         onNodeClick: (event: MouseEvent, node: unknown) => void;
     }) => {
         useEffect(() => {
-            onInit({ setViewport });
+            onInit({
+                setViewport,
+                getViewport: () => ({ x: 0, y: 0, zoom: 1 }),
+            });
         }, [onInit]);
 
         return (
             <button
                 onClick={(event) =>
                     onNodeClick(event.nativeEvent, {
-                        data: { kind: 'document', entityId: 'note' },
+                        position: { x: 0, y: 0 },
+                        data: {
+                            kind: 'document',
+                            entityId: 'note',
+                            diameter: 100,
+                        },
                     })
                 }
             >
@@ -199,7 +207,9 @@ describe('RF-06 editor integration and navigation', () => {
         expect(
             screen.queryByRole('textbox', { name: 'Conteúdo Markdown' }),
         ).toBeNull();
-        expect(setViewport).toHaveBeenCalledWith(props.workspace.viewport);
+        expect(setViewport).toHaveBeenCalledWith(props.workspace.viewport, {
+            duration: 250,
+        });
     });
 
     it('stops the activity indicator at the third failure and retries only after the user asks', async () => {
