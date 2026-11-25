@@ -369,10 +369,13 @@ function buildSpaceNodes(
                 // here because the canvas library centres a node with the
                 // size it knows, and a node rebuilt on every frame loses the
                 // size the library measured: after a drag every circle
-                // jumped by half its diameter.
+                // jumped by half its diameter. The drag reads the measured
+                // size to turn the corner it moves back into the centre, so
+                // without it the note jumped by its radius when grabbed.
                 origin: [0.5, 0.5],
                 width: diameter,
                 height: diameter,
+                measured: { width: diameter, height: diameter },
                 position: toCanvasPoint(body.position),
                 draggable: true,
                 selected:
