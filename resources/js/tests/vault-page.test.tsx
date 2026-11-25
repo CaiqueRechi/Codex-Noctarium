@@ -801,7 +801,9 @@ describe('RF-02 vault canvas', () => {
         );
 
         await waitFor(() =>
-            expect(setViewportMock).toHaveBeenCalledWith(persistedViewport),
+            expect(setViewportMock).toHaveBeenCalledWith(persistedViewport, {
+                duration: 250,
+            }),
         );
 
         document.cookie =

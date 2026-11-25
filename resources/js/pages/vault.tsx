@@ -190,12 +190,15 @@ type CompassReturn = {
 };
 
 const fadeHalfDuration = 150;
-// How long each level of a travel stays on screen (D-10); the timing of
-// zoom animations is still open in D-12.
-const travelStepDuration = 400;
+// D-12: every camera transition takes 250 ms, and none with reduced motion.
+const cameraTransitionDuration = 250;
 
 function prefersReducedMotion(): boolean {
     return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+function cameraTransition(): number {
+    return prefersReducedMotion() ? 0 : cameraTransitionDuration;
 }
 
 function pause(milliseconds: number): Promise<void> {
@@ -1233,7 +1236,9 @@ export default function VaultPage({
         element.style.setProperty('--cvc-zoom', String(framed.zoom));
         // A zoom that crossed into another space continues without a jump;
         // only a space entered by a click is framed with a short animation.
-        void flow.setViewport(framed, { duration: placement ? 0 : 250 });
+        void flow.setViewport(framed, {
+            duration: placement ? 0 : cameraTransition(),
+        });
         void persistWorkspace(framed, null);
     }, [flow, persistWorkspace, scene]);
 
@@ -1421,7 +1426,7 @@ export default function VaultPage({
                     await flow.fitView({
                         nodes: [{ id: entityNodeId(result.contextId, result.id) }],
                         padding: 0.6,
-                        duration: half * 2,
+                        duration: cameraTransition(),
                     });
                     viewport.current = flow.getViewport();
                 } else {
@@ -1466,7 +1471,9 @@ export default function VaultPage({
 
         if (back.contextId === activeContextId) {
             viewport.current = back.viewport;
-            void flow?.setViewport(back.viewport);
+            void flow?.setViewport(back.viewport, {
+                duration: cameraTransition(),
+            });
 
             return;
         }
@@ -1517,7 +1524,7 @@ export default function VaultPage({
                     trail,
                     path.map((step) => step.id),
                 );
-                const stepPause = prefersReducedMotion() ? 0 : travelStepDuration;
+                const stepPause = cameraTransition();
 
                 for (const step of steps) {
                     // A step not on the trail goes down; the ancestor is on it.
@@ -1563,7 +1570,7 @@ export default function VaultPage({
                 nodes: [{ id: target.nodeId }],
                 includeHiddenNodes: true,
                 padding: 0.35,
-                duration: 250,
+                duration: cameraTransition(),
             });
             const nextViewport = flow.getViewport();
             viewport.current = nextViewport;
@@ -2091,7 +2098,9 @@ export default function VaultPage({
         setError(null);
 
         if (returnViewport.current) {
-            void flow?.setViewport(returnViewport.current);
+            void flow?.setViewport(returnViewport.current, {
+                duration: cameraTransition(),
+            });
         }
     }, [flow, session]);
 
