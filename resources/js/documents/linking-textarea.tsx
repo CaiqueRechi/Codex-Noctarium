@@ -103,6 +103,7 @@ export function LinkingTextarea({
                 ref={textarea}
                 className="cvc-editor__textarea"
                 aria-label="Conteúdo Markdown"
+                placeholder="Escreva em Markdown. /link conecta outra nota."
                 aria-autocomplete="list"
                 aria-controls={isOpen ? listId : undefined}
                 aria-expanded={isOpen}
