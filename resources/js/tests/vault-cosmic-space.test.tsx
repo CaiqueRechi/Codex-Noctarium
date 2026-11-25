@@ -20,6 +20,7 @@ type MockNode = {
     origin?: [number, number];
     width?: number;
     height?: number;
+    measured?: { width?: number; height?: number };
     data: {
         label: string;
         diameter?: number;
@@ -88,6 +89,8 @@ vi.mock('@xyflow/react', () => ({
                         data-origin={node.origin?.join(',')}
                         data-width={node.width}
                         data-height={node.height}
+                        data-measured-width={node.measured?.width}
+                        data-measured-height={node.measured?.height}
                         data-pinned={String(node.data.isPinned)}
                     >
                         {node.data.label}
@@ -303,6 +306,16 @@ describe('RF-03 space drawn and moved by the physics', () => {
         expect(node).toHaveAttribute('data-origin', '0.5,0.5');
         expect(node).toHaveAttribute('data-width', diameter);
         expect(node).toHaveAttribute('data-height', diameter);
+    });
+
+    it('gives the canvas the measured size so a grabbed note does not jump by its radius', () => {
+        renderSpace([note('a', 'Alfa'), note('b', 'Beta')]);
+
+        const node = screen.getByTestId('entity:space:a');
+        const diameter = node.getAttribute('data-diameter');
+
+        expect(node).toHaveAttribute('data-measured-width', diameter);
+        expect(node).toHaveAttribute('data-measured-height', diameter);
     });
 
     it('moves free notes as frames pass', () => {
