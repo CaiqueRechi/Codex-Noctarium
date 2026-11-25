@@ -1002,16 +1002,16 @@ the changed paths.
 
 | Requirement | State | Next work / blocker |
 | --- | --- | --- |
-| RF-01 | partial | Cosmic spaces, framing, zoom navigation at 60 % / 30 % into notes as well, the linked-sibling dot and the touch gestures are built (phases 10 to 15). Zoom animation timings are still open in D-12; Rechi found the result not yet fluid |
-| RF-02 | partial | Title limit, rename, color, the connection list with "Conectar a…" and a single click opening a note are built (phases 13 and 15). The editor still opens over the whole screen instead of expanding on the canvas, and the content type belongs to RF-04 |
-| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the Ctrl drop did not pin when Ctrl was held for the whole drag); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
+| RF-01 | partial | Cosmic spaces, framing, zoom navigation at 60 % / 30 % into notes as well, the linked-sibling dot and the touch gestures are built (phases 10 to 15). Camera transitions take the 250 ms of D-12 (2026-11-25); cancellation during a move is still open |
+| RF-02 | partial | Title limit, rename, color, the connection list with "Conectar a…" and a single click opening a note are built (phases 13 and 15). The editor opens as an inset panel that grows out of the clicked note (2026-11-25); the content type belongs to RF-04 |
+| RF-03 | partial | Arithmetic, simulator and shared-space backend implemented, restoration cycle regression fixed, measures stored by the server and sent with the slice, simulator scene built from them (phase 8), an open space drawn and moved by the physics with free drops saved (phase 9, seen in a browser on 2026-11-12; the drag jump and the Ctrl drop were settled on 2026-11-25); flowchart metrics, saving the positions the physics settles, and a stored position for nested contexts and universes remain. D-14 moves the measure to the browser: phase 7 has to be reworked when encryption is built |
 | RF-04 | built | Flowchart notes with hand-placed blocks and arrows with text (phase 20) |
 | RF-05 | built | Conversion through one `mermaid` block both ways (phase 20) |
 | RF-07 | built | Compass, groups, approach or fade and "Voltar" built (phase 16); not yet seen in a browser |
-| RF-08 | built | Move with subnotes, "só daqui", deletion asking about subnotes and the 7-day purge (phase 19); migration of existing data (D-13) still open |
-| RF-09 | built | Corner indications, "+N" and travel through the common ancestor (phase 18); travel timing open in D-12 |
+| RF-08 | built | Move with subnotes, "só daqui", deletion asking about subnotes and the 7-day purge (phase 19); existing data kept as it is (D-13, 2026-11-25) |
+| RF-09 | built | Corner indications, "+N" and travel through the common ancestor (phase 18); each level takes the 250 ms of D-12 |
 | RF-10 | built | `/link` and `/l` with prefix-only suggestions (phase 12) and the full score of D-09 (phase 17) |
-| RF-11 | blocked | Depends on the final persistence (RF-04, encryption) and on fixture identity/tombstone handling; last in the delivery order |
+| RF-11 | built | `cvc:seed-projects` creates the "Meus Projetos" universe; run on the local MySQL on 2026-11-25 without duplicating on a second run. Encrypted persistence is not built, so its interaction with the seeder is unverified |
 
 Follow-up questions are asked only when their decisions block the next phase.
 No open physical constant, formula, migration policy, or content format has been
@@ -1146,3 +1146,125 @@ undirected-relation title ordering, single-click canvas test fixtures, Node
 types in the package toolchain and React state patterns rejected by the host's
 lint configuration. MySQL migration execution and a real browser session stay
 as environment-level release checks.
+
+## Fluidity, editor expansion and seeder check — 2026-11-25
+
+Branch `cm-fluidez-e-editor`, from `cm-retomar-noctarium`. Done on the local
+Docker environment with the page visible, after Rechi answered the open parts
+of D-12, D-13, D-14 and D-15 (specification section 15.6).
+
+| Change | Implementation | Tests |
+| --- | --- | --- |
+| A grabbed note stays under the pointer | `measured` given with `width` and `height` in `buildSpaceNodes` (`vault.tsx`) | `vault-cosmic-space.test.tsx`, one case |
+| Every camera transition takes 250 ms, none with reduced motion (D-12) | `cameraTransition()` in `vault.tsx` | `vault-page.test.tsx`, framing with and without reduced motion; `autosave-page.test.tsx`, return to the canvas |
+| The editor grows out of the clicked note (RN-03, RF-02) | `useExpansionOrigin` in `documents/use-expansion-origin.ts`; `clientCircle` and `expandsFrom` in `vault.tsx`; `cvc-editor-expand` in `cvc.css` | `expansion-origin.test.tsx`, three cases |
+| Buttons of one shape, a two-row editor header, move and delete asked in a popover | `.cvc-button`, `.cvc-editor__header`, `.cvc-note-actions__question`, `.cvc-move-picker` in `cvc.css`; the text area hint in `linking-textarea.tsx` | none: presentation only, seen in a browser at 1280 × 800 and 375 × 812 |
+
+### The drag
+
+Measured with scripted mouse events and the note sampled on every frame: the
+note jumped up and left by exactly its radius on screen (23.5 px for a
+23.5 px radius) when grabbed, then followed the pointer one to one. That jump
+is the "about 64 % of the pointer's path" of the 2026-11-12 check. The canvas
+library turns the dragged corner back into a position with the node's
+measured size; nodes rebuilt on every physics frame carried no measured size,
+so the library used zero. After the fix the note stays under the pointer, one
+frame behind it, because its position goes through the physics before it is
+drawn.
+
+The (−0.135, −0.135) px shift of every body was not seen again and was not
+investigated further.
+
+### Ctrl
+
+With Ctrl held through the whole scripted drag (`ctrlKey` on every event, and
+the key pressed on the window), the note followed the pointer, stayed pinned
+after the drop, and the camera did not move in the second attempt; in the
+first, the camera moved 9 px once, which was not reproduced. The report of
+Ctrl panning the camera came from the browser tool used on 2026-11-12, which
+never set Ctrl on its events: the events recorded today from the same tool
+carried `ctrlKey: false`. A drag with a physical Ctrl key has not been
+checked by a person.
+
+### Fluidity
+
+Frame gaps with the page visible: 60 frames per second during a drag and
+the settling after it, p99 17 ms, no long task; a burst of 40 wheel steps that
+entered a context by zoom also ran at 60 frames per second with no long task.
+No rendering bottleneck was found in a space of six bodies. What made the
+navigation feel uneven was the mix of timings (instant, 250, 300 and 400 ms),
+now unified by D-12. A space near the 5,000-note target of D-15 was not
+measured.
+
+### Loading and navigation
+
+Rechi found loading and navigation slow. Measured on the local Docker
+environment:
+
+| Step | Before | After `php artisan optimize` |
+| --- | --- | --- |
+| `/up`, which does nothing | 480 ms | 100 ms |
+| `/vault`, time to first byte | 1,139 ms | 469 ms for the full page |
+| Entering a space (one slice request) | 876 ms | 324 ms |
+
+Static files are served in 8 ms, so the cost was Laravel booting on every
+request without its config, route and event caches, reading the files through
+the Windows share. With the caches, the slice of a space costs about 130 ms in
+the server: about 20 ms is this package (23 queries, 20 ms in the database),
+the rest is the host's middleware, which reads `screen_access_permissions`
+four times per request. That query belongs to Rechi OS and was not changed.
+
+`php artisan optimize` is a local environment step, not code: run it again in
+the Rechi OS container after changing routes or config of either repository,
+or clear it with `php artisan optimize:clear`. Prefetching a space before the
+zoom crosses into it was considered and not built.
+
+### Buttons and the editor
+
+Rechi found the dialogs and buttons ugly. Within palette F: every button is a
+pill of 2.5 rem that never wraps, hovering raises the surface and colours the
+border, and the focus ring appears only for the keyboard. The primary button
+keeps the violet with an inner champagne hairline, the trim the notes wear on
+the canvas. The editor header has two rows (title and saving; color, type,
+move and delete), the content type is a segmented control, and the questions
+of move and delete open in a popover under their button with a champagne top
+edge. To let the popover overlap the text, the editor no longer clips its
+overflow on wide screens; under 48 rem it scrolls and the questions stay in
+line. The text is a centred column of about 72 characters with a hint. The
+editor now starts 4 rem from the top so the path stays visible.
+
+While checking, a click on "Excluir" sent a note of the local test user to the
+trash: a note without subnotes is deleted without a question (D-13). It was
+restored through `POST /vault/trash/{entity}/restore` and is back on the canvas.
+
+### Seeder and migrations on the local MySQL
+
+Migrations 000017 (note color), 000018 (use counters) and 000019 (seeder
+fixtures) were still pending on the local MySQL. They were applied, rolled
+back three steps and applied again without error. `cvc:measure-documents`
+measured 0 documents. `cvc:seed-projects` created 15 notes and 3 links on the
+first run; the second run created nothing and reported 18 items kept.
+Existing data was left as it was (D-13/D-15).
+
+### Verification
+
+- Frontend: 320 tests in 29 files passed.
+- TypeScript (`tooling/tsconfig.json`) and ESLint on `resources/js/documents`,
+  `vault.tsx` and the changed tests passed.
+- PHP: 189 tests and 943 assertions passed on SQLite (16 minutes over the
+  Windows share).
+
+The suite ran inside the Rechi OS container, where the host lives at
+`/var/www/html`: `/var/www/rechi-os` was linked to it, and Vitest used a
+wrapper config outside the repository that adds `preserveSymlinks` and
+`/var/www/html` to the allowed roots, since Vite resolves the link to its
+real path.
+
+Seen in a browser: the drag, the Ctrl drop, the frame gaps and the editor
+starting its expansion from the note's circle (`data-expansion="note"`, the
+`cvc-editor-expand` animation and an origin on the note). The expansion was
+checked in a background tab, so the animation itself was not watched.
+
+Security review: no endpoint, query, storage or dependency was added. The
+expansion origin is a screen position written to CSS custom properties from
+numbers, never from user text. Nothing found.

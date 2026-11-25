@@ -267,9 +267,8 @@ Em 2026-11-11 Rechi fechou D-07, D-09, D-10 e D-11 e a maior parte de D-12 a D-1
 
 | # | Decisão | Área | Impacto |
 | --- | --- | --- | --- |
-| D-12 (parte restante) | Tempos de animação do zoom e cancelamento durante a movimentação | Interação | Completar transições |
-| D-13 (parte restante) | Migração do layout atual e conversão dos dados existentes | Dados | Necessária antes de mudar o esquema dos dados atuais |
-| D-14 (parte restante) | Integração final com o Rechi OS; desenho de chaves: derivação, troca de senha e guarda da cópia do administrador | Integração | Bloqueia a implementação da criptografia e qualquer hospedagem remota |
+| D-12 (parte restante) | Cancelamento durante a movimentação (os tempos foram fechados em 2026-11-25, seção 15.6) | Interação | Completar transições |
+| D-14 (parte restante) | Integração final com o Rechi OS; algoritmo e parâmetros da derivação, guarda da cópia do administrador (a origem da chave foi fechada em 2026-11-25, seção 15.6) | Integração | Bloqueia a implementação da criptografia e qualquer hospedagem remota |
 | D-15 (parte restante) | Ambientes, operação e custos | Entrega | Planejamento de implantação ainda necessário |
 
 As demais áreas do checklist não redefinidas nesta entrevista conservam referências anteriores como contexto a verificar; não contam automaticamente como novas confirmações. Não declarar 100% de cobertura nem testes de produto concluídos.
@@ -402,6 +401,14 @@ Rechi pediu uma identidade visual própria do vault, independente da do Rechi OS
 - Tipografia: Cinzel no caminho e nos rótulos, Manrope na interface e nas notas, JetBrains Mono no editor e nos estados. Fontes servidas pelo pacote, porque a CSP do Rechi OS só aceita fontes da própria origem.
 - Assinatura: toda nota tem borda fina champanhe; a nota em foco ganha a energia branco-azulada com halo violeta.
 - Separação do Rechi OS: fundo azul-preto em vez de ameixa, violeta vivo em vez de roxo apagado, champanhe claro em vez de mostarda, nenhum laranja.
+
+### 15.6 Decisões aprovadas em 2026-11-25
+
+Rechi respondeu nesta data às perguntas sobre as partes ainda abertas de D-12, D-13, D-14 e D-15.
+
+- **D-12 (tempos):** toda transição de câmera dura 250 ms, e nenhuma quando o sistema pede movimento reduzido. Vale para entrar num espaço por clique, aproximar de um resultado perto da rosa dos ventos, localizar uma nota pelo explorador, cada nível da viagem até uma conexão externa, “Voltar” e a volta do editor ao canvas. O editor de uma nota aberta por clique ou criada por duplo clique nasce do círculo da nota no mesmo tempo. Continuam fora desta regra o fade de 150 + 150 ms de um resultado longe (D-11) e o zoom que atravessa de um espaço para outro, que segue a roda do usuário sem animação própria. O cancelamento durante a movimentação continua aberto.
+- **D-14 (chave):** a chave do conteúdo vem de uma senha própria do vault, derivada no navegador (PBKDF2 ou Argon2). Trocar a senha do Rechi OS não afeta essa chave. Algoritmo, parâmetros e a guarda da cópia do administrador ainda precisam ser fixados antes da implementação.
+- **D-13 e D-15 (dados existentes):** os dados atuais ficam como estão; não há conversão. Basta aplicar as migrations e rodar `cvc:measure-documents` no MySQL local. Isso fecha a parte da D-13 sobre migração do layout e dos dados existentes. Ambientes, operação e custos da D-15 continuam abertos.
 
 ## 16. Glossário
 

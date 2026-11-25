@@ -1,7 +1,8 @@
 # Working context
 
-Where the work stands and how to pick it up. Updated on 2026-11-13 after the
-complete cosmic-canvas branch stack was integrated and verified. The product
+Where the work stands and how to pick it up. Updated on 2026-11-25 on
+`cm-fluidez-e-editor` (drag, camera timings, editor expansion, seeder run),
+after the 2026-11-13 integration of the cosmic-canvas stack. The product
 contract is `docs/requirements/canvas-cosmico.md` (with its formulas); the
 detail of every change, with what was and was not verified, is in
 `docs/requirements/canvas-cosmico-traceability.md`, phases 9 to 20. This file
@@ -55,15 +56,33 @@ The two additive migrations have automated rollback/reapply coverage on
 SQLite. A real MySQL migration run and an end-to-end browser session remain
 deployment checks, not claims made by this source verification.
 
+## Verification on 2026-11-25
+
+See "Fluidity, editor expansion and seeder check" at the end of the
+traceability. In short: the drag jump (the old "64 %") was the note's radius,
+fixed; Ctrl drags and pins with real Ctrl events, and the old report of Ctrl
+panning came from the testing tool; the canvas runs at 60 frames per second
+in a drag, the settling and a zoom across levels; every camera transition
+takes 250 ms (D-12); the editor grows out of the clicked note; buttons and the
+editor header were redesigned; migrations 000017–000019 and
+`cvc:seed-projects` ran on the local MySQL. Loading was slow because Laravel
+booted without caches: `php artisan optimize` in the container took entering a
+space from 876 ms to 324 ms. PHP: 189 tests / 943 assertions passed. Frontend:
+320 tests in 29 files passed; TypeScript and ESLint passed.
+
 ## Known problems
 
-- Holding Ctrl for a whole drag pans the camera instead of moving the note,
-  so the Ctrl drop never pinned in the browser check; pressing Ctrl only at
-  the drop was not tried. The phone menu "Fixar / Liberar" pins without Ctrl.
-- In the browser check a free drag moved the note about 64 % of the pointer's
-  path, and twice every body shifted by exactly (−0.135, −0.135) px. Neither
-  was investigated.
-- Caique found the navigation "on the right path" but not fluid.
+- A drag with a physical Ctrl key has not been tried by a person; the check
+  used scripted events.
+- The editor expansion was checked in a background tab: the origin and the
+  animation are set, but nobody has watched it run.
+- The (−0.135, −0.135) px shift of every body seen on 2026-11-12 did not
+  reappear and was not investigated.
+- A space near 5,000 notes (D-15) has not been measured for fluidity.
+- The Rechi OS middleware reads `screen_access_permissions` four times per
+  request; it is most of the ~110 ms left per request after the caches.
+- "Excluir" on a note without subnotes sends it to the trash with no
+  question (D-13), right next to "Mover para…".
 - A note's search index holds its stored content, so a flowchart's JSON keys
   can match a search.
 
@@ -78,15 +97,14 @@ deployment checks, not claims made by this source verification.
 
 ## What is left
 
-1. **RF-11, the "Meus Projetos" seeder** — implemented. Local execution and suite verification are pending. See section 5.1 of the specification.
-2. **Encryption (D-14)** — blocked: key derivation, password change and the
-   administrator's copy are still open. When built, the content measure
-   moves to the browser and parts of phases 6 to 8 change.
-3. Open decisions: zoom animation timings (D-12), migration of existing
-   layout and data (D-13), environments and operation (D-15).
-4. The note editor opens as an inset panel over the canvas (RF-02).
-   Expansion from the selected note and browser verification are pending.
-5. Decide separately whether technical identifiers follow the product name;
+1. **Encryption (D-14)** — the key comes from a vault-only passphrase
+   derived in the browser (PBKDF2 or Argon2), independent of the Rechi OS
+   password (specification 15.6). Still to fix before building: algorithm
+   and parameters, and how the administrator's copy is kept. When built, the
+   content measure moves to the browser and parts of phases 6 to 8 change.
+2. Open decisions: cancellation during a camera move (D-12), environments and
+   operation (D-15).
+3. Decide separately whether technical identifiers follow the product name;
    the current identifiers intentionally remain compatible.
 
 ## Local environment
@@ -99,6 +117,12 @@ For a host-level release check, configure the Rechi OS `.env`, run its MySQL
 migrations, compile with `WAYFINDER_GENERATE=false npm run build`, and exercise
 the authenticated `/vault` screen with read and write permissions. Those steps
 are intentionally separate from the package's source-level checks.
+
+In the local Docker environment, run `php artisan optimize` inside the Rechi
+OS container: without the config, route and event caches every request
+boots Laravel through the Windows share, about 480 ms before any work. Run it
+again after changing routes or config, or clear it with
+`php artisan optimize:clear`.
 
 ## Checks
 
